@@ -1,4 +1,4 @@
-# KURF Interview AI — Application
+# AI-Powered Interview Training Application for Students
 
 Foundation for the AI interview training application described in the KURF
 report. It stands up an end-to-end slice: a React frontend calls a FastAPI
