@@ -2,7 +2,9 @@ import { useState } from "react";
 import { sendChat } from "../api";
 
 export default function ChatTest() {
-  const [prompt, setPrompt] = useState("Say hello in five words.");
+  const [prompt, setPrompt] = useState(
+    "Give me a common interview question for a graduate software engineering role.",
+  );
   const [reply, setReply] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -27,6 +29,7 @@ export default function ChatTest() {
       <textarea
         value={prompt}
         onChange={(e) => setPrompt(e.target.value)}
+        placeholder="Type a message..."
         rows={3}
         style={{ width: "100%", boxSizing: "border-box", fontSize: "1rem" }}
       />

@@ -17,7 +17,7 @@ export default function App() {
 
   return (
     <main style={{ maxWidth: 640, margin: "2rem auto", fontFamily: "system-ui, sans-serif" }}>
-      <h1>KURF Interview AI</h1>
+      <h1>AI Interview Practice</h1>
       <p>
         Backend:{" "}
         {health === "checking" && <span>checking...</span>}
