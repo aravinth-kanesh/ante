@@ -35,19 +35,43 @@ cp .env.example .env        # then put your real key in .env
 uvicorn app.main:app --reload --port 8000
 ```
 
-Check it:
+Check it (health is public; chat requires a logged-in user):
 
 ```bash
 curl localhost:8000/api/health
 # {"status":"ok","model":"arc:lite"}
 
-curl -X POST localhost:8000/api/chat \
+# create an account and capture the token
+TOKEN=$(curl -s -X POST localhost:8000/api/auth/signup \
   -H 'content-type: application/json' \
+  -d '{"email":"you@example.com","password":"password123"}' | python3 -c 'import sys,json;print(json.load(sys.stdin)["access_token"])')
+
+curl -X POST localhost:8000/api/chat \
+  -H "Authorization: Bearer $TOKEN" -H 'content-type: application/json' \
   -d '{"messages":[{"role":"user","content":"Say hello in five words"}]}'
 # {"reply":"..."}
 ```
 
 Interactive API docs are served at `http://localhost:8000/docs`.
+
+### Accounts and auth
+
+Accounts are stored in a local SQLite database (`backend/app.db`, gitignored),
+with passwords hashed using bcrypt. Auth is via JWT bearer tokens. Set a strong
+`JWT_SECRET` in `backend/.env` before deploying. Endpoints:
+
+- `POST /api/auth/signup` and `POST /api/auth/login` return an access token.
+- `GET /api/auth/me` returns the current user.
+- `GET`/`PUT /api/profile` store the user's CV and job description text.
+- `POST /api/chat` now requires a bearer token.
+
+### Tests
+
+```bash
+cd backend
+source .venv/bin/activate
+pytest
+```
 
 ## Frontend
 
@@ -57,15 +81,17 @@ npm install
 npm run dev
 ```
 
-Open `http://localhost:5173`. The page shows the backend health status and a box
-to send a prompt to the model. The dev server proxies `/api` to the backend on
-port 8000, so run the backend first.
+Open `http://localhost:5173`. You are taken to a login page; sign up for an
+account, then the dashboard shows the backend health status, a form to save your
+CV and job description, and a box to send a prompt to the model. The dev server
+proxies `/api` to the backend on port 8000, so run the backend first.
 
 ## Configuration
 
 All configuration lives in `backend/.env` (gitignored). See
 `backend/.env.example` for the keys: `LLM_BASE_URL`, `LLM_API_KEY`, `LLM_MODEL`,
-and `BACKEND_CORS_ORIGINS`.
+`BACKEND_CORS_ORIGINS`, `DATABASE_URL`, `JWT_SECRET`, `JWT_ALGORITHM`, and
+`ACCESS_TOKEN_EXPIRE_MINUTES`.
 
 ## Docker (backend)
 

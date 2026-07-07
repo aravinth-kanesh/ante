@@ -1,30 +1,28 @@
-import { useEffect, useState } from "react";
-import { getHealth } from "./api";
-import ChatTest from "./components/ChatTest";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { AuthProvider } from "./auth/AuthContext";
+import ProtectedRoute from "./components/ProtectedRoute";
+import Dashboard from "./pages/Dashboard";
+import Login from "./pages/Login";
+import Signup from "./pages/Signup";
 
 export default function App() {
-  const [health, setHealth] = useState<"checking" | "ok" | "down">("checking");
-  const [model, setModel] = useState("");
-
-  useEffect(() => {
-    getHealth()
-      .then((h) => {
-        setHealth("ok");
-        setModel(h.model);
-      })
-      .catch(() => setHealth("down"));
-  }, []);
-
   return (
-    <main style={{ maxWidth: 640, margin: "2rem auto", fontFamily: "system-ui, sans-serif" }}>
-      <h1>AI Interview Practice</h1>
-      <p>
-        Backend:{" "}
-        {health === "checking" && <span>checking...</span>}
-        {health === "ok" && <span style={{ color: "green" }}>connected (model: {model})</span>}
-        {health === "down" && <span style={{ color: "crimson" }}>unavailable</span>}
-      </p>
-      <ChatTest />
-    </main>
+    <AuthProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+          <Route
+            path="/"
+            element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </BrowserRouter>
+    </AuthProvider>
   );
 }
