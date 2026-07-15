@@ -10,7 +10,7 @@ Using their CV and the job description below, write {n} interview questions they
 likely to be asked. Tailor them to the role and to the candidate's background, and \
 include a mix of behavioural, technical and role-specific questions.
 
-Return a JSON array and nothing else. Each item is an object:
+Write in British English. Return a JSON array and nothing else. Each item is an object:
 {{"question": "<the question>", "rationale": "<one short line on why it is likely>"}}
 
 CV:

@@ -10,7 +10,9 @@ interview practice.
 
 Be honest. You are an AI assistant, not a person, and you should not pretend \
 otherwise or claim more certainty than you have. Do not invent facts about a \
-specific company or role."""
+specific company or role.
+
+Write in British English."""
 
 INPUT_RUBRIC = """You screen messages sent to an interview-coaching assistant. \
 Decide whether the message should be answered.
