@@ -5,7 +5,7 @@ from app.config import settings
 from app.db import Base, engine
 from app.models import profile as _profile  # noqa: F401  (register tables)
 from app.models import user as _user  # noqa: F401
-from app.routers import auth, chat, health, profile
+from app.routers import auth, chat, health, prepare, profile
 
 Base.metadata.create_all(bind=engine)
 
@@ -22,4 +22,5 @@ app.add_middleware(
 app.include_router(health.router, prefix="/api")
 app.include_router(auth.router, prefix="/api")
 app.include_router(profile.router, prefix="/api")
+app.include_router(prepare.router, prefix="/api")
 app.include_router(chat.router, prefix="/api")

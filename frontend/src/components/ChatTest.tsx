@@ -6,6 +6,7 @@ export default function ChatTest() {
     "Give me a common interview question for a graduate software engineering role.",
   );
   const [reply, setReply] = useState("");
+  const [blocked, setBlocked] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -14,8 +15,9 @@ export default function ChatTest() {
     setError("");
     setReply("");
     try {
-      const text = await sendChat([{ role: "user", content: prompt }]);
-      setReply(text);
+      const result = await sendChat([{ role: "user", content: prompt }]);
+      setReply(result.reply);
+      setBlocked(result.blocked);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
@@ -37,8 +39,8 @@ export default function ChatTest() {
         {loading ? "Sending..." : "Send"}
       </button>
       {reply && (
-        <p style={{ whiteSpace: "pre-wrap", marginTop: "1rem" }}>
-          <strong>Reply:</strong> {reply}
+        <p style={{ whiteSpace: "pre-wrap", marginTop: "1rem", color: blocked ? "#8a6d3b" : "inherit" }}>
+          <strong>{blocked ? "Declined:" : "Reply:"}</strong> {reply}
         </p>
       )}
       {error && (

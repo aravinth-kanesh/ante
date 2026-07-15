@@ -1,5 +1,11 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { getHealth, getProfile, saveProfile } from "../api";
+import {
+  generateQuestions,
+  getHealth,
+  getProfile,
+  saveProfile,
+  type PrepQuestion,
+} from "../api";
 import { useAuth } from "../auth/AuthContext";
 import ChatTest from "../components/ChatTest";
 
@@ -12,6 +18,10 @@ export default function Dashboard() {
   const [jd, setJd] = useState("");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+
+  const [questions, setQuestions] = useState<PrepQuestion[]>([]);
+  const [generating, setGenerating] = useState(false);
+  const [genError, setGenError] = useState("");
 
   useEffect(() => {
     getHealth()
@@ -37,6 +47,18 @@ export default function Dashboard() {
       setSaved(true);
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function generate() {
+    setGenerating(true);
+    setGenError("");
+    try {
+      setQuestions(await generateQuestions());
+    } catch (err) {
+      setGenError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setGenerating(false);
     }
   }
 
@@ -86,6 +108,29 @@ export default function Dashboard() {
           </button>
           {saved && <span style={{ color: "green", marginLeft: "0.75rem" }}>Saved</span>}
         </form>
+      </section>
+
+      <section>
+        <h2>Likely interview questions</h2>
+        <p style={{ color: "#666", marginTop: 0 }}>
+          Generate questions tailored to your saved CV and job description.
+        </p>
+        <button onClick={generate} disabled={generating}>
+          {generating ? "Generating..." : "Generate likely questions"}
+        </button>
+        {genError && <p style={{ color: "crimson" }}>{genError}</p>}
+        {questions.length > 0 && (
+          <ol>
+            {questions.map((q, i) => (
+              <li key={i} style={{ marginBottom: "0.5rem" }}>
+                {q.question}
+                {q.rationale && (
+                  <div style={{ color: "#666", fontSize: "0.85rem" }}>{q.rationale}</div>
+                )}
+              </li>
+            ))}
+          </ol>
+        )}
       </section>
 
       <ChatTest />

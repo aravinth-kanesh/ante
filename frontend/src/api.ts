@@ -74,10 +74,25 @@ export async function saveProfile(profile: Profile): Promise<Profile> {
   return request("/api/profile", { method: "PUT", body: JSON.stringify(profile) });
 }
 
-export async function sendChat(messages: Message[]): Promise<string> {
+export interface ChatReply {
+  reply: string;
+  blocked: boolean;
+}
+
+export async function sendChat(messages: Message[]): Promise<ChatReply> {
   const data = await request("/api/chat", {
     method: "POST",
     body: JSON.stringify({ messages }),
   });
-  return data.reply;
+  return { reply: data.reply, blocked: data.blocked ?? false };
+}
+
+export interface PrepQuestion {
+  question: string;
+  rationale: string;
+}
+
+export async function generateQuestions(): Promise<PrepQuestion[]> {
+  const data = await request("/api/prepare/questions", { method: "POST" });
+  return data.questions;
 }

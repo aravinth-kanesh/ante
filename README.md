@@ -64,6 +64,25 @@ with passwords hashed using bcrypt. Auth is via JWT bearer tokens. Set a strong
 - `GET /api/auth/me` returns the current user.
 - `GET`/`PUT /api/profile` store the user's CV and job description text.
 - `POST /api/chat` now requires a bearer token.
+- `POST /api/prepare/questions` generates likely interview questions from the
+  saved CV and job description.
+
+### Moderation
+
+`POST /api/chat` does not call the model directly. A layer in `app/services/`
+frames the model as an interview coach, then uses the model itself to judge the
+user's message and the reply: off-topic, unsafe, or manipulative input is
+declined politely, and a reply that drifts is regenerated once before a fallback.
+The checks are model-based rather than keyword lists, and each is a separate
+call, so a message can cost up to three model calls; toggle them in `.env`
+(`MODERATE_INPUT_ENABLED`, etc.) if the provider rate-limits.
+
+Sanity-check it against deliberate misuse:
+
+```bash
+cd backend && source .venv/bin/activate
+python scripts/moderation_smoke.py
+```
 
 ### Tests
 
