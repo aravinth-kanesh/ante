@@ -16,6 +16,14 @@ class Settings(BaseSettings):
     jwt_algorithm: str = "HS256"
     access_token_expire_minutes: int = 60
 
+    # Moderation. Each check is a separate model call, so a chat message can cost
+    # up to three calls; turn input checking off if the provider rate-limits.
+    moderation_enabled: bool = True
+    moderate_input_enabled: bool = True
+    moderate_output_enabled: bool = True
+    moderation_model: str = ""  # falls back to llm_model
+    moderation_max_retries: int = 1
+
     @property
     def cors_origins(self) -> list[str]:
         return [o.strip() for o in self.backend_cors_origins.split(",") if o.strip()]
