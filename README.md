@@ -63,6 +63,8 @@ with passwords hashed using bcrypt. Auth is via JWT bearer tokens. Set a strong
 - `POST /api/auth/signup` and `POST /api/auth/login` return an access token.
 - `GET /api/auth/me` returns the current user.
 - `GET`/`PUT /api/profile` store the user's CV and job description text.
+- `POST /api/profile/cv` uploads a CV file (PDF, Word or plain text, 2 MB limit),
+  extracts the text and saves it to the account.
 - `POST /api/chat` now requires a bearer token.
 - `POST /api/prepare/questions` generates likely interview questions from the
   saved CV and job description.

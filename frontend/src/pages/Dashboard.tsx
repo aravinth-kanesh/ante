@@ -1,9 +1,10 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
 import {
   generateQuestions,
   getHealth,
   getProfile,
   saveProfile,
+  uploadCv,
   type PrepQuestion,
 } from "../api";
 import { useAuth } from "../auth/AuthContext";
@@ -15,9 +16,12 @@ export default function Dashboard() {
   const [model, setModel] = useState("");
 
   const [cv, setCv] = useState("");
+  const [cvFilename, setCvFilename] = useState("");
   const [jd, setJd] = useState("");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState("");
 
   const [questions, setQuestions] = useState<PrepQuestion[]>([]);
   const [generating, setGenerating] = useState(false);
@@ -33,6 +37,7 @@ export default function Dashboard() {
     getProfile()
       .then((p) => {
         setCv(p.cv_text);
+        setCvFilename(p.cv_filename);
         setJd(p.jd_text);
       })
       .catch(() => {});
@@ -43,10 +48,27 @@ export default function Dashboard() {
     setSaving(true);
     setSaved(false);
     try {
-      await saveProfile({ cv_text: cv, jd_text: jd });
+      await saveProfile(cv, jd);
       setSaved(true);
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function onCvFile(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    setUploadError("");
+    try {
+      const p = await uploadCv(file);
+      setCv(p.cv_text);
+      setCvFilename(p.cv_filename);
+    } catch (err) {
+      setUploadError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setUploading(false);
+      e.target.value = "";
     }
   }
 
@@ -85,11 +107,23 @@ export default function Dashboard() {
         <form onSubmit={saveContext}>
           <label>
             CV
+            <input
+              type="file"
+              accept=".pdf,.docx,.txt"
+              onChange={onCvFile}
+              disabled={uploading}
+              style={{ display: "block", margin: "0.25rem 0" }}
+            />
+            {uploading && <span style={{ fontSize: "0.85rem" }}>Extracting text...</span>}
+            {!uploading && cvFilename && (
+              <span style={{ color: "#666", fontSize: "0.85rem" }}>Uploaded: {cvFilename}</span>
+            )}
+            {uploadError && <span style={{ color: "crimson", fontSize: "0.85rem" }}> {uploadError}</span>}
             <textarea
               value={cv}
               onChange={(e) => setCv(e.target.value)}
               rows={6}
-              placeholder="Paste your CV..."
+              placeholder="Upload a file above or paste your CV..."
               style={{ width: "100%", boxSizing: "border-box", margin: "0.25rem 0 1rem" }}
             />
           </label>

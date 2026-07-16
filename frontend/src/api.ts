@@ -12,6 +12,7 @@ export interface User {
 
 export interface Profile {
   cv_text: string;
+  cv_filename: string;
   jd_text: string;
 }
 
@@ -21,10 +22,12 @@ function authHeaders(): Record<string, string> {
 }
 
 async function request(path: string, options: RequestInit = {}) {
+  // FormData bodies set their own multipart content-type.
+  const isForm = options.body instanceof FormData;
   const res = await fetch(path, {
     ...options,
     headers: {
-      "Content-Type": "application/json",
+      ...(isForm ? {} : { "Content-Type": "application/json" }),
       ...authHeaders(),
       ...options.headers,
     },
@@ -70,8 +73,17 @@ export async function getProfile(): Promise<Profile> {
   return request("/api/profile");
 }
 
-export async function saveProfile(profile: Profile): Promise<Profile> {
-  return request("/api/profile", { method: "PUT", body: JSON.stringify(profile) });
+export async function saveProfile(cv_text: string, jd_text: string): Promise<Profile> {
+  return request("/api/profile", {
+    method: "PUT",
+    body: JSON.stringify({ cv_text, jd_text }),
+  });
+}
+
+export async function uploadCv(file: File): Promise<Profile> {
+  const form = new FormData();
+  form.append("file", file);
+  return request("/api/profile/cv", { method: "POST", body: form });
 }
 
 export interface ChatReply {
