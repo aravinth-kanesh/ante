@@ -3,9 +3,11 @@ import {
   generateQuestions,
   getHealth,
   getProfile,
+  researchCompany,
   saveProfile,
   uploadCv,
   type PrepQuestion,
+  type Research,
 } from "../api";
 import { useAuth } from "../auth/AuthContext";
 import ChatTest from "../components/ChatTest";
@@ -26,6 +28,10 @@ export default function Dashboard() {
   const [questions, setQuestions] = useState<PrepQuestion[]>([]);
   const [generating, setGenerating] = useState(false);
   const [genError, setGenError] = useState("");
+
+  const [research, setResearch] = useState<Research | null>(null);
+  const [researching, setResearching] = useState(false);
+  const [researchError, setResearchError] = useState("");
 
   useEffect(() => {
     getHealth()
@@ -81,6 +87,18 @@ export default function Dashboard() {
       setGenError(err instanceof Error ? err.message : String(err));
     } finally {
       setGenerating(false);
+    }
+  }
+
+  async function runResearch() {
+    setResearching(true);
+    setResearchError("");
+    try {
+      setResearch(await researchCompany());
+    } catch (err) {
+      setResearchError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setResearching(false);
     }
   }
 
@@ -142,6 +160,27 @@ export default function Dashboard() {
           </button>
           {saved && <span style={{ color: "green", marginLeft: "0.75rem" }}>Saved</span>}
         </form>
+      </section>
+
+      <section>
+        <h2>Company research</h2>
+        <p style={{ color: "#666", marginTop: 0 }}>
+          Research the company from your saved job description, so questions match how they
+          interview.
+        </p>
+        <button onClick={runResearch} disabled={researching}>
+          {researching ? "Researching..." : "Research company"}
+        </button>
+        {researchError && <p style={{ color: "crimson" }}>{researchError}</p>}
+        {research && (
+          <div style={{ marginTop: "0.75rem" }}>
+            <p style={{ margin: "0.25rem 0" }}>
+              <strong>{research.company || "Company"}</strong>
+              {research.role && ` (${research.role})`}
+            </p>
+            <p style={{ whiteSpace: "pre-wrap", color: "#333" }}>{research.company_context}</p>
+          </div>
+        )}
       </section>
 
       <section>

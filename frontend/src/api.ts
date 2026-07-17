@@ -86,6 +86,16 @@ export async function uploadCv(file: File): Promise<Profile> {
   return request("/api/profile/cv", { method: "POST", body: form });
 }
 
+export interface Research {
+  company: string;
+  role: string;
+  company_context: string;
+}
+
+export async function researchCompany(): Promise<Research> {
+  return request("/api/profile/research", { method: "POST" });
+}
+
 export interface ChatReply {
   reply: string;
   blocked: boolean;

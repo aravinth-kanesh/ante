@@ -19,6 +19,9 @@ class Profile(Base):
     cv_text: Mapped[str] = mapped_column(Text, default="")
     cv_filename: Mapped[str] = mapped_column(String, default="")
     jd_text: Mapped[str] = mapped_column(Text, default="")
+    company: Mapped[str] = mapped_column(String, default="")
+    role: Mapped[str] = mapped_column(String, default="")
+    company_context: Mapped[str] = mapped_column(Text, default="")
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=_utcnow, onupdate=_utcnow
     )

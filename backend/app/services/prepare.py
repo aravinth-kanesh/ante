@@ -6,9 +6,10 @@ from app.services import llm, moderation
 _JSON_ARRAY = re.compile(r"\[.*\]", re.DOTALL)
 
 PREP_PROMPT = """You are helping a student prepare for a specific job interview. \
-Using their CV and the job description below, write {n} interview questions they are \
-likely to be asked. Tailor them to the role and to the candidate's background, and \
-include a mix of behavioural, technical and role-specific questions.
+Using their CV, the job description, and what is known about the company below, \
+write {n} interview questions they are likely to be asked. Tailor them to the \
+candidate's background, the role, and the way this company interviews. Include a \
+mix of behavioural, technical and role-specific questions.
 
 Write in British English. Return a JSON array and nothing else. Each item is an object:
 {{"question": "<the question>", "rationale": "<one short line on why it is likely>"}}
@@ -17,12 +18,20 @@ CV:
 {cv}
 
 Job description:
-{jd}"""
+{jd}
+
+Company and role context:
+{context}"""
 
 
-def generate_questions(cv_text: str, jd_text: str, n: int = 8) -> list[dict]:
+def generate_questions(
+    cv_text: str, jd_text: str, company_context: str = "", n: int = 8
+) -> list[dict]:
     prompt = PREP_PROMPT.format(
-        n=n, cv=cv_text or "(not provided)", jd=jd_text or "(not provided)"
+        n=n,
+        cv=cv_text or "(not provided)",
+        jd=jd_text or "(not provided)",
+        context=company_context or "(not researched)",
     )
     raw = llm.chat([{"role": "user", "content": prompt}], temperature=0.4)
 

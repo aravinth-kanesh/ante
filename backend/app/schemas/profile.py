@@ -12,3 +12,11 @@ class ProfileRead(BaseModel):
     jd_text: str
 
     model_config = {"from_attributes": True}
+
+
+class ResearchRead(BaseModel):
+    company: str
+    role: str
+    company_context: str
+
+    model_config = {"from_attributes": True}

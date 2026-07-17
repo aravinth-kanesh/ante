@@ -4,8 +4,9 @@ from sqlalchemy.orm import Session
 from app.db import get_db
 from app.models.profile import Profile
 from app.models.user import User
-from app.schemas.profile import ProfileRead, ProfileUpdate
+from app.schemas.profile import ProfileRead, ProfileUpdate, ResearchRead
 from app.security import get_current_user
+from app.services import research
 from app.services.cv_parse import SUPPORTED, extract_text
 
 router = APIRouter(prefix="/profile", tags=["profile"])
@@ -37,7 +38,31 @@ def update_profile(
 ) -> Profile:
     profile = _get_or_create(db, current_user)
     profile.cv_text = data.cv_text
+    if data.jd_text != profile.jd_text:
+        # the job description changed, so any cached research no longer applies
+        profile.company = ""
+        profile.role = ""
+        profile.company_context = ""
     profile.jd_text = data.jd_text
+    db.commit()
+    db.refresh(profile)
+    return profile
+
+
+@router.post("/research", response_model=ResearchRead)
+def research_profile(
+    current_user: User = Depends(get_current_user), db: Session = Depends(get_db)
+) -> Profile:
+    profile = _get_or_create(db, current_user)
+    if not profile.jd_text.strip():
+        raise HTTPException(status_code=400, detail="Add a job description first")
+    try:
+        company, role = research.extract_company_role(profile.jd_text)
+        profile.company_context = research.research_company(company, role)
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"Research failed: {exc}") from exc
+    profile.company = company
+    profile.role = role
     db.commit()
     db.refresh(profile)
     return profile
