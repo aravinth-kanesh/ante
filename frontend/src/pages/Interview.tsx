@@ -73,7 +73,7 @@ export default function Interview() {
     setFeedback("");
     setHistory([]);
     try {
-      const res = await startInterview();
+      const res = await startInterview(voiceMode ? "voice" : "text");
       setSessionId(res.session_id);
       setQuestion(res.question);
     } catch (err) {

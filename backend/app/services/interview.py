@@ -40,9 +40,15 @@ def _add_turn(db: Session, session: InterviewSession, role: str, kind: str, cont
     db.refresh(session)
 
 
-def start(db: Session, user: User, cv: str, jd: str, context: str) -> tuple[InterviewSession, str]:
+def start(
+    db: Session, user: User, cv: str, jd: str, context: str, mode: str = "text"
+) -> tuple[InterviewSession, str]:
     session = InterviewSession(
-        user_id=user.id, cv_snapshot=cv, jd_snapshot=jd, company_context_snapshot=context
+        user_id=user.id,
+        mode=mode,
+        cv_snapshot=cv,
+        jd_snapshot=jd,
+        company_context_snapshot=context,
     )
     db.add(session)
     db.commit()

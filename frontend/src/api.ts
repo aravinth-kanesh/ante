@@ -119,8 +119,15 @@ export async function generateQuestions(): Promise<PrepQuestion[]> {
   return data.questions;
 }
 
-export async function startInterview(): Promise<{ session_id: number; question: string }> {
-  return request("/api/interview/start", { method: "POST" });
+export type InterviewMode = "text" | "voice";
+
+export async function startInterview(
+  mode: InterviewMode = "text",
+): Promise<{ session_id: number; question: string; mode: InterviewMode }> {
+  return request("/api/interview/start", {
+    method: "POST",
+    body: JSON.stringify({ mode }),
+  });
 }
 
 export async function answerInterview(

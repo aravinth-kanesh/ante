@@ -9,6 +9,7 @@ from app.schemas.interview import (
     AnswerRequest,
     AnswerResponse,
     FeedbackResponse,
+    StartRequest,
     StartResponse,
     TranscriptResponse,
 )
@@ -27,8 +28,11 @@ def _owned(db: Session, session_id: int, user: User) -> InterviewSession:
 
 @router.post("/start", response_model=StartResponse)
 def start(
-    current_user: User = Depends(get_current_user), db: Session = Depends(get_db)
+    data: StartRequest | None = None,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
 ) -> StartResponse:
+    mode = data.mode if data else "text"
     profile = _get_or_create(db, current_user)
     if not profile.cv_text.strip():
         raise HTTPException(status_code=400, detail="Add your CV before starting an interview")
@@ -44,11 +48,11 @@ def start(
 
     try:
         session, question = interview.start(
-            db, current_user, profile.cv_text, profile.jd_text, profile.company_context
+            db, current_user, profile.cv_text, profile.jd_text, profile.company_context, mode
         )
     except Exception as exc:
         raise HTTPException(status_code=502, detail=f"Could not start interview: {exc}") from exc
-    return StartResponse(session_id=session.id, question=question)
+    return StartResponse(session_id=session.id, question=question, mode=session.mode)
 
 
 @router.post("/{session_id}/answer", response_model=AnswerResponse)
@@ -89,4 +93,4 @@ def transcript(
     db: Session = Depends(get_db),
 ) -> TranscriptResponse:
     session = _owned(db, session_id, current_user)
-    return TranscriptResponse(status=session.status, turns=session.turns)
+    return TranscriptResponse(status=session.status, mode=session.mode, turns=session.turns)

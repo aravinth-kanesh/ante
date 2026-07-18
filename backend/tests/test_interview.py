@@ -77,6 +77,36 @@ def test_ownership(client, monkeypatch):
     )
 
 
+def test_start_defaults_to_text_mode(client, monkeypatch):
+    mock_llm(monkeypatch)
+    headers = auth_header(client)
+    save_cv(client, headers)
+
+    started = client.post("/api/interview/start", headers=headers).json()
+    assert started["mode"] == "text"
+
+
+def test_start_records_voice_mode(client, monkeypatch):
+    mock_llm(monkeypatch)
+    headers = auth_header(client)
+    save_cv(client, headers)
+
+    started = client.post("/api/interview/start", headers=headers, json={"mode": "voice"}).json()
+    assert started["mode"] == "voice"
+
+    transcript = client.get(f"/api/interview/{started['session_id']}", headers=headers).json()
+    assert transcript["mode"] == "voice"
+
+
+def test_start_rejects_unknown_mode(client, monkeypatch):
+    mock_llm(monkeypatch)
+    headers = auth_header(client)
+    save_cv(client, headers)
+
+    res = client.post("/api/interview/start", headers=headers, json={"mode": "telepathy"})
+    assert res.status_code == 422
+
+
 def test_transcript(client, monkeypatch):
     mock_llm(monkeypatch)
     headers = auth_header(client)
