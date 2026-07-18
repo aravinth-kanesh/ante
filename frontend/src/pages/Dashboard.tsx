@@ -1,4 +1,5 @@
 import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
+import { Link } from "react-router-dom";
 import {
   generateQuestions,
   getHealth,
@@ -114,6 +115,13 @@ export default function Dashboard() {
         {health === "checking" && <span>checking...</span>}
         {health === "ok" && <span style={{ color: "green" }}>connected (model: {model})</span>}
         {health === "down" && <span style={{ color: "crimson" }}>unavailable</span>}
+      </p>
+
+      <p style={{ margin: "1rem 0" }}>
+        <Link to="/interview">
+          <strong>Start a mock interview</strong>
+        </Link>{" "}
+        (add your CV and job description below first).
       </p>
 
       <section>

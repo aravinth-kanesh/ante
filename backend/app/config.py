@@ -24,6 +24,8 @@ class Settings(BaseSettings):
     moderation_model: str = ""  # falls back to llm_model
     moderation_max_retries: int = 1
 
+    interview_max_questions: int = 6
+
     @property
     def cors_origins(self) -> list[str]:
         return [o.strip() for o in self.backend_cors_origins.split(",") if o.strip()]

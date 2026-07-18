@@ -70,6 +70,11 @@ with passwords hashed using bcrypt. Auth is via JWT bearer tokens. Set a strong
 - `POST /api/chat` now requires a bearer token.
 - `POST /api/prepare/questions` generates likely interview questions grounded in
   the CV, the job description, and the company research.
+- `POST /api/interview/start` runs a mock interview (requires a saved CV):
+  `/start` returns the first question, `/{id}/answer` takes an answer and returns
+  the next question (or `done`), `/{id}/finish` returns feedback, `GET /{id}`
+  returns the transcript. Questions are grounded in the CV, job description and
+  company research and go through the moderation layer.
 
 ### Moderation
 

@@ -118,3 +118,21 @@ export async function generateQuestions(): Promise<PrepQuestion[]> {
   const data = await request("/api/prepare/questions", { method: "POST" });
   return data.questions;
 }
+
+export async function startInterview(): Promise<{ session_id: number; question: string }> {
+  return request("/api/interview/start", { method: "POST" });
+}
+
+export async function answerInterview(
+  sessionId: number,
+  answer: string,
+): Promise<{ question: string | null; done: boolean }> {
+  return request(`/api/interview/${sessionId}/answer`, {
+    method: "POST",
+    body: JSON.stringify({ answer }),
+  });
+}
+
+export async function finishInterview(sessionId: number): Promise<{ feedback: string }> {
+  return request(`/api/interview/${sessionId}/finish`, { method: "POST" });
+}
