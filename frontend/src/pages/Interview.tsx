@@ -1,6 +1,14 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { answerInterview, finishInterview, startInterview } from "../api";
+import {
+  cancelSpeech,
+  createRecognition,
+  speak,
+  speechSupported,
+  transcriptFrom,
+  type SpeechRecognition,
+} from "../speech";
 
 interface Exchange {
   question: string;
@@ -20,6 +28,45 @@ export default function Interview() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  const supported = speechSupported();
+  const [voiceMode, setVoiceMode] = useState(supported);
+  const [listening, setListening] = useState(false);
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
+
+  // Speak each new interviewer question while voice mode is on.
+  useEffect(() => {
+    if (voiceMode && question) speak(question);
+  }, [question, voiceMode]);
+
+  // Stop any speech or listening if the user leaves the page.
+  useEffect(() => {
+    return () => {
+      cancelSpeech();
+      recognitionRef.current?.abort();
+    };
+  }, []);
+
+  function stopListening() {
+    recognitionRef.current?.stop();
+    recognitionRef.current = null;
+    setListening(false);
+  }
+
+  function startListening() {
+    const recognition = createRecognition();
+    if (!recognition) return;
+    cancelSpeech(); // do not record the interviewer's own voice
+    recognition.onresult = (event) => setAnswer(transcriptFrom(event));
+    recognition.onerror = () => setListening(false);
+    recognition.onend = () => {
+      recognitionRef.current = null;
+      setListening(false);
+    };
+    recognitionRef.current = recognition;
+    setListening(true);
+    recognition.start();
+  }
+
   async function begin() {
     setLoading(true);
     setError("");
@@ -38,6 +85,8 @@ export default function Interview() {
 
   async function submit() {
     if (sessionId === null || question === null) return;
+    stopListening();
+    cancelSpeech();
     setLoading(true);
     setError("");
     try {
@@ -54,6 +103,8 @@ export default function Interview() {
 
   async function end() {
     if (sessionId === null) return;
+    stopListening();
+    cancelSpeech();
     setLoading(true);
     setError("");
     try {
@@ -73,6 +124,28 @@ export default function Interview() {
         <h1>Mock interview</h1>
         <Link to="/">Back to dashboard</Link>
       </header>
+
+      {supported ? (
+        <label style={{ display: "block", margin: "0.5rem 0", color: "#333" }}>
+          <input
+            type="checkbox"
+            checked={voiceMode}
+            onChange={(e) => {
+              if (!e.target.checked) {
+                stopListening();
+                cancelSpeech();
+              }
+              setVoiceMode(e.target.checked);
+            }}
+          />{" "}
+          Voice mode (questions are read aloud; answer by speaking)
+        </label>
+      ) : (
+        <p style={{ color: "#666", fontSize: "0.85rem" }}>
+          This browser does not support speech, so the interview is typed. Voice mode works
+          best in Chrome or Edge.
+        </p>
+      )}
 
       {error && (
         <p style={{ color: "crimson" }}>
@@ -109,15 +182,33 @@ export default function Interview() {
             <>
               <p>
                 <strong>Interviewer:</strong> {question}
+                {voiceMode && (
+                  <button
+                    onClick={() => speak(question)}
+                    style={{ marginLeft: "0.5rem", fontSize: "0.85rem" }}
+                    title="Replay the question"
+                  >
+                    Replay
+                  </button>
+                )}
               </p>
               <textarea
                 value={answer}
                 onChange={(e) => setAnswer(e.target.value)}
                 rows={4}
-                placeholder="Your answer..."
+                placeholder={voiceMode ? "Speak your answer, or type it here..." : "Your answer..."}
                 style={{ width: "100%", boxSizing: "border-box", fontSize: "1rem" }}
               />
               <div style={{ marginTop: "0.5rem" }}>
+                {voiceMode && (
+                  <button
+                    onClick={listening ? stopListening : startListening}
+                    disabled={loading}
+                    style={{ marginRight: "0.75rem" }}
+                  >
+                    {listening ? "Stop recording" : "Speak answer"}
+                  </button>
+                )}
                 <button onClick={submit} disabled={loading || !answer.trim()}>
                   {loading ? "Sending..." : "Submit answer"}
                 </button>
@@ -125,6 +216,11 @@ export default function Interview() {
                   Finish and get feedback
                 </button>
               </div>
+              {listening && (
+                <p style={{ color: "#666", fontSize: "0.85rem", margin: "0.5rem 0 0" }}>
+                  Listening... the transcript appears above and can be edited before you submit.
+                </p>
+              )}
             </>
           ) : (
             <div>
