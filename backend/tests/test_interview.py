@@ -107,6 +107,63 @@ def test_start_rejects_unknown_mode(client, monkeypatch):
     assert res.status_code == 422
 
 
+VOICE_METRICS = {
+    "duration_sec": 20.0,
+    "word_count": 60,
+    "wpm": 180,
+    "pause_count": 2,
+    "long_pause_count": 1,
+    "total_pause_sec": 3.0,
+    "filler_count": 3,
+    "fillers": {"like": 2, "um": 1},
+}
+
+
+def _capture_prompts(monkeypatch):
+    """Mock the LLM to record the last user prompt of each call."""
+    prompts: list[str] = []
+
+    def fake_chat(messages, *args, **kwargs):
+        prompts.append(messages[-1]["content"])
+        return "Tell me about a project."
+
+    monkeypatch.setattr(interview.llm, "chat", fake_chat)
+    monkeypatch.setattr(interview.moderation, "moderate_output", lambda t: Verdict(allowed=True))
+    return prompts
+
+
+def test_feedback_includes_delivery_when_metrics_present(client, monkeypatch):
+    prompts = _capture_prompts(monkeypatch)
+    headers = auth_header(client)
+    save_cv(client, headers)
+    sid = client.post(
+        "/api/interview/start", headers=headers, json={"mode": "voice"}
+    ).json()["session_id"]
+
+    client.post(
+        f"/api/interview/{sid}/answer",
+        headers=headers,
+        json={"answer": "I built X.", "metrics": VOICE_METRICS},
+    )
+    client.post(f"/api/interview/{sid}/finish", headers=headers)
+
+    feedback_prompt = prompts[-1]
+    assert "spoken delivery was measured" in feedback_prompt
+    assert "180 words per minute" in feedback_prompt
+
+
+def test_feedback_has_no_delivery_block_for_typed_answers(client, monkeypatch):
+    prompts = _capture_prompts(monkeypatch)
+    headers = auth_header(client)
+    save_cv(client, headers)
+    sid = client.post("/api/interview/start", headers=headers).json()["session_id"]
+
+    client.post(f"/api/interview/{sid}/answer", headers=headers, json={"answer": "I built X."})
+    client.post(f"/api/interview/{sid}/finish", headers=headers)
+
+    assert "spoken delivery was measured" not in prompts[-1]
+
+
 def test_transcript(client, monkeypatch):
     mock_llm(monkeypatch)
     headers = auth_header(client)

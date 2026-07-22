@@ -1,4 +1,16 @@
+from app.services import speech
 from app.services.speech import Word, delivery_metrics
+
+
+def auth_header(client, email="speech@example.com"):
+    token = client.post(
+        "/api/auth/signup", json={"email": email, "password": "password123"}
+    ).json()["access_token"]
+    return {"Authorization": f"Bearer {token}"}
+
+
+def audio_file(data=b"fake-audio-bytes"):
+    return {"audio": ("answer.webm", data, "audio/webm")}
 
 
 def words(pairs):
@@ -61,6 +73,31 @@ def test_common_connector_so_is_not_a_filler():
     spoken = words([("So", 0.0, 0.3), ("we", 0.4, 0.6), ("shipped", 0.7, 1.0)])
     metrics = delivery_metrics(spoken, duration=1.0)
     assert metrics.filler_count == 0
+
+
+def test_transcribe_endpoint_returns_transcript_and_metrics(client, monkeypatch):
+    spoken = words([("I", 0.0, 0.3), ("um", 0.4, 0.7), ("built", 0.8, 1.2)])
+    monkeypatch.setattr(speech, "transcribe", lambda data: ("I um built", spoken, 1.2))
+
+    res = client.post(
+        "/api/speech/transcribe", headers=auth_header(client), files=audio_file()
+    )
+    assert res.status_code == 200
+    body = res.json()
+    assert body["transcript"] == "I um built"
+    assert body["metrics"]["word_count"] == 3
+    assert body["metrics"]["filler_count"] == 1
+
+
+def test_transcribe_requires_auth(client):
+    assert client.post("/api/speech/transcribe", files=audio_file()).status_code == 401
+
+
+def test_transcribe_rejects_empty_audio(client):
+    res = client.post(
+        "/api/speech/transcribe", headers=auth_header(client), files=audio_file(b"")
+    )
+    assert res.status_code == 400
 
 
 def test_summary_reads_naturally():

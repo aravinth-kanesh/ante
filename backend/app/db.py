@@ -20,6 +20,7 @@ class Base(DeclarativeBase):
 # missing columns here at startup. This stays lightweight in place of Alembic.
 _ADDED_COLUMNS: dict[str, dict[str, str]] = {
     "interview_sessions": {"mode": "VARCHAR NOT NULL DEFAULT 'text'"},
+    "turns": {"metrics": "TEXT"},
 }
 
 

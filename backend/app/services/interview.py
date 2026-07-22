@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from app.config import settings
 from app.models.session import InterviewSession, Turn
 from app.models.user import User
+from app.schemas.interview import DeliveryMetrics
 from app.services import llm, moderation
 from app.services.prompts import FEEDBACK_PROMPT, INTERVIEWER_PROMPT
 
@@ -33,11 +34,50 @@ def _generate(messages: list[dict]) -> str:
     return reply.strip()
 
 
-def _add_turn(db: Session, session: InterviewSession, role: str, kind: str, content: str) -> None:
-    turn = Turn(session_id=session.id, index=len(session.turns), role=role, kind=kind, content=content)
+def _add_turn(
+    db: Session,
+    session: InterviewSession,
+    role: str,
+    kind: str,
+    content: str,
+    metrics: str | None = None,
+) -> None:
+    turn = Turn(
+        session_id=session.id,
+        index=len(session.turns),
+        role=role,
+        kind=kind,
+        content=content,
+        metrics=metrics,
+    )
     db.add(turn)
     db.commit()
     db.refresh(session)
+
+
+def _delivery_block(session: InterviewSession) -> str:
+    """A feedback-prompt block summarising measured delivery, or empty if none."""
+    lines: list[str] = []
+    answered = 0
+    for turn in session.turns:
+        if turn.kind != "answer":
+            continue
+        answered += 1
+        if not turn.metrics:
+            continue
+        try:
+            metrics = DeliveryMetrics.model_validate_json(turn.metrics)
+        except ValueError:
+            continue
+        lines.append(f"- Answer {answered}: {metrics.summary()}")
+    if not lines:
+        return ""
+    header = (
+        "\nThe candidate's spoken delivery was measured from their audio. Comment "
+        "briefly and supportively on their delivery (speaking pace, pauses, and "
+        "filler words) using these measurements, without overstating them:\n"
+    )
+    return header + "\n".join(lines) + "\n"
 
 
 def start(
@@ -60,8 +100,10 @@ def start(
     return session, question
 
 
-def answer(db: Session, session: InterviewSession, text: str) -> str | None:
-    _add_turn(db, session, "candidate", "answer", text)
+def answer(
+    db: Session, session: InterviewSession, text: str, metrics: str | None = None
+) -> str | None:
+    _add_turn(db, session, "candidate", "answer", text, metrics=metrics)
 
     asked = sum(1 for turn in session.turns if turn.kind == "question")
     if asked >= settings.interview_max_questions:
@@ -78,9 +120,10 @@ def finish(db: Session, session: InterviewSession) -> str:
         for t in session.turns
         if t.kind in ("question", "answer")
     )
-    feedback = llm.chat([{"role": "user", "content": FEEDBACK_PROMPT.format(transcript=transcript)}])
+    prompt = FEEDBACK_PROMPT.format(transcript=transcript, delivery=_delivery_block(session))
+    feedback = llm.chat([{"role": "user", "content": prompt}])
     if not moderation.moderate_output(feedback).allowed:
-        feedback = llm.chat([{"role": "user", "content": FEEDBACK_PROMPT.format(transcript=transcript)}])
+        feedback = llm.chat([{"role": "user", "content": prompt}])
     feedback = feedback.strip()
 
     _add_turn(db, session, "interviewer", "feedback", feedback)

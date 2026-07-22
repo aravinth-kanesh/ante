@@ -40,6 +40,7 @@ class Turn(Base):
     role: Mapped[str] = mapped_column(String)  # interviewer | candidate
     kind: Mapped[str] = mapped_column(String)  # question | answer | feedback
     content: Mapped[str] = mapped_column(Text)
+    metrics: Mapped[str | None] = mapped_column(Text, nullable=True)  # JSON delivery metrics on spoken answers
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
 
     session: Mapped[InterviewSession] = relationship(back_populates="turns")

@@ -53,8 +53,8 @@ FEEDBACK_PROMPT = """Below is the transcript of a mock interview. Give the candi
 constructive feedback on the content of their answers: what they did well, where \
 they could improve, and specific suggestions on structure, relevance, and showing \
 the competencies the role needs. Be supportive and honest, and write in British \
-English. Do not comment on delivery or body language.
-
+English.
+{delivery}
 Transcript:
 {transcript}"""
 
