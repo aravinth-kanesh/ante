@@ -26,6 +26,14 @@ class Settings(BaseSettings):
 
     interview_max_questions: int = 6
 
+    # Speech delivery analysis. Answer audio is transcribed with faster-whisper
+    # to measure speaking pace, pauses and filler words. Audio is processed in
+    # memory and never written to disk (LSEPI no-storage policy).
+    speech_enabled: bool = True
+    whisper_model: str = "base.en"
+    speech_pause_sec: float = 0.5  # a gap this long or longer counts as a pause
+    speech_long_pause_sec: float = 1.5  # and this long counts as a long pause
+
     @property
     def cors_origins(self) -> list[str]:
         return [o.strip() for o in self.backend_cors_origins.split(",") if o.strip()]
