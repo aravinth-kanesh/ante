@@ -130,13 +130,33 @@ export async function startInterview(
   });
 }
 
+export interface DeliveryMetrics {
+  duration_sec: number;
+  word_count: number;
+  wpm: number;
+  pause_count: number;
+  long_pause_count: number;
+  total_pause_sec: number;
+  filler_count: number;
+  fillers: Record<string, number>;
+}
+
+export async function transcribeAudio(
+  blob: Blob,
+): Promise<{ transcript: string; metrics: DeliveryMetrics }> {
+  const form = new FormData();
+  form.append("audio", blob, "answer.webm");
+  return request("/api/speech/transcribe", { method: "POST", body: form });
+}
+
 export async function answerInterview(
   sessionId: number,
   answer: string,
+  metrics: DeliveryMetrics | null = null,
 ): Promise<{ question: string | null; done: boolean }> {
   return request(`/api/interview/${sessionId}/answer`, {
     method: "POST",
-    body: JSON.stringify({ answer }),
+    body: JSON.stringify({ answer, metrics }),
   });
 }
 
