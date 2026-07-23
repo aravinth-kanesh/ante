@@ -73,8 +73,10 @@ with passwords hashed using bcrypt. Auth is via JWT bearer tokens. Set a strong
 - `POST /api/interview/start` runs a mock interview (requires a saved CV):
   `/start` returns the first question, `/{id}/answer` takes an answer and returns
   the next question (or `done`), `/{id}/finish` returns feedback, `GET /{id}`
-  returns the transcript. Questions are grounded in the CV, job description and
-  company research and go through the moderation layer.
+  returns the transcript (with each answer's stored delivery and nonverbal
+  metrics), and `GET /api/interview` lists the user's past sessions. Questions are
+  grounded in the CV, job description and company research and go through the
+  moderation layer.
 - `POST /api/speech/transcribe` transcribes a spoken answer (multipart audio) with
   faster-whisper and returns the transcript plus delivery metrics (speaking pace,
   pauses, filler words).
@@ -119,8 +121,12 @@ npm run dev
 
 Open `http://localhost:5173`. You are taken to a login page; sign up for an
 account, then the dashboard shows the backend health status, a form to save your
-CV and job description, and a box to send a prompt to the model. The dev server
-proxies `/api` to the backend on port 8000, so run the backend first.
+CV and job description, and a box to send a prompt to the model. From the
+dashboard you can start a mock interview or open your interview history. After an
+interview you land on a results page showing every question, your answers with
+their delivery and nonverbal readouts, and the feedback; the history page lists
+past sessions and reopens any of them. The dev server proxies `/api` to the
+backend on port 8000, so run the backend first.
 
 `npm run setup` vendors the MediaPipe models used by the interview's optional
 camera feedback so they are served from the app's own origin (no CDN). It is only
