@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { controlClass, Label, cn } from "./ui";
 
 interface Props {
   label: string;
@@ -12,9 +13,9 @@ interface Props {
 export default function PasswordField({ label, value, onChange, minLength, autoComplete }: Props) {
   const [show, setShow] = useState(false);
   return (
-    <label style={{ display: "block" }}>
-      {label}
-      <span style={{ position: "relative", display: "block", margin: "0.25rem 0 1rem" }}>
+    <div className="mb-4">
+      <Label>{label}</Label>
+      <div className="relative">
         <input
           type={show ? "text" : "password"}
           value={value}
@@ -22,28 +23,18 @@ export default function PasswordField({ label, value, onChange, minLength, autoC
           required
           minLength={minLength}
           autoComplete={autoComplete}
-          style={{ width: "100%", padding: "0.5rem", paddingRight: "2.5rem", boxSizing: "border-box" }}
+          className={cn(controlClass, "pr-11")}
         />
         <button
           type="button"
           onClick={() => setShow((s) => !s)}
           aria-label={show ? "Hide password" : "Show password"}
           title={show ? "Hide password" : "Show password"}
-          style={{
-            position: "absolute",
-            right: "0.5rem",
-            top: "50%",
-            transform: "translateY(-50%)",
-            border: "none",
-            background: "none",
-            cursor: "pointer",
-            fontSize: "1rem",
-            lineHeight: 1,
-          }}
+          className="absolute inset-y-0 right-0 flex items-center px-3 text-base text-slate-500 hover:text-slate-700"
         >
           {show ? "🙈" : "👁"}
         </button>
-      </span>
-    </label>
+      </div>
+    </div>
   );
 }
