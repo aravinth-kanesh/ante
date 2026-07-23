@@ -21,6 +21,7 @@ class Base(DeclarativeBase):
 _ADDED_COLUMNS: dict[str, dict[str, str]] = {
     "interview_sessions": {"mode": "VARCHAR NOT NULL DEFAULT 'text'"},
     "turns": {"metrics": "TEXT", "nonverbal": "TEXT"},
+    "profiles": {"selected_cv_id": "INTEGER"},
 }
 
 
