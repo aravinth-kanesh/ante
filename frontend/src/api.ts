@@ -149,14 +149,43 @@ export async function transcribeAudio(
   return request("/api/speech/transcribe", { method: "POST", body: form });
 }
 
+export interface NonverbalSample {
+  face_detected: boolean;
+  yaw: number;
+  pitch: number;
+  roll: number;
+  eyes_open: boolean;
+  smile: number;
+  pose_detected: boolean;
+  shoulder_tilt: number | null;
+}
+
+export interface NonverbalMetrics {
+  frames_analysed: number;
+  face_detected: boolean;
+  eye_contact_pct: number;
+  head_steadiness: number;
+  steadiness_label: string;
+  smile_pct: number | null;
+  posture_pct: number | null;
+}
+
+export async function analyseNonverbal(samples: NonverbalSample[]): Promise<NonverbalMetrics> {
+  return request("/api/vision/analyse", {
+    method: "POST",
+    body: JSON.stringify({ samples }),
+  });
+}
+
 export async function answerInterview(
   sessionId: number,
   answer: string,
   metrics: DeliveryMetrics | null = null,
+  nonverbal: NonverbalMetrics | null = null,
 ): Promise<{ question: string | null; done: boolean }> {
   return request(`/api/interview/${sessionId}/answer`, {
     method: "POST",
-    body: JSON.stringify({ answer, metrics }),
+    body: JSON.stringify({ answer, metrics, nonverbal }),
   });
 }
 
