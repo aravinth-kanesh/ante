@@ -50,11 +50,24 @@ Company context:
 {context}"""
 
 FEEDBACK_PROMPT = """Below is the transcript of a mock interview. Give the candidate \
-constructive feedback on the content of their answers: what they did well, where \
-they could improve, and specific suggestions on structure, relevance, and showing \
-the competencies the role needs. Be supportive and honest, and write in British \
-English.
+honest, direct feedback on the content of their answers. Practice only helps if the \
+feedback is truthful, so do not flatter.
+
+- Judge each answer on its merits. If an answer is vague, generic, or says little of \
+substance, say so plainly and explain why it is weak, rather than praising it. For \
+example, "I have built many applications in Linux" asserts experience but gives no \
+evidence, so it is a weak answer.
+- Do not invent strengths or soften real problems, and do not pad the feedback with \
+empty praise. Only credit something the candidate genuinely did well.
+- For weak answers, show what a strong answer would include: a specific example, real \
+detail, clear structure (such as situation, task, action, result), and evidence of \
+the competencies the role needs.
+- Prioritise the few changes that would make the biggest difference.
+- Keep a supportive, encouraging tone, but never at the expense of honesty.
 {delivery}
+Write in plain British English prose. Do not use Markdown or any special formatting: \
+no asterisks, no hashes, no bullet symbols, no bold, no headings.
+
 Transcript:
 {transcript}"""
 

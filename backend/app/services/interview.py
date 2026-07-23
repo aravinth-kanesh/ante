@@ -6,6 +6,7 @@ from app.models.user import User
 from app.schemas.interview import DeliveryMetrics, NonverbalMetrics
 from app.services import llm, moderation
 from app.services.prompts import FEEDBACK_PROMPT, INTERVIEWER_PROMPT
+from app.services.text import strip_markdown
 
 
 def _system(session: InterviewSession) -> dict:
@@ -92,8 +93,10 @@ def _delivery_block(session: InterviewSession) -> str:
     header = (
         "\nThe candidate's delivery was measured during the interview ("
         + "; ".join(aspects)
-        + "). Comment briefly and supportively on it using these measurements, "
-        "without overstating them or diagnosing emotion:\n"
+        + "). Comment briefly and honestly on it using these measurements: flag "
+        "genuine issues such as a very slow or very fast pace, long pauses or "
+        "frequent fillers, and do not spin a weak signal as a positive. Do not "
+        "overstate the numbers or diagnose emotion:\n"
     )
     return header + "\n".join(lines) + "\n"
 
@@ -146,7 +149,7 @@ def finish(db: Session, session: InterviewSession) -> str:
     feedback = llm.chat([{"role": "user", "content": prompt}])
     if not moderation.moderate_output(feedback).allowed:
         feedback = llm.chat([{"role": "user", "content": prompt}])
-    feedback = feedback.strip()
+    feedback = strip_markdown(feedback)
 
     _add_turn(db, session, "interviewer", "feedback", feedback)
     session.status = "finished"

@@ -2,6 +2,7 @@ import json
 import re
 
 from app.services import llm
+from app.services.text import strip_markdown
 
 _JSON = re.compile(r"\{.*\}", re.DOTALL)
 
@@ -32,15 +33,6 @@ special formatting: no asterisks, no hashes, no bullet symbols, no bold, no head
 Keep it under 250 words."""
 
 
-def _plain(text: str) -> str:
-    """Strip Markdown so the briefing renders cleanly as plain text."""
-    text = re.sub(r"^\s*[*+-]\s+", "- ", text, flags=re.MULTILINE)  # normalise any bullets
-    text = re.sub(r"\*+", "", text)  # bold/italic asterisks
-    text = re.sub(r"`+", "", text)  # inline code ticks
-    text = re.sub(r"^\s{0,3}#{1,6}\s+", "", text, flags=re.MULTILINE)  # headings
-    return text.strip()
-
-
 def extract_company_role(jd_text: str) -> tuple[str, str]:
     raw = llm.chat(
         [{"role": "user", "content": EXTRACT_PROMPT + jd_text}],
@@ -61,4 +53,4 @@ def research_company(company: str, role: str) -> str:
     prompt = RESEARCH_PROMPT.format(
         company=company or "the employer", role=role or "the advertised role"
     )
-    return _plain(llm.chat([{"role": "user", "content": prompt}], temperature=0.3))
+    return strip_markdown(llm.chat([{"role": "user", "content": prompt}], temperature=0.3))

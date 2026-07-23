@@ -181,7 +181,20 @@ def test_feedback_includes_nonverbal_when_present(client, monkeypatch):
     prompt = prompts[-1]
     assert "eye contact, composure and posture" in prompt
     assert "look at the camera about 78%" in prompt
-    assert "diagnosing emotion" in prompt
+    assert "diagnose emotion" in prompt
+
+
+def test_feedback_is_plain_text(client, monkeypatch):
+    monkeypatch.setattr(
+        interview.llm, "chat", lambda *a, **k: "### **Feedback**\n1. **Weak** answer.\n- vague"
+    )
+    monkeypatch.setattr(interview.moderation, "moderate_output", lambda t: Verdict(allowed=True))
+    headers = auth_header(client)
+    save_cv(client, headers)
+    sid = client.post("/api/interview/start", headers=headers).json()["session_id"]
+
+    feedback = client.post(f"/api/interview/{sid}/finish", headers=headers).json()["feedback"]
+    assert "*" not in feedback and "#" not in feedback
 
 
 def test_feedback_has_no_delivery_block_for_typed_answers(client, monkeypatch):
