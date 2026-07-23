@@ -49,9 +49,13 @@ export async function startCapture(opts: { video: boolean }): Promise<Capture> {
       stream.getTracks().forEach((track) => track.stop());
       throw err;
     }
+    // Attach the sampling video offscreen (not display:none, which can pause
+    // decoding) so MediaPipe reliably gets frames across browsers.
     video = document.createElement("video");
     video.muted = true;
     video.playsInline = true;
+    video.style.cssText = "position:fixed;left:-9999px;width:2px;height:2px;opacity:0;";
+    document.body.appendChild(video);
     video.srcObject = stream;
     await video.play().catch(() => undefined);
     timer = window.setInterval(() => {
@@ -65,6 +69,7 @@ export async function startCapture(opts: { video: boolean }): Promise<Capture> {
     if (timer !== undefined) window.clearInterval(timer);
     if (video) {
       video.srcObject = null;
+      video.remove();
       video = undefined;
     }
     stream.getTracks().forEach((track) => track.stop());

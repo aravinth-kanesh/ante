@@ -70,6 +70,7 @@ export default function Interview() {
   const [voiceMode, setVoiceMode] = useState(supported);
   const [cameraOn, setCameraOn] = useState(false);
   const [recording, setRecording] = useState(false);
+  const [starting, setStarting] = useState(false);
   const [analysing, setAnalysing] = useState(false);
   const captureRef = useRef<Capture | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -96,6 +97,8 @@ export default function Interview() {
   }
 
   async function startAnswer() {
+    if (starting || recording) return; // guard against a double click during load
+    setStarting(true);
     setError("");
     cancelSpeech(); // do not record the interviewer's own voice
     try {
@@ -109,6 +112,8 @@ export default function Interview() {
     } catch (err) {
       setError(`Could not start the camera or microphone: ${message(err)}`);
       setCameraOn(false);
+    } finally {
+      setStarting(false);
     }
   }
 
@@ -187,7 +192,7 @@ export default function Interview() {
     }
   }
 
-  const busy = loading || analysing || recording;
+  const busy = loading || analysing || recording || starting;
 
   return (
     <main style={{ maxWidth: 640, margin: "2rem auto", fontFamily: "system-ui, sans-serif" }}>
@@ -311,10 +316,16 @@ export default function Interview() {
                 {voiceMode && (
                   <button
                     onClick={recording ? stopAnswer : startAnswer}
-                    disabled={loading || analysing}
+                    disabled={loading || analysing || starting}
                     style={{ marginRight: "0.75rem" }}
                   >
-                    {recording ? "Stop recording" : analysing ? "Analysing..." : "Speak answer"}
+                    {recording
+                      ? "Stop recording"
+                      : starting
+                        ? "Starting..."
+                        : analysing
+                          ? "Analysing..."
+                          : "Speak answer"}
                   </button>
                 )}
                 <button onClick={submit} disabled={busy || !answer.trim()}>
