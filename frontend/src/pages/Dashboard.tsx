@@ -132,28 +132,46 @@ export default function Dashboard() {
           tailor your practice.
         </p>
         <form onSubmit={saveContext}>
-          <label>
-            CV
-            <input
-              type="file"
-              accept=".pdf,.docx,.txt"
-              onChange={onCvFile}
-              disabled={uploading}
-              style={{ display: "block", margin: "0.25rem 0" }}
-            />
-            {uploading && <span style={{ fontSize: "0.85rem" }}>Extracting text...</span>}
+          <div>
+            <div style={{ marginBottom: "0.25rem" }}>CV</div>
+            <label
+              style={{
+                display: "inline-block",
+                padding: "0.35rem 0.75rem",
+                border: "1px solid #ccc",
+                borderRadius: 4,
+                background: "#f7f8fa",
+                cursor: uploading ? "default" : "pointer",
+                fontSize: "0.9rem",
+              }}
+            >
+              {uploading ? "Extracting text..." : cvFilename ? "Replace CV file" : "Choose a CV file"}
+              <input
+                type="file"
+                accept=".pdf,.docx,.txt"
+                onChange={onCvFile}
+                disabled={uploading}
+                style={{ display: "none" }}
+              />
+            </label>
             {!uploading && cvFilename && (
-              <span style={{ color: "#666", fontSize: "0.85rem" }}>Uploaded: {cvFilename}</span>
+              <span style={{ color: "#666", fontSize: "0.85rem", marginLeft: "0.5rem" }}>
+                Uploaded: {cvFilename}
+              </span>
             )}
-            {uploadError && <span style={{ color: "crimson", fontSize: "0.85rem" }}> {uploadError}</span>}
+            {uploadError && (
+              <span style={{ color: "crimson", fontSize: "0.85rem", marginLeft: "0.5rem" }}>
+                {uploadError}
+              </span>
+            )}
             <textarea
               value={cv}
               onChange={(e) => setCv(e.target.value)}
               rows={6}
               placeholder="Upload a file above or paste your CV..."
-              style={{ width: "100%", boxSizing: "border-box", margin: "0.25rem 0 1rem" }}
+              style={{ width: "100%", boxSizing: "border-box", margin: "0.5rem 0 1rem" }}
             />
-          </label>
+          </div>
           <label>
             Job description
             <textarea
