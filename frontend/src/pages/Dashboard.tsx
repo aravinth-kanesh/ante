@@ -121,7 +121,8 @@ export default function Dashboard() {
         <Link to="/interview">
           <strong>Start a mock interview</strong>
         </Link>{" "}
-        (add your CV and job description below first).
+        (add your CV and job description below first). ·{" "}
+        <Link to="/history">Your interview history</Link>
       </p>
 
       <section>
