@@ -6,7 +6,7 @@ from app.db import Base, engine, ensure_columns
 from app.models import profile as _profile  # noqa: F401  (register tables)
 from app.models import session as _session  # noqa: F401
 from app.models import user as _user  # noqa: F401
-from app.routers import auth, chat, health, interview, prepare, profile, speech
+from app.routers import auth, chat, health, interview, prepare, profile, speech, vision
 
 Base.metadata.create_all(bind=engine)
 ensure_columns()
@@ -27,4 +27,5 @@ app.include_router(profile.router, prefix="/api")
 app.include_router(prepare.router, prefix="/api")
 app.include_router(interview.router, prefix="/api")
 app.include_router(speech.router, prefix="/api")
+app.include_router(vision.router, prefix="/api")
 app.include_router(chat.router, prefix="/api")

@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from app.config import settings
 from app.models.session import InterviewSession, Turn
 from app.models.user import User
-from app.schemas.interview import DeliveryMetrics
+from app.schemas.interview import DeliveryMetrics, NonverbalMetrics
 from app.services import llm, moderation
 from app.services.prompts import FEEDBACK_PROMPT, INTERVIEWER_PROMPT
 
@@ -41,6 +41,7 @@ def _add_turn(
     kind: str,
     content: str,
     metrics: str | None = None,
+    nonverbal: str | None = None,
 ) -> None:
     turn = Turn(
         session_id=session.id,
@@ -49,6 +50,7 @@ def _add_turn(
         kind=kind,
         content=content,
         metrics=metrics,
+        nonverbal=nonverbal,
     )
     db.add(turn)
     db.commit()
@@ -59,23 +61,39 @@ def _delivery_block(session: InterviewSession) -> str:
     """A feedback-prompt block summarising measured delivery, or empty if none."""
     lines: list[str] = []
     answered = 0
+    has_speech = False
+    has_nonverbal = False
     for turn in session.turns:
         if turn.kind != "answer":
             continue
         answered += 1
-        if not turn.metrics:
-            continue
-        try:
-            metrics = DeliveryMetrics.model_validate_json(turn.metrics)
-        except ValueError:
-            continue
-        lines.append(f"- Answer {answered}: {metrics.summary()}")
+        parts: list[str] = []
+        if turn.metrics:
+            try:
+                parts.append(DeliveryMetrics.model_validate_json(turn.metrics).summary())
+                has_speech = True
+            except ValueError:
+                pass
+        if turn.nonverbal:
+            try:
+                parts.append(NonverbalMetrics.model_validate_json(turn.nonverbal).summary())
+                has_nonverbal = True
+            except ValueError:
+                pass
+        if parts:
+            lines.append(f"- Answer {answered}: " + " ".join(parts))
     if not lines:
         return ""
+    aspects: list[str] = []
+    if has_speech:
+        aspects.append("speaking pace, pauses and filler words")
+    if has_nonverbal:
+        aspects.append("eye contact, composure and posture")
     header = (
-        "\nThe candidate's spoken delivery was measured from their audio. Comment "
-        "briefly and supportively on their delivery (speaking pace, pauses, and "
-        "filler words) using these measurements, without overstating them:\n"
+        "\nThe candidate's delivery was measured during the interview ("
+        + "; ".join(aspects)
+        + "). Comment briefly and supportively on it using these measurements, "
+        "without overstating them or diagnosing emotion:\n"
     )
     return header + "\n".join(lines) + "\n"
 
@@ -101,9 +119,13 @@ def start(
 
 
 def answer(
-    db: Session, session: InterviewSession, text: str, metrics: str | None = None
+    db: Session,
+    session: InterviewSession,
+    text: str,
+    metrics: str | None = None,
+    nonverbal: str | None = None,
 ) -> str | None:
-    _add_turn(db, session, "candidate", "answer", text, metrics=metrics)
+    _add_turn(db, session, "candidate", "answer", text, metrics=metrics, nonverbal=nonverbal)
 
     asked = sum(1 for turn in session.turns if turn.kind == "question")
     if asked >= settings.interview_max_questions:

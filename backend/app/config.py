@@ -34,6 +34,17 @@ class Settings(BaseSettings):
     speech_pause_sec: float = 0.5  # a gap this long or longer counts as a pause
     speech_long_pause_sec: float = 1.5  # and this long counts as a long pause
 
+    # Webcam nonverbal analysis. Per-frame signals are captured in the browser with
+    # MediaPipe and aggregated here; no video or image leaves the browser, only the
+    # derived numbers below (LSEPI no-storage policy). Expression is gated on its
+    # own flag because it edges into EU AI Act Art 5 emotion-recognition territory.
+    nonverbal_enabled: bool = True
+    expression_enabled: bool = True
+    eye_contact_yaw_deg: float = 15.0  # head turned within this of centre counts as facing the camera
+    eye_contact_pitch_deg: float = 12.0
+    smile_threshold: float = 0.3  # mean smile blendshape at or above this counts as smiling
+    nonverbal_max_samples: int = 3000  # cap the per-answer sample array defensively
+
     @property
     def cors_origins(self) -> list[str]:
         return [o.strip() for o in self.backend_cors_origins.split(",") if o.strip()]

@@ -148,8 +148,40 @@ def test_feedback_includes_delivery_when_metrics_present(client, monkeypatch):
     client.post(f"/api/interview/{sid}/finish", headers=headers)
 
     feedback_prompt = prompts[-1]
-    assert "spoken delivery was measured" in feedback_prompt
+    assert "speaking pace, pauses and filler words" in feedback_prompt
     assert "180 words per minute" in feedback_prompt
+
+
+NONVERBAL_METRICS = {
+    "frames_analysed": 100,
+    "face_detected": True,
+    "eye_contact_pct": 78,
+    "head_steadiness": 82,
+    "steadiness_label": "steady",
+    "smile_pct": 40,
+    "posture_pct": 85,
+}
+
+
+def test_feedback_includes_nonverbal_when_present(client, monkeypatch):
+    prompts = _capture_prompts(monkeypatch)
+    headers = auth_header(client)
+    save_cv(client, headers)
+    sid = client.post(
+        "/api/interview/start", headers=headers, json={"mode": "voice"}
+    ).json()["session_id"]
+
+    client.post(
+        f"/api/interview/{sid}/answer",
+        headers=headers,
+        json={"answer": "I led the team.", "metrics": VOICE_METRICS, "nonverbal": NONVERBAL_METRICS},
+    )
+    client.post(f"/api/interview/{sid}/finish", headers=headers)
+
+    prompt = prompts[-1]
+    assert "eye contact, composure and posture" in prompt
+    assert "look at the camera about 78%" in prompt
+    assert "diagnosing emotion" in prompt
 
 
 def test_feedback_has_no_delivery_block_for_typed_answers(client, monkeypatch):
@@ -161,7 +193,7 @@ def test_feedback_has_no_delivery_block_for_typed_answers(client, monkeypatch):
     client.post(f"/api/interview/{sid}/answer", headers=headers, json={"answer": "I built X."})
     client.post(f"/api/interview/{sid}/finish", headers=headers)
 
-    assert "spoken delivery was measured" not in prompts[-1]
+    assert "was measured during the interview" not in prompts[-1]
 
 
 def test_transcript(client, monkeypatch):

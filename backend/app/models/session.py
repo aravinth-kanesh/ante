@@ -41,6 +41,7 @@ class Turn(Base):
     kind: Mapped[str] = mapped_column(String)  # question | answer | feedback
     content: Mapped[str] = mapped_column(Text)
     metrics: Mapped[str | None] = mapped_column(Text, nullable=True)  # JSON delivery metrics on spoken answers
+    nonverbal: Mapped[str | None] = mapped_column(Text, nullable=True)  # JSON nonverbal metrics on webcam answers
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
 
     session: Mapped[InterviewSession] = relationship(back_populates="turns")

@@ -66,8 +66,9 @@ def answer(
     if session.status != "active":
         raise HTTPException(status_code=400, detail="This interview has finished")
     metrics_json = data.metrics.model_dump_json() if data.metrics else None
+    nonverbal_json = data.nonverbal.model_dump_json() if data.nonverbal else None
     try:
-        question = interview.answer(db, session, data.answer, metrics_json)
+        question = interview.answer(db, session, data.answer, metrics_json, nonverbal_json)
     except Exception as exc:
         raise HTTPException(status_code=502, detail=f"Interview error: {exc}") from exc
     return AnswerResponse(question=question, done=question is None)
