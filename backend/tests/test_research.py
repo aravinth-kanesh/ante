@@ -23,6 +23,16 @@ def test_extract_company_role_handles_no_json(monkeypatch):
     assert research.extract_company_role("jd") == ("", "")
 
 
+def test_research_output_is_plain_text(monkeypatch):
+    markdown = "## Culture\n**Acme** values *craft*.\n* Fast-paced\n- Collaborative\nUse `git`."
+    monkeypatch.setattr(research.llm, "chat", lambda *a, **k: markdown)
+    out = research.research_company("Acme", "Engineer")
+    assert "*" not in out and "`" not in out
+    assert "#" not in out
+    assert "Acme values craft." in out
+    assert out.startswith("Culture")
+
+
 def test_research_endpoint_requires_jd(client):
     res = client.post("/api/profile/research", headers=auth_header(client))
     assert res.status_code == 400

@@ -12,13 +12,33 @@ and the role title. Reply with a single JSON object and nothing else:
 Job description:
 """
 
-RESEARCH_PROMPT = """You are briefing a candidate before a job interview. Using what \
-you know about {company}, write a short briefing for someone interviewing for the \
-role of {role} there. Cover the company's values and culture, what it tends to look \
-for in candidates, and how it commonly interviews for this kind of role (formats, \
-themes, competencies). If you are not confident about specifics for this company, \
-say so plainly and give the norms for this role and industry instead. Keep it under \
-250 words and write in British English."""
+RESEARCH_PROMPT = """You are briefing a candidate who is about to interview for the \
+role of {role} at {company}. Write practical preparation notes that help them walk in \
+ready.
+
+Cover, in this order:
+- what the company does and the values or culture it is known for;
+- what it tends to look for in candidates for this kind of role (the competencies and \
+qualities that matter);
+- how it usually interviews for this role: the likely stages and formats, and the \
+themes questions tend to focus on (behavioural, technical, values-based);
+- a few concrete things the candidate should prepare or emphasise.
+
+If you are not confident about specifics for this company, say so plainly and give the \
+norms for this role and industry instead, rather than inventing details.
+
+Write in plain British English prose, in short paragraphs. Do not use Markdown or any \
+special formatting: no asterisks, no hashes, no bullet symbols, no bold, no headings. \
+Keep it under 250 words."""
+
+
+def _plain(text: str) -> str:
+    """Strip Markdown so the briefing renders cleanly as plain text."""
+    text = re.sub(r"^\s*[*+-]\s+", "- ", text, flags=re.MULTILINE)  # normalise any bullets
+    text = re.sub(r"\*+", "", text)  # bold/italic asterisks
+    text = re.sub(r"`+", "", text)  # inline code ticks
+    text = re.sub(r"^\s{0,3}#{1,6}\s+", "", text, flags=re.MULTILINE)  # headings
+    return text.strip()
 
 
 def extract_company_role(jd_text: str) -> tuple[str, str]:
@@ -41,4 +61,4 @@ def research_company(company: str, role: str) -> str:
     prompt = RESEARCH_PROMPT.format(
         company=company or "the employer", role=role or "the advertised role"
     )
-    return llm.chat([{"role": "user", "content": prompt}], temperature=0.3).strip()
+    return _plain(llm.chat([{"role": "user", "content": prompt}], temperature=0.3))
