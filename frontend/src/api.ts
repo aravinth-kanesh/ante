@@ -192,3 +192,34 @@ export async function answerInterview(
 export async function finishInterview(sessionId: number): Promise<{ feedback: string }> {
   return request(`/api/interview/${sessionId}/finish`, { method: "POST" });
 }
+
+export interface SessionSummary {
+  id: number;
+  mode: InterviewMode;
+  status: string;
+  created_at: string;
+  question_count: number;
+  preview: string;
+}
+
+export interface TurnRead {
+  role: string;
+  kind: string;
+  content: string;
+  metrics: DeliveryMetrics | null;
+  nonverbal: NonverbalMetrics | null;
+}
+
+export interface InterviewDetail {
+  status: string;
+  mode: InterviewMode;
+  turns: TurnRead[];
+}
+
+export async function listSessions(): Promise<SessionSummary[]> {
+  return request("/api/interview");
+}
+
+export async function getInterview(sessionId: number): Promise<InterviewDetail> {
+  return request(`/api/interview/${sessionId}`);
+}

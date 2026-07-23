@@ -10,6 +10,7 @@ import {
   type NonverbalMetrics,
 } from "../api";
 import { recordingSupported, startCapture, type Capture } from "../capture";
+import { deliverySummary, nonverbalSummary } from "../format";
 import { cancelSpeech, speak } from "../speech";
 
 interface Exchange {
@@ -19,31 +20,6 @@ interface Exchange {
 
 function message(err: unknown) {
   return err instanceof Error ? err.message : String(err);
-}
-
-function deliverySummary(m: DeliveryMetrics): string {
-  if (m.word_count === 0) return "No speech detected.";
-  const parts = [`≈${m.wpm} words/min over ${Math.round(m.duration_sec)}s`];
-  if (m.pause_count) {
-    parts.push(`${m.pause_count} pause${m.pause_count === 1 ? "" : "s"}`);
-  }
-  if (m.filler_count) {
-    const top = Object.entries(m.fillers)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 3)
-      .map(([word, count]) => `${word} x${count}`)
-      .join(", ");
-    parts.push(`${m.filler_count} filler${m.filler_count === 1 ? "" : "s"} (${top})`);
-  }
-  return parts.join(" · ");
-}
-
-function nonverbalSummary(m: NonverbalMetrics): string {
-  if (!m.face_detected) return "No face detected on camera.";
-  const parts = [`eye contact ${m.eye_contact_pct}%`, `${m.steadiness_label} head`];
-  if (m.posture_pct !== null) parts.push(`level posture ${m.posture_pct}%`);
-  if (m.smile_pct !== null) parts.push(`smiled ${m.smile_pct}%`);
-  return parts.join(" · ");
 }
 
 const readoutStyle = {
@@ -359,6 +335,12 @@ export default function Interview() {
           <button onClick={begin} disabled={loading}>
             Start another interview
           </button>
+          {sessionId !== null && (
+            <p style={{ marginTop: "0.75rem" }}>
+              <Link to={`/results/${sessionId}`}>View full results</Link> ·{" "}
+              <Link to="/history">Interview history</Link>
+            </p>
+          )}
         </section>
       )}
     </main>

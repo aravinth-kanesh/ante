@@ -4,6 +4,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import Dashboard from "./pages/Dashboard";
 import Interview from "./pages/Interview";
 import Login from "./pages/Login";
+import Results from "./pages/Results";
 import Signup from "./pages/Signup";
 
 export default function App() {
@@ -26,6 +27,14 @@ export default function App() {
             element={
               <ProtectedRoute>
                 <Interview />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/results/:id"
+            element={
+              <ProtectedRoute>
+                <Results />
               </ProtectedRoute>
             }
           />
