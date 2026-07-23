@@ -75,6 +75,13 @@ with passwords hashed using bcrypt. Auth is via JWT bearer tokens. Set a strong
   the next question (or `done`), `/{id}/finish` returns feedback, `GET /{id}`
   returns the transcript. Questions are grounded in the CV, job description and
   company research and go through the moderation layer.
+- `POST /api/speech/transcribe` transcribes a spoken answer (multipart audio) with
+  faster-whisper and returns the transcript plus delivery metrics (speaking pace,
+  pauses, filler words).
+- `POST /api/vision/analyse` aggregates webcam samples (sent from the browser, no
+  image data) into nonverbal metrics (eye contact, head steadiness, expression,
+  posture). Delivery and nonverbal metrics are attached to the answer and inform
+  the final feedback. Audio and video are processed in memory and never stored.
 
 ### Moderation
 
@@ -106,6 +113,7 @@ pytest
 ```bash
 cd frontend
 npm install
+npm run setup   # downloads the MediaPipe webcam models into public/ (one-off)
 npm run dev
 ```
 
@@ -113,6 +121,14 @@ Open `http://localhost:5173`. You are taken to a login page; sign up for an
 account, then the dashboard shows the backend health status, a form to save your
 CV and job description, and a box to send a prompt to the model. The dev server
 proxies `/api` to the backend on port 8000, so run the backend first.
+
+`npm run setup` vendors the MediaPipe models used by the interview's optional
+camera feedback so they are served from the app's own origin (no CDN). It is only
+needed for the camera; the rest of the app runs without it, and if the models are
+missing the camera option degrades gracefully. Speaking your answers requires the
+backend to have `faster-whisper` installed (in `requirements.txt`); the Whisper
+model downloads on first use. Both features work best in Chrome or Edge and need
+microphone/camera permission (served over `https` or `localhost`).
 
 ## Configuration
 
