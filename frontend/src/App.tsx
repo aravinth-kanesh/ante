@@ -8,6 +8,7 @@ import History from "./pages/History";
 import Interview from "./pages/Interview";
 import Login from "./pages/Login";
 import Results from "./pages/Results";
+import Settings from "./pages/Settings";
 import Signup from "./pages/Signup";
 
 // A protected page wrapped in the app shell (nav + container).
@@ -30,6 +31,7 @@ export default function App() {
           <Route path="/interview" element={<Page><Interview /></Page>} />
           <Route path="/results/:id" element={<Page><Results /></Page>} />
           <Route path="/history" element={<Page><History /></Page>} />
+          <Route path="/settings" element={<Page><Settings /></Page>} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
