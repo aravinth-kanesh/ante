@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Literal
 
 from pydantic import BaseModel
@@ -123,11 +124,20 @@ class TurnRead(BaseModel):
     role: str
     kind: str
     content: str
-
-    model_config = {"from_attributes": True}
+    metrics: DeliveryMetrics | None = None
+    nonverbal: NonverbalMetrics | None = None
 
 
 class TranscriptResponse(BaseModel):
     status: str
     mode: Mode
     turns: list[TurnRead]
+
+
+class SessionSummary(BaseModel):
+    id: int
+    mode: Mode
+    status: str
+    created_at: datetime
+    question_count: int
+    preview: str

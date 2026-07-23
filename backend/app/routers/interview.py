@@ -2,16 +2,20 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.db import get_db
-from app.models.session import InterviewSession
+from app.models.session import InterviewSession, Turn
 from app.models.user import User
 from app.routers.profile import _get_or_create
 from app.schemas.interview import (
     AnswerRequest,
     AnswerResponse,
+    DeliveryMetrics,
     FeedbackResponse,
+    NonverbalMetrics,
+    SessionSummary,
     StartRequest,
     StartResponse,
     TranscriptResponse,
+    TurnRead,
 )
 from app.security import get_current_user
 from app.services import interview, research
@@ -24,6 +28,25 @@ def _owned(db: Session, session_id: int, user: User) -> InterviewSession:
     if session is None or session.user_id != user.id:
         raise HTTPException(status_code=404, detail="Interview not found")
     return session
+
+
+def _parse(model, raw: str | None):
+    if not raw:
+        return None
+    try:
+        return model.model_validate_json(raw)
+    except ValueError:
+        return None
+
+
+def _turn_read(turn: Turn) -> TurnRead:
+    return TurnRead(
+        role=turn.role,
+        kind=turn.kind,
+        content=turn.content,
+        metrics=_parse(DeliveryMetrics, turn.metrics),
+        nonverbal=_parse(NonverbalMetrics, turn.nonverbal),
+    )
 
 
 @router.post("/start", response_model=StartResponse)
@@ -88,6 +111,32 @@ def finish(
     return FeedbackResponse(feedback=feedback)
 
 
+@router.get("", response_model=list[SessionSummary])
+def list_sessions(
+    current_user: User = Depends(get_current_user), db: Session = Depends(get_db)
+) -> list[SessionSummary]:
+    sessions = (
+        db.query(InterviewSession)
+        .filter(InterviewSession.user_id == current_user.id)
+        .order_by(InterviewSession.created_at.desc(), InterviewSession.id.desc())
+        .all()
+    )
+    summaries: list[SessionSummary] = []
+    for session in sessions:
+        questions = [t for t in session.turns if t.kind == "question"]
+        summaries.append(
+            SessionSummary(
+                id=session.id,
+                mode=session.mode,
+                status=session.status,
+                created_at=session.created_at,
+                question_count=len(questions),
+                preview=questions[0].content if questions else "(no questions)",
+            )
+        )
+    return summaries
+
+
 @router.get("/{session_id}", response_model=TranscriptResponse)
 def transcript(
     session_id: int,
@@ -95,4 +144,8 @@ def transcript(
     db: Session = Depends(get_db),
 ) -> TranscriptResponse:
     session = _owned(db, session_id, current_user)
-    return TranscriptResponse(status=session.status, mode=session.mode, turns=session.turns)
+    return TranscriptResponse(
+        status=session.status,
+        mode=session.mode,
+        turns=[_turn_read(t) for t in session.turns],
+    )

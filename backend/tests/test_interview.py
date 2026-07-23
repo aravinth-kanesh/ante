@@ -196,6 +196,60 @@ def test_feedback_has_no_delivery_block_for_typed_answers(client, monkeypatch):
     assert "was measured during the interview" not in prompts[-1]
 
 
+def test_transcript_exposes_metrics(client, monkeypatch):
+    mock_llm(monkeypatch)
+    headers = auth_header(client)
+    save_cv(client, headers)
+    sid = client.post(
+        "/api/interview/start", headers=headers, json={"mode": "voice"}
+    ).json()["session_id"]
+    client.post(
+        f"/api/interview/{sid}/answer",
+        headers=headers,
+        json={"answer": "spoken", "metrics": VOICE_METRICS, "nonverbal": NONVERBAL_METRICS},
+    )
+
+    turns = client.get(f"/api/interview/{sid}", headers=headers).json()["turns"]
+    answer_turn = next(t for t in turns if t["kind"] == "answer")
+    assert answer_turn["metrics"]["wpm"] == 180
+    assert answer_turn["nonverbal"]["eye_contact_pct"] == 78
+    question_turn = next(t for t in turns if t["kind"] == "question")
+    assert question_turn["metrics"] is None and question_turn["nonverbal"] is None
+
+
+def test_transcript_null_metrics_for_typed_answer(client, monkeypatch):
+    mock_llm(monkeypatch)
+    headers = auth_header(client)
+    save_cv(client, headers)
+    sid = client.post("/api/interview/start", headers=headers).json()["session_id"]
+    client.post(f"/api/interview/{sid}/answer", headers=headers, json={"answer": "typed"})
+
+    turns = client.get(f"/api/interview/{sid}", headers=headers).json()["turns"]
+    answer_turn = next(t for t in turns if t["kind"] == "answer")
+    assert answer_turn["metrics"] is None and answer_turn["nonverbal"] is None
+
+
+def test_list_sessions_newest_first_and_scoped(client, monkeypatch):
+    mock_llm(monkeypatch)
+    owner = auth_header(client, "hist-owner@example.com")
+    save_cv(client, owner)
+    sid1 = client.post("/api/interview/start", headers=owner).json()["session_id"]
+    sid2 = client.post("/api/interview/start", headers=owner).json()["session_id"]
+
+    other = auth_header(client, "hist-other@example.com")
+    save_cv(client, other)
+    client.post("/api/interview/start", headers=other)
+
+    listing = client.get("/api/interview", headers=owner).json()
+    assert [s["id"] for s in listing] == [sid2, sid1]  # newest first, owner's only
+    assert listing[0]["question_count"] == 1
+    assert listing[0]["preview"]
+
+
+def test_list_sessions_requires_auth(client):
+    assert client.get("/api/interview").status_code == 401
+
+
 def test_transcript(client, monkeypatch):
     mock_llm(monkeypatch)
     headers = auth_header(client)
