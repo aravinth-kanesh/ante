@@ -1,19 +1,25 @@
 import { useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
+import PasswordField from "../components/PasswordField";
 
 export default function Signup() {
   const { signup } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
   async function submit(e: FormEvent) {
     e.preventDefault();
-    setBusy(true);
     setError("");
+    if (password !== confirm) {
+      setError("Passwords do not match.");
+      return;
+    }
+    setBusy(true);
     try {
       await signup(email, password);
       navigate("/");
@@ -38,20 +44,23 @@ export default function Signup() {
             style={{ width: "100%", padding: "0.5rem", margin: "0.25rem 0 1rem" }}
           />
         </label>
-        <label>
-          Password
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            minLength={8}
-            style={{ width: "100%", padding: "0.5rem", margin: "0.25rem 0 0.25rem" }}
-          />
-        </label>
-        <p style={{ fontSize: "0.85rem", color: "#666", marginTop: 0 }}>
+        <PasswordField
+          label="Password"
+          value={password}
+          onChange={setPassword}
+          minLength={8}
+          autoComplete="new-password"
+        />
+        <p style={{ fontSize: "0.85rem", color: "#666", margin: "-0.75rem 0 1rem" }}>
           At least 8 characters.
         </p>
+        <PasswordField
+          label="Confirm password"
+          value={confirm}
+          onChange={setConfirm}
+          minLength={8}
+          autoComplete="new-password"
+        />
         <button type="submit" disabled={busy} style={{ width: "100%", padding: "0.5rem" }}>
           {busy ? "Creating account..." : "Sign up"}
         </button>
