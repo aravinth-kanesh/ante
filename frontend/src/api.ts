@@ -73,17 +73,52 @@ export async function getProfile(): Promise<Profile> {
   return request("/api/profile");
 }
 
-export async function saveProfile(cv_text: string, jd_text: string): Promise<Profile> {
+export async function saveJobDescription(jd_text: string): Promise<Profile> {
   return request("/api/profile", {
     method: "PUT",
-    body: JSON.stringify({ cv_text, jd_text }),
+    body: JSON.stringify({ jd_text }),
   });
 }
 
-export async function uploadCv(file: File): Promise<Profile> {
+// CV library
+
+export interface Cv {
+  id: number;
+  label: string;
+  filename: string;
+  created_at: string;
+  selected: boolean;
+}
+
+export interface CvDetail extends Cv {
+  text: string;
+}
+
+export async function listCvs(): Promise<Cv[]> {
+  return request("/api/cv");
+}
+
+export async function createCv(label: string, text: string): Promise<CvDetail> {
+  return request("/api/cv", { method: "POST", body: JSON.stringify({ label, text }) });
+}
+
+export async function uploadCvFile(file: File, label: string): Promise<CvDetail> {
   const form = new FormData();
   form.append("file", file);
-  return request("/api/profile/cv", { method: "POST", body: form });
+  form.append("label", label);
+  return request("/api/cv/upload", { method: "POST", body: form });
+}
+
+export async function renameCv(id: number, label: string): Promise<CvDetail> {
+  return request(`/api/cv/${id}`, { method: "PATCH", body: JSON.stringify({ label }) });
+}
+
+export async function selectCv(id: number): Promise<CvDetail> {
+  return request(`/api/cv/${id}/select`, { method: "POST" });
+}
+
+export async function deleteCv(id: number): Promise<{ ok: boolean }> {
+  return request(`/api/cv/${id}`, { method: "DELETE" });
 }
 
 export interface Research {

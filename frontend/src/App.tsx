@@ -3,6 +3,7 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { AuthProvider } from "./auth/AuthContext";
 import Layout from "./components/Layout";
 import ProtectedRoute from "./components/ProtectedRoute";
+import Cvs from "./pages/Cvs";
 import Dashboard from "./pages/Dashboard";
 import History from "./pages/History";
 import Interview from "./pages/Interview";
@@ -28,6 +29,7 @@ export default function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/" element={<Page><Dashboard /></Page>} />
+          <Route path="/cvs" element={<Page><Cvs /></Page>} />
           <Route path="/interview" element={<Page><Interview /></Page>} />
           <Route path="/results/:id" element={<Page><Results /></Page>} />
           <Route path="/history" element={<Page><History /></Page>} />

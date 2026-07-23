@@ -2,7 +2,7 @@ from pydantic import BaseModel
 
 
 class ProfileUpdate(BaseModel):
-    cv_text: str = ""
+    cv_text: str | None = None  # None leaves the active CV untouched
     jd_text: str = ""
 
 

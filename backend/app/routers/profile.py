@@ -37,7 +37,8 @@ def update_profile(
     db: Session = Depends(get_db),
 ) -> Profile:
     profile = _get_or_create(db, current_user)
-    profile.cv_text = data.cv_text
+    if data.cv_text is not None:
+        profile.cv_text = data.cv_text
     if data.jd_text != profile.jd_text:
         # the job description changed, so any cached research no longer applies
         profile.company = ""

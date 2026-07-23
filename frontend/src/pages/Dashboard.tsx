@@ -1,12 +1,13 @@
-import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import {
   generateQuestions,
   getHealth,
   getProfile,
+  listCvs,
   researchCompany,
-  saveProfile,
-  uploadCv,
+  saveJobDescription,
+  type Cv,
   type PrepQuestion,
   type Research,
 } from "../api";
@@ -18,13 +19,10 @@ export default function Dashboard() {
   const [health, setHealth] = useState<"checking" | "ok" | "down">("checking");
   const [model, setModel] = useState("");
 
-  const [cv, setCv] = useState("");
-  const [cvFilename, setCvFilename] = useState("");
+  const [activeCv, setActiveCv] = useState<Cv | null>(null);
   const [jd, setJd] = useState("");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
-  const [uploading, setUploading] = useState(false);
-  const [uploadError, setUploadError] = useState("");
 
   const [questions, setQuestions] = useState<PrepQuestion[]>([]);
   const [generating, setGenerating] = useState(false);
@@ -42,11 +40,10 @@ export default function Dashboard() {
       })
       .catch(() => setHealth("down"));
     getProfile()
-      .then((p) => {
-        setCv(p.cv_text);
-        setCvFilename(p.cv_filename);
-        setJd(p.jd_text);
-      })
+      .then((p) => setJd(p.jd_text))
+      .catch(() => {});
+    listCvs()
+      .then((cvs) => setActiveCv(cvs.find((c) => c.selected) ?? null))
       .catch(() => {});
   }, []);
 
@@ -55,27 +52,10 @@ export default function Dashboard() {
     setSaving(true);
     setSaved(false);
     try {
-      await saveProfile(cv, jd);
+      await saveJobDescription(jd);
       setSaved(true);
     } finally {
       setSaving(false);
-    }
-  }
-
-  async function onCvFile(e: ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setUploading(true);
-    setUploadError("");
-    try {
-      const p = await uploadCv(file);
-      setCv(p.cv_text);
-      setCvFilename(p.cv_filename);
-    } catch (err) {
-      setUploadError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setUploading(false);
-      e.target.value = "";
     }
   }
 
@@ -115,7 +95,6 @@ export default function Dashboard() {
         {health === "down" && <Badge color="red">Backend unavailable</Badge>}
       </div>
 
-      {/* Hero CTA */}
       <Card className="overflow-hidden">
         <div className="flex flex-col gap-4 bg-gradient-to-br from-brand-600 to-brand-800 p-6 text-white sm:flex-row sm:items-center sm:justify-between">
           <div>
@@ -134,59 +113,61 @@ export default function Dashboard() {
       </Card>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        {/* Preparation context */}
-        <Card className="lg:col-span-2">
+        {/* Active CV */}
+        <Card>
           <CardBody>
-            <CardTitle>Your preparation context</CardTitle>
-            <p className="mt-1 text-sm text-slate-500">
-              Add your CV and the job description you are preparing for. These tailor your
-              practice. You can manage multiple CVs on the{" "}
-              <Link to="/cvs" className="font-medium text-brand-700 hover:underline">
-                CVs page
+            <div className="flex items-center justify-between gap-3">
+              <CardTitle>Active CV</CardTitle>
+              <Link to="/cvs" className="text-sm font-medium text-brand-700 hover:underline">
+                Manage CVs
               </Link>
-              .
+            </div>
+            {activeCv ? (
+              <div className="mt-4 flex items-center gap-3">
+                <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-brand-50 text-brand-700">
+                  📄
+                </span>
+                <div>
+                  <p className="font-medium text-slate-900">{activeCv.label}</p>
+                  {activeCv.filename && (
+                    <p className="text-xs text-slate-500">{activeCv.filename}</p>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <p className="mt-4 text-sm text-slate-500">
+                No CV yet.{" "}
+                <Link to="/cvs" className="font-medium text-brand-700 hover:underline">
+                  Add one
+                </Link>{" "}
+                to tailor your interview.
+              </p>
+            )}
+            <p className="mt-4 text-sm text-slate-500">
+              Keep separate CVs for different industries and switch the active one before an
+              interview.
             </p>
-            <form onSubmit={saveContext} className="mt-4 grid grid-cols-1 gap-5 md:grid-cols-2">
-              <div>
-                <Label>CV</Label>
-                <label
-                  className={`inline-flex items-center rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 ${
-                    uploading ? "cursor-default opacity-70" : "cursor-pointer"
-                  }`}
-                >
-                  {uploading ? "Extracting text…" : cvFilename ? "Replace CV file" : "Choose a CV file"}
-                  <input
-                    type="file"
-                    accept=".pdf,.docx,.txt"
-                    onChange={onCvFile}
-                    disabled={uploading}
-                    className="hidden"
-                  />
-                </label>
-                {!uploading && cvFilename && (
-                  <p className="mt-1 text-xs text-slate-500">Uploaded: {cvFilename}</p>
-                )}
-                {uploadError && <p className="mt-1 text-xs text-red-600">{uploadError}</p>}
-                <TextArea
-                  value={cv}
-                  onChange={(e) => setCv(e.target.value)}
-                  rows={7}
-                  placeholder="Upload a file above or paste your CV…"
-                  className="mt-2"
-                />
-              </div>
-              <div>
-                <Label>Job description</Label>
-                <TextArea
-                  value={jd}
-                  onChange={(e) => setJd(e.target.value)}
-                  rows={7}
-                  placeholder="Paste the job description…"
-                />
-              </div>
-              <div className="flex items-center gap-3 md:col-span-2">
+          </CardBody>
+        </Card>
+
+        {/* Job description */}
+        <Card>
+          <CardBody>
+            <CardTitle>Job description</CardTitle>
+            <p className="mt-1 text-sm text-slate-500">
+              Paste the job description you are preparing for.
+            </p>
+            <form onSubmit={saveContext} className="mt-4">
+              <Label>Job description</Label>
+              <TextArea
+                value={jd}
+                onChange={(e) => setJd(e.target.value)}
+                rows={7}
+                placeholder="Paste the job description…"
+              />
+              <div className="mt-3 flex items-center gap-3">
                 <Button type="submit" loading={saving}>
-                  Save context
+                  Save
                 </Button>
                 {saved && <span className="text-sm text-green-600">Saved</span>}
               </div>
@@ -227,7 +208,7 @@ export default function Dashboard() {
           <CardBody>
             <CardTitle>Likely interview questions</CardTitle>
             <p className="mt-1 text-sm text-slate-500">
-              Generate questions tailored to your saved CV and job description.
+              Generate questions tailored to your active CV and job description.
             </p>
             <div className="mt-4">
               <Button variant="secondary" onClick={generate} loading={generating}>
