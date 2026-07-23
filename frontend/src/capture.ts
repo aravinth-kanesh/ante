@@ -4,7 +4,6 @@
 // is used in memory and its tracks are released on stop.
 
 import type { NonverbalSample } from "./api";
-import { extractSample, loadVision } from "./vision";
 
 const SAMPLE_INTERVAL_MS = 125; // ~8 samples per second
 
@@ -40,8 +39,12 @@ export async function startCapture(opts: { video: boolean }): Promise<Capture> {
   let video: HTMLVideoElement | undefined;
 
   if (opts.video) {
+    // Load MediaPipe only when the camera is actually used, so it is code-split
+    // out of the initial bundle.
+    let vision: typeof import("./vision");
     try {
-      await loadVision();
+      vision = await import("./vision");
+      await vision.loadVision();
     } catch (err) {
       stream.getTracks().forEach((track) => track.stop());
       throw err;
@@ -53,7 +56,7 @@ export async function startCapture(opts: { video: boolean }): Promise<Capture> {
     await video.play().catch(() => undefined);
     timer = window.setInterval(() => {
       if (!video) return;
-      const sample = extractSample(video, performance.now());
+      const sample = vision.extractSample(video, performance.now());
       if (sample) samples.push(sample);
     }, SAMPLE_INTERVAL_MS);
   }

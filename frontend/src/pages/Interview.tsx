@@ -1,13 +1,15 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import {
+  analyseNonverbal,
   answerInterview,
   finishInterview,
   startInterview,
   transcribeAudio,
   type DeliveryMetrics,
+  type NonverbalMetrics,
 } from "../api";
-import { recordingSupported, startRecording, type Recorder } from "../audio";
+import { recordingSupported, startCapture, type Capture } from "../capture";
 import { cancelSpeech, speak } from "../speech";
 
 interface Exchange {
@@ -36,11 +38,29 @@ function deliverySummary(m: DeliveryMetrics): string {
   return parts.join(" · ");
 }
 
+function nonverbalSummary(m: NonverbalMetrics): string {
+  if (!m.face_detected) return "No face detected on camera.";
+  const parts = [`eye contact ${m.eye_contact_pct}%`, `${m.steadiness_label} head`];
+  if (m.posture_pct !== null) parts.push(`level posture ${m.posture_pct}%`);
+  if (m.smile_pct !== null) parts.push(`smiled ${m.smile_pct}%`);
+  return parts.join(" · ");
+}
+
+const readoutStyle = {
+  margin: "0.25rem 0 0",
+  padding: "0.4rem 0.6rem",
+  background: "#f2f4f7",
+  borderRadius: 4,
+  color: "#333",
+  fontSize: "0.85rem",
+} as const;
+
 export default function Interview() {
   const [sessionId, setSessionId] = useState<number | null>(null);
   const [question, setQuestion] = useState<string | null>(null);
   const [answer, setAnswer] = useState("");
   const [metrics, setMetrics] = useState<DeliveryMetrics | null>(null);
+  const [nonverbal, setNonverbal] = useState<NonverbalMetrics | null>(null);
   const [history, setHistory] = useState<Exchange[]>([]);
   const [feedback, setFeedback] = useState("");
   const [loading, setLoading] = useState(false);
@@ -48,26 +68,29 @@ export default function Interview() {
 
   const supported = recordingSupported();
   const [voiceMode, setVoiceMode] = useState(supported);
+  const [cameraOn, setCameraOn] = useState(false);
   const [recording, setRecording] = useState(false);
-  const [transcribing, setTranscribing] = useState(false);
-  const recorderRef = useRef<Recorder | null>(null);
+  const [analysing, setAnalysing] = useState(false);
+  const captureRef = useRef<Capture | null>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
 
   // Speak each new interviewer question while voice mode is on.
   useEffect(() => {
     if (voiceMode && question) speak(question);
   }, [question, voiceMode]);
 
-  // Stop any speech or recording if the user leaves the page.
+  // Stop any speech or capture if the user leaves the page.
   useEffect(() => {
     return () => {
       cancelSpeech();
-      recorderRef.current?.cancel();
+      captureRef.current?.cancel();
     };
   }, []);
 
-  function stopVoice() {
-    recorderRef.current?.cancel();
-    recorderRef.current = null;
+  function stopCapture() {
+    captureRef.current?.cancel();
+    captureRef.current = null;
+    if (videoRef.current) videoRef.current.srcObject = null;
     setRecording(false);
     cancelSpeech();
   }
@@ -76,29 +99,37 @@ export default function Interview() {
     setError("");
     cancelSpeech(); // do not record the interviewer's own voice
     try {
-      recorderRef.current = await startRecording();
+      const capture = await startCapture({ video: cameraOn });
+      captureRef.current = capture;
+      if (cameraOn && videoRef.current) {
+        videoRef.current.srcObject = capture.stream;
+        await videoRef.current.play().catch(() => undefined);
+      }
       setRecording(true);
     } catch (err) {
-      setError(`Could not access the microphone: ${message(err)}`);
+      setError(`Could not start the camera or microphone: ${message(err)}`);
+      setCameraOn(false);
     }
   }
 
   async function stopAnswer() {
-    const recorder = recorderRef.current;
-    if (!recorder) return;
-    recorderRef.current = null;
+    const capture = captureRef.current;
+    if (!capture) return;
+    captureRef.current = null;
     setRecording(false);
-    setTranscribing(true);
+    setAnalysing(true);
     setError("");
     try {
-      const blob = await recorder.stop();
-      const res = await transcribeAudio(blob);
+      const { audioBlob, samples } = await capture.stop();
+      if (videoRef.current) videoRef.current.srcObject = null;
+      const res = await transcribeAudio(audioBlob);
       setAnswer(res.transcript);
       setMetrics(res.metrics);
+      if (samples.length > 0) setNonverbal(await analyseNonverbal(samples));
     } catch (err) {
-      setError(`Could not transcribe your answer: ${message(err)}`);
+      setError(`Could not analyse your answer: ${message(err)}`);
     } finally {
-      setTranscribing(false);
+      setAnalysing(false);
     }
   }
 
@@ -109,6 +140,7 @@ export default function Interview() {
     setHistory([]);
     setAnswer("");
     setMetrics(null);
+    setNonverbal(null);
     try {
       const res = await startInterview(voiceMode ? "voice" : "text");
       setSessionId(res.session_id);
@@ -122,14 +154,15 @@ export default function Interview() {
 
   async function submit() {
     if (sessionId === null || question === null) return;
-    stopVoice();
+    stopCapture();
     setLoading(true);
     setError("");
     try {
-      const res = await answerInterview(sessionId, answer, metrics);
+      const res = await answerInterview(sessionId, answer, metrics, nonverbal);
       setHistory((h) => [...h, { question, answer }]);
       setAnswer("");
       setMetrics(null);
+      setNonverbal(null);
       setQuestion(res.done ? null : res.question);
     } catch (err) {
       setError(message(err));
@@ -140,7 +173,7 @@ export default function Interview() {
 
   async function end() {
     if (sessionId === null) return;
-    stopVoice();
+    stopCapture();
     setLoading(true);
     setError("");
     try {
@@ -154,7 +187,7 @@ export default function Interview() {
     }
   }
 
-  const busy = loading || transcribing || recording;
+  const busy = loading || analysing || recording;
 
   return (
     <main style={{ maxWidth: 640, margin: "2rem auto", fontFamily: "system-ui, sans-serif" }}>
@@ -164,17 +197,33 @@ export default function Interview() {
       </header>
 
       {supported ? (
-        <label style={{ display: "block", margin: "0.5rem 0", color: "#333" }}>
-          <input
-            type="checkbox"
-            checked={voiceMode}
-            onChange={(e) => {
-              if (!e.target.checked) stopVoice();
-              setVoiceMode(e.target.checked);
-            }}
-          />{" "}
-          Voice mode (questions are read aloud; answer by speaking, with delivery feedback)
-        </label>
+        <>
+          <label style={{ display: "block", margin: "0.5rem 0", color: "#333" }}>
+            <input
+              type="checkbox"
+              checked={voiceMode}
+              onChange={(e) => {
+                if (!e.target.checked) {
+                  stopCapture();
+                  setCameraOn(false);
+                }
+                setVoiceMode(e.target.checked);
+              }}
+            />{" "}
+            Voice mode (questions are read aloud; answer by speaking, with delivery feedback)
+          </label>
+          {voiceMode && (
+            <label style={{ display: "block", margin: "0.25rem 0", color: "#333" }}>
+              <input
+                type="checkbox"
+                checked={cameraOn}
+                disabled={recording || analysing}
+                onChange={(e) => setCameraOn(e.target.checked)}
+              />{" "}
+              Camera (adds eye contact, composure and posture feedback; nothing is recorded)
+            </label>
+          )}
+        </>
       ) : (
         <p style={{ color: "#666", fontSize: "0.85rem" }}>
           This browser does not support audio recording, so the interview is typed. Voice mode
@@ -227,6 +276,20 @@ export default function Interview() {
                   </button>
                 )}
               </p>
+              {cameraOn && (
+                <video
+                  ref={videoRef}
+                  muted
+                  playsInline
+                  style={{
+                    width: 220,
+                    borderRadius: 4,
+                    margin: "0.5rem 0",
+                    display: recording ? "block" : "none",
+                    transform: "scaleX(-1)",
+                  }}
+                />
+              )}
               <textarea
                 value={answer}
                 onChange={(e) => setAnswer(e.target.value)}
@@ -235,27 +298,23 @@ export default function Interview() {
                 style={{ width: "100%", boxSizing: "border-box", fontSize: "1rem" }}
               />
               {metrics && (
-                <p
-                  style={{
-                    margin: "0.25rem 0 0",
-                    padding: "0.4rem 0.6rem",
-                    background: "#f2f4f7",
-                    borderRadius: 4,
-                    color: "#333",
-                    fontSize: "0.85rem",
-                  }}
-                >
+                <p style={readoutStyle}>
                   <strong>Delivery:</strong> {deliverySummary(metrics)}
+                </p>
+              )}
+              {nonverbal && (
+                <p style={readoutStyle}>
+                  <strong>Nonverbal:</strong> {nonverbalSummary(nonverbal)}
                 </p>
               )}
               <div style={{ marginTop: "0.5rem" }}>
                 {voiceMode && (
                   <button
                     onClick={recording ? stopAnswer : startAnswer}
-                    disabled={loading || transcribing}
+                    disabled={loading || analysing}
                     style={{ marginRight: "0.75rem" }}
                   >
-                    {recording ? "Stop recording" : transcribing ? "Transcribing..." : "Speak answer"}
+                    {recording ? "Stop recording" : analysing ? "Analysing..." : "Speak answer"}
                   </button>
                 )}
                 <button onClick={submit} disabled={busy || !answer.trim()}>
