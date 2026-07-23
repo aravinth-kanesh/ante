@@ -1,16 +1,8 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { getInterview, type InterviewDetail, type TurnRead } from "../api";
+import { getInterview, type InterviewDetail } from "../api";
+import { Badge, Card, CardBody, CardTitle } from "../components/ui";
 import { deliverySummary, nonverbalSummary } from "../format";
-
-const readoutStyle = {
-  margin: "0.25rem 0 0",
-  padding: "0.4rem 0.6rem",
-  background: "#f2f4f7",
-  borderRadius: 4,
-  color: "#333",
-  fontSize: "0.85rem",
-} as const;
 
 function message(err: unknown) {
   return err instanceof Error ? err.message : String(err);
@@ -37,61 +29,65 @@ export default function Results() {
   const exchanges = turns.filter((t) => t.kind === "question" || t.kind === "answer");
 
   return (
-    <main style={{ maxWidth: 640, margin: "2rem auto", fontFamily: "system-ui, sans-serif" }}>
-      <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <h1>Interview results</h1>
-        <span>
-          <Link to="/history">History</Link> · <Link to="/">Dashboard</Link>
-        </span>
-      </header>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Interview results</h1>
+          {detail && (
+            <p className="mt-1 text-sm text-slate-500">
+              {detail.status === "finished" ? "Completed" : "In progress"} · {detail.mode} interview
+            </p>
+          )}
+        </div>
+        <Link to="/history" className="text-sm font-medium text-brand-700 hover:underline">
+          ← History
+        </Link>
+      </div>
 
-      {error && <p style={{ color: "crimson" }}>{error}</p>}
-      {!error && !detail && <p>Loading...</p>}
+      {error && <p className="text-sm text-red-600">{error}</p>}
+      {!error && !detail && <p className="text-sm text-slate-500">Loading…</p>}
 
       {detail && (
         <>
-          <p style={{ color: "#666" }}>
-            {detail.status === "finished" ? "Completed" : "In progress"} · {detail.mode} interview
-          </p>
+          <Card>
+            <CardBody className="space-y-5">
+              <CardTitle>Transcript</CardTitle>
+              {exchanges.map((turn, i) =>
+                turn.kind === "question" ? (
+                  <p key={i} className="pt-2 text-sm font-semibold text-slate-900">
+                    <span className="text-brand-700">Interviewer.</span> {turn.content}
+                  </p>
+                ) : (
+                  <div key={i} className="border-l-2 border-slate-200 pl-4">
+                    <p className="text-sm text-slate-700">
+                      <span className="font-semibold text-slate-900">You.</span> {turn.content}
+                    </p>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {turn.metrics && <Badge color="brand">🎙 {deliverySummary(turn.metrics)}</Badge>}
+                      {turn.nonverbal && (
+                        <Badge color="slate">🎥 {nonverbalSummary(turn.nonverbal)}</Badge>
+                      )}
+                    </div>
+                  </div>
+                ),
+              )}
+            </CardBody>
+          </Card>
 
-          <section>
-            {exchanges.map((turn: TurnRead, i) =>
-              turn.kind === "question" ? (
-                <p key={i} style={{ margin: "1rem 0 0.25rem" }}>
-                  <strong>Interviewer:</strong> {turn.content}
+          <Card>
+            <CardBody>
+              <CardTitle>Feedback</CardTitle>
+              {feedback ? (
+                <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-slate-700">
+                  {feedback.content}
                 </p>
               ) : (
-                <div key={i} style={{ marginBottom: "0.5rem" }}>
-                  <p style={{ margin: "0.25rem 0", color: "#333" }}>
-                    <strong>You:</strong> {turn.content}
-                  </p>
-                  {turn.metrics && (
-                    <p style={readoutStyle}>
-                      <strong>Delivery:</strong> {deliverySummary(turn.metrics)}
-                    </p>
-                  )}
-                  {turn.nonverbal && (
-                    <p style={readoutStyle}>
-                      <strong>Nonverbal:</strong> {nonverbalSummary(turn.nonverbal)}
-                    </p>
-                  )}
-                </div>
-              ),
-            )}
-          </section>
-
-          {feedback ? (
-            <section style={{ marginTop: "1.5rem" }}>
-              <h2>Feedback</h2>
-              <p style={{ whiteSpace: "pre-wrap" }}>{feedback.content}</p>
-            </section>
-          ) : (
-            <p style={{ marginTop: "1.5rem", color: "#666" }}>
-              This interview has no feedback yet.
-            </p>
-          )}
+                <p className="mt-3 text-sm text-slate-500">This interview has no feedback yet.</p>
+              )}
+            </CardBody>
+          </Card>
         </>
       )}
-    </main>
+    </div>
   );
 }

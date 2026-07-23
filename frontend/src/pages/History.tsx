@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { listSessions, type SessionSummary } from "../api";
+import { Badge, Card } from "../components/ui";
 
 function message(err: unknown) {
   return err instanceof Error ? err.message : String(err);
@@ -22,41 +23,48 @@ export default function History() {
   }, []);
 
   return (
-    <main style={{ maxWidth: 640, margin: "2rem auto", fontFamily: "system-ui, sans-serif" }}>
-      <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <h1>Interview history</h1>
-        <Link to="/">Back to dashboard</Link>
-      </header>
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Interview history</h1>
+        <p className="mt-1 text-sm text-slate-500">Review your past mock interviews and feedback.</p>
+      </div>
 
-      {error && <p style={{ color: "crimson" }}>{error}</p>}
-      {!error && !sessions && <p>Loading...</p>}
+      {error && <p className="text-sm text-red-600">{error}</p>}
+      {!error && !sessions && <p className="text-sm text-slate-500">Loading…</p>}
+
       {sessions && sessions.length === 0 && (
-        <p style={{ color: "#666" }}>
-          You have no interviews yet. <Link to="/interview">Start a mock interview</Link>.
-        </p>
+        <Card>
+          <div className="p-8 text-center text-sm text-slate-500">
+            You have no interviews yet.{" "}
+            <Link to="/interview" className="font-medium text-brand-700 hover:underline">
+              Start a mock interview
+            </Link>
+            .
+          </div>
+        </Card>
       )}
 
-      {sessions?.map((s) => (
-        <Link
-          key={s.id}
-          to={`/results/${s.id}`}
-          style={{
-            display: "block",
-            textDecoration: "none",
-            color: "inherit",
-            border: "1px solid #e2e5ea",
-            borderRadius: 6,
-            padding: "0.75rem 1rem",
-            margin: "0.6rem 0",
-          }}
-        >
-          <p style={{ margin: 0, fontWeight: 600 }}>{s.preview}</p>
-          <p style={{ margin: "0.25rem 0 0", color: "#666", fontSize: "0.85rem" }}>
-            {formatDate(s.created_at)} · {s.mode} · {s.question_count} question
-            {s.question_count === 1 ? "" : "s"} · {s.status}
-          </p>
-        </Link>
-      ))}
-    </main>
+      <div className="space-y-3">
+        {sessions?.map((s) => (
+          <Link key={s.id} to={`/results/${s.id}`} className="block">
+            <Card className="transition-shadow hover:shadow-lift">
+              <div className="flex items-center justify-between gap-4 p-5">
+                <div className="min-w-0">
+                  <p className="truncate font-medium text-slate-900">{s.preview}</p>
+                  <p className="mt-1 text-xs text-slate-500">
+                    {formatDate(s.created_at)} · {s.question_count} question
+                    {s.question_count === 1 ? "" : "s"}
+                  </p>
+                </div>
+                <div className="flex shrink-0 items-center gap-2">
+                  <Badge color={s.mode === "voice" ? "brand" : "slate"}>{s.mode}</Badge>
+                  <Badge color={s.status === "finished" ? "green" : "amber"}>{s.status}</Badge>
+                </div>
+              </div>
+            </Card>
+          </Link>
+        ))}
+      </div>
+    </div>
   );
 }

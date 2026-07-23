@@ -10,6 +10,7 @@ import {
   type NonverbalMetrics,
 } from "../api";
 import { recordingSupported, startCapture, type Capture } from "../capture";
+import { Badge, Button, Card, CardBody, CardTitle, TextArea, Toggle } from "../components/ui";
 import { deliverySummary, nonverbalSummary } from "../format";
 import { cancelSpeech, speak } from "../speech";
 
@@ -21,15 +22,6 @@ interface Exchange {
 function message(err: unknown) {
   return err instanceof Error ? err.message : String(err);
 }
-
-const readoutStyle = {
-  margin: "0.25rem 0 0",
-  padding: "0.4rem 0.6rem",
-  background: "#f2f4f7",
-  borderRadius: 4,
-  color: "#333",
-  fontSize: "0.85rem",
-} as const;
 
 export default function Interview() {
   const [sessionId, setSessionId] = useState<number | null>(null);
@@ -171,178 +163,186 @@ export default function Interview() {
   const busy = loading || analysing || recording || starting;
 
   return (
-    <main style={{ maxWidth: 640, margin: "2rem auto", fontFamily: "system-ui, sans-serif" }}>
-      <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <h1>Mock interview</h1>
-        <Link to="/">Back to dashboard</Link>
-      </header>
-
-      {supported ? (
-        <>
-          <label style={{ display: "block", margin: "0.5rem 0", color: "#333" }}>
-            <input
-              type="checkbox"
-              checked={voiceMode}
-              onChange={(e) => {
-                if (!e.target.checked) {
-                  stopCapture();
-                  setCameraOn(false);
-                }
-                setVoiceMode(e.target.checked);
-              }}
-            />{" "}
-            Voice mode (questions are read aloud; answer by speaking, with delivery feedback)
-          </label>
-          {voiceMode && (
-            <label style={{ display: "block", margin: "0.25rem 0", color: "#333" }}>
-              <input
-                type="checkbox"
-                checked={cameraOn}
-                disabled={recording || analysing}
-                onChange={(e) => setCameraOn(e.target.checked)}
-              />{" "}
-              Camera (adds eye contact, composure and posture feedback; nothing is recorded)
-            </label>
-          )}
-        </>
-      ) : (
-        <p style={{ color: "#666", fontSize: "0.85rem" }}>
-          This browser does not support audio recording, so the interview is typed. Voice mode
-          works best in Chrome or Edge.
+    <div className="mx-auto max-w-2xl space-y-6">
+      <div>
+        <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Mock interview</h1>
+        <p className="mt-1 text-sm text-slate-500">
+          Adaptive questions grounded in your CV and the role, with feedback on your answers and
+          delivery.
         </p>
-      )}
+      </div>
 
       {error && (
-        <p style={{ color: "crimson" }}>
+        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           {error}
           {error.toLowerCase().includes("cv") && (
             <>
               {" "}
-              <Link to="/">Add your CV</Link>.
+              <Link to="/cvs" className="font-medium underline">
+                Add your CV
+              </Link>
+              .
             </>
           )}
-        </p>
-      )}
-
-      {sessionId === null && (
-        <button onClick={begin} disabled={loading}>
-          {loading ? "Starting..." : "Start interview"}
-        </button>
-      )}
-
-      {history.map((ex, i) => (
-        <div key={i} style={{ marginBottom: "1rem" }}>
-          <p style={{ margin: "0.25rem 0" }}>
-            <strong>Interviewer:</strong> {ex.question}
-          </p>
-          <p style={{ margin: "0.25rem 0", color: "#333" }}>
-            <strong>You:</strong> {ex.answer}
-          </p>
         </div>
-      ))}
+      )}
 
-      {sessionId !== null && !feedback && (
-        <section>
-          {question !== null ? (
-            <>
-              <p>
-                <strong>Interviewer:</strong> {question}
-                {voiceMode && (
-                  <button
-                    onClick={() => speak(question)}
-                    style={{ marginLeft: "0.5rem", fontSize: "0.85rem" }}
-                    title="Replay the question"
-                  >
-                    Replay
-                  </button>
-                )}
-              </p>
-              {cameraOn && (
-                <video
-                  ref={videoRef}
-                  muted
-                  playsInline
-                  style={{
-                    width: 220,
-                    borderRadius: 4,
-                    margin: "0.5rem 0",
-                    display: recording ? "block" : "none",
-                    transform: "scaleX(-1)",
+      {/* Setup / start */}
+      {sessionId === null && (
+        <Card>
+          <CardBody className="space-y-4">
+            <CardTitle>Set up your interview</CardTitle>
+            {supported ? (
+              <div className="space-y-3">
+                <Toggle
+                  checked={voiceMode}
+                  onChange={(v) => {
+                    if (!v) {
+                      stopCapture();
+                      setCameraOn(false);
+                    }
+                    setVoiceMode(v);
                   }}
+                  label="Voice mode — questions are read aloud and you answer by speaking"
                 />
-              )}
-              <textarea
-                value={answer}
-                onChange={(e) => setAnswer(e.target.value)}
-                rows={4}
-                placeholder={voiceMode ? "Speak your answer, or type it here..." : "Your answer..."}
-                style={{ width: "100%", boxSizing: "border-box", fontSize: "1rem" }}
-              />
-              {metrics && (
-                <p style={readoutStyle}>
-                  <strong>Delivery:</strong> {deliverySummary(metrics)}
-                </p>
-              )}
-              {nonverbal && (
-                <p style={readoutStyle}>
-                  <strong>Nonverbal:</strong> {nonverbalSummary(nonverbal)}
-                </p>
-              )}
-              <div style={{ marginTop: "0.5rem" }}>
                 {voiceMode && (
-                  <button
-                    onClick={recording ? stopAnswer : startAnswer}
-                    disabled={loading || analysing || starting}
-                    style={{ marginRight: "0.75rem" }}
-                  >
-                    {recording
-                      ? "Stop recording"
-                      : starting
-                        ? "Starting..."
-                        : analysing
-                          ? "Analysing..."
-                          : "Speak answer"}
-                  </button>
+                  <Toggle
+                    checked={cameraOn}
+                    onChange={setCameraOn}
+                    label="Camera — adds eye contact, composure and posture feedback (nothing is recorded)"
+                  />
                 )}
-                <button onClick={submit} disabled={busy || !answer.trim()}>
-                  {loading ? "Sending..." : "Submit answer"}
-                </button>
-                <button onClick={end} disabled={busy} style={{ marginLeft: "0.75rem" }}>
-                  Finish and get feedback
-                </button>
               </div>
-              {recording && (
-                <p style={{ color: "#666", fontSize: "0.85rem", margin: "0.5rem 0 0" }}>
-                  Recording... press Stop when you have finished your answer.
-                </p>
-              )}
-            </>
-          ) : (
-            <div>
-              <p>You have answered all the questions.</p>
-              <button onClick={end} disabled={loading}>
-                {loading ? "Preparing feedback..." : "Get feedback"}
-              </button>
-            </div>
-          )}
-        </section>
+            ) : (
+              <p className="text-sm text-slate-500">
+                This browser does not support audio recording, so the interview is typed. Voice
+                mode works best in Chrome or Edge.
+              </p>
+            )}
+            <Button onClick={begin} loading={loading}>
+              Start interview
+            </Button>
+          </CardBody>
+        </Card>
       )}
 
-      {feedback && (
-        <section style={{ marginTop: "1rem" }}>
-          <h2>Feedback</h2>
-          <p style={{ whiteSpace: "pre-wrap" }}>{feedback}</p>
-          <button onClick={begin} disabled={loading}>
-            Start another interview
-          </button>
-          {sessionId !== null && (
-            <p style={{ marginTop: "0.75rem" }}>
-              <Link to={`/results/${sessionId}`}>View full results</Link> ·{" "}
-              <Link to="/history">Interview history</Link>
-            </p>
-          )}
-        </section>
+      {/* Answered so far */}
+      {history.length > 0 && !feedback && (
+        <div className="space-y-3">
+          {history.map((ex, i) => (
+            <Card key={i} className="bg-slate-50/60">
+              <CardBody className="py-4">
+                <p className="text-sm font-medium text-slate-800">{ex.question}</p>
+                <p className="mt-1 text-sm text-slate-500">{ex.answer}</p>
+              </CardBody>
+            </Card>
+          ))}
+        </div>
       )}
-    </main>
+
+      {/* Active question */}
+      {sessionId !== null && !feedback && (
+        <Card>
+          <CardBody className="space-y-4">
+            {question !== null ? (
+              <>
+                <div className="flex items-center justify-between">
+                  <Badge color="brand">Question {history.length + 1}</Badge>
+                  {voiceMode && (
+                    <Button variant="ghost" size="sm" onClick={() => speak(question)}>
+                      🔊 Replay
+                    </Button>
+                  )}
+                </div>
+                <p className="text-lg font-medium text-slate-900">{question}</p>
+
+                {cameraOn && (
+                  <video
+                    ref={videoRef}
+                    muted
+                    playsInline
+                    className="w-56 rounded-xl border border-slate-200 shadow-sm"
+                    style={{ display: recording ? "block" : "none", transform: "scaleX(-1)" }}
+                  />
+                )}
+
+                <TextArea
+                  value={answer}
+                  onChange={(e) => setAnswer(e.target.value)}
+                  rows={5}
+                  placeholder={voiceMode ? "Speak your answer, or type it here…" : "Your answer…"}
+                />
+
+                {(metrics || nonverbal) && (
+                  <div className="flex flex-wrap gap-2">
+                    {metrics && <Badge color="brand">🎙 {deliverySummary(metrics)}</Badge>}
+                    {nonverbal && <Badge color="slate">🎥 {nonverbalSummary(nonverbal)}</Badge>}
+                  </div>
+                )}
+
+                {recording && (
+                  <p className="text-sm text-slate-500">
+                    <span className="mr-1.5 inline-block h-2 w-2 animate-pulse rounded-full bg-red-500 align-middle" />
+                    Recording… press Stop when you have finished your answer.
+                  </p>
+                )}
+
+                <div className="flex flex-wrap gap-3 pt-1">
+                  {voiceMode && (
+                    <Button
+                      variant={recording ? "danger" : "secondary"}
+                      onClick={recording ? stopAnswer : startAnswer}
+                      loading={analysing || starting}
+                      disabled={loading}
+                    >
+                      {recording ? "Stop recording" : analysing ? "Analysing…" : "🎤 Speak answer"}
+                    </Button>
+                  )}
+                  <Button onClick={submit} loading={loading} disabled={busy || !answer.trim()}>
+                    Submit answer
+                  </Button>
+                  <Button variant="ghost" onClick={end} disabled={busy}>
+                    Finish &amp; get feedback
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <div className="space-y-3">
+                <p className="text-sm text-slate-700">You have answered all the questions.</p>
+                <Button onClick={end} loading={loading}>
+                  Get feedback
+                </Button>
+              </div>
+            )}
+          </CardBody>
+        </Card>
+      )}
+
+      {/* Feedback */}
+      {feedback && (
+        <Card>
+          <CardBody className="space-y-4">
+            <CardTitle>Feedback</CardTitle>
+            <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-700">{feedback}</p>
+            <div className="flex flex-wrap items-center gap-3 pt-1">
+              <Button onClick={begin} loading={loading}>
+                Start another interview
+              </Button>
+              {sessionId !== null && (
+                <Link
+                  to={`/results/${sessionId}`}
+                  className="text-sm font-medium text-brand-700 hover:underline"
+                >
+                  View full results
+                </Link>
+              )}
+              <Link to="/history" className="text-sm font-medium text-brand-700 hover:underline">
+                Interview history
+              </Link>
+            </div>
+          </CardBody>
+        </Card>
+      )}
+    </div>
   );
 }

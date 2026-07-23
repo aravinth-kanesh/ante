@@ -11,10 +11,10 @@ import {
   type Research,
 } from "../api";
 import { useAuth } from "../auth/AuthContext";
-import ChatTest from "../components/ChatTest";
+import { Badge, Button, Card, CardBody, CardTitle, Label, TextArea } from "../components/ui";
 
 export default function Dashboard() {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const [health, setHealth] = useState<"checking" | "ok" | "down">("checking");
   const [model, setModel] = useState("");
 
@@ -104,136 +104,151 @@ export default function Dashboard() {
   }
 
   return (
-    <main style={{ maxWidth: 640, margin: "2rem auto", fontFamily: "system-ui, sans-serif" }}>
-      <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <h1>AI Interview Practice</h1>
-        <button onClick={logout}>Log out</button>
-      </header>
-      <p>Signed in as {user?.email}</p>
-      <p>
-        Backend:{" "}
-        {health === "checking" && <span>checking...</span>}
-        {health === "ok" && <span style={{ color: "green" }}>connected (model: {model})</span>}
-        {health === "down" && <span style={{ color: "crimson" }}>unavailable</span>}
-      </p>
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Dashboard</h1>
+          <p className="mt-1 text-sm text-slate-500">Signed in as {user?.email}</p>
+        </div>
+        {health === "checking" && <Badge color="slate">Checking backend…</Badge>}
+        {health === "ok" && <Badge color="green">Connected · {model}</Badge>}
+        {health === "down" && <Badge color="red">Backend unavailable</Badge>}
+      </div>
 
-      <p style={{ margin: "1rem 0" }}>
-        <Link to="/interview">
-          <strong>Start a mock interview</strong>
-        </Link>{" "}
-        (add your CV and job description below first). ·{" "}
-        <Link to="/history">Your interview history</Link>
-      </p>
-
-      <section>
-        <h2>Your preparation context</h2>
-        <p style={{ color: "#666", marginTop: 0 }}>
-          Paste your CV and the job description you are preparing for. These will be used to
-          tailor your practice.
-        </p>
-        <form onSubmit={saveContext}>
+      {/* Hero CTA */}
+      <Card className="overflow-hidden">
+        <div className="flex flex-col gap-4 bg-gradient-to-br from-brand-600 to-brand-800 p-6 text-white sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <div style={{ marginBottom: "0.25rem" }}>CV</div>
-            <label
-              style={{
-                display: "inline-block",
-                padding: "0.35rem 0.75rem",
-                border: "1px solid #ccc",
-                borderRadius: 4,
-                background: "#f7f8fa",
-                cursor: uploading ? "default" : "pointer",
-                fontSize: "0.9rem",
-              }}
-            >
-              {uploading ? "Extracting text..." : cvFilename ? "Replace CV file" : "Choose a CV file"}
-              <input
-                type="file"
-                accept=".pdf,.docx,.txt"
-                onChange={onCvFile}
-                disabled={uploading}
-                style={{ display: "none" }}
-              />
-            </label>
-            {!uploading && cvFilename && (
-              <span style={{ color: "#666", fontSize: "0.85rem", marginLeft: "0.5rem" }}>
-                Uploaded: {cvFilename}
-              </span>
-            )}
-            {uploadError && (
-              <span style={{ color: "crimson", fontSize: "0.85rem", marginLeft: "0.5rem" }}>
-                {uploadError}
-              </span>
-            )}
-            <textarea
-              value={cv}
-              onChange={(e) => setCv(e.target.value)}
-              rows={6}
-              placeholder="Upload a file above or paste your CV..."
-              style={{ width: "100%", boxSizing: "border-box", margin: "0.5rem 0 1rem" }}
-            />
-          </div>
-          <label>
-            Job description
-            <textarea
-              value={jd}
-              onChange={(e) => setJd(e.target.value)}
-              rows={6}
-              placeholder="Paste the job description..."
-              style={{ width: "100%", boxSizing: "border-box", margin: "0.25rem 0 1rem" }}
-            />
-          </label>
-          <button type="submit" disabled={saving}>
-            {saving ? "Saving..." : "Save"}
-          </button>
-          {saved && <span style={{ color: "green", marginLeft: "0.75rem" }}>Saved</span>}
-        </form>
-      </section>
-
-      <section>
-        <h2>Company research</h2>
-        <p style={{ color: "#666", marginTop: 0 }}>
-          Research the company from your saved job description, so questions match how they
-          interview.
-        </p>
-        <button onClick={runResearch} disabled={researching}>
-          {researching ? "Researching..." : "Research company"}
-        </button>
-        {researchError && <p style={{ color: "crimson" }}>{researchError}</p>}
-        {research && (
-          <div style={{ marginTop: "0.75rem" }}>
-            <p style={{ margin: "0.25rem 0" }}>
-              <strong>{research.company || "Company"}</strong>
-              {research.role && ` (${research.role})`}
+            <h2 className="text-xl font-semibold">Ready to practise?</h2>
+            <p className="mt-1 max-w-md text-sm text-brand-100">
+              Run an adaptive mock interview with spoken questions and feedback on both your
+              answers and your delivery.
             </p>
-            <p style={{ whiteSpace: "pre-wrap", color: "#333" }}>{research.company_context}</p>
           </div>
-        )}
-      </section>
+          <Link to="/interview">
+            <span className="inline-flex items-center justify-center rounded-lg bg-white px-5 py-2.5 text-sm font-semibold text-brand-700 shadow-sm transition-colors hover:bg-brand-50">
+              Start a mock interview
+            </span>
+          </Link>
+        </div>
+      </Card>
 
-      <section>
-        <h2>Likely interview questions</h2>
-        <p style={{ color: "#666", marginTop: 0 }}>
-          Generate questions tailored to your saved CV and job description.
-        </p>
-        <button onClick={generate} disabled={generating}>
-          {generating ? "Generating..." : "Generate likely questions"}
-        </button>
-        {genError && <p style={{ color: "crimson" }}>{genError}</p>}
-        {questions.length > 0 && (
-          <ol>
-            {questions.map((q, i) => (
-              <li key={i} style={{ marginBottom: "0.5rem" }}>
-                {q.question}
-                {q.rationale && (
-                  <div style={{ color: "#666", fontSize: "0.85rem" }}>{q.rationale}</div>
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        {/* Preparation context */}
+        <Card className="lg:col-span-2">
+          <CardBody>
+            <CardTitle>Your preparation context</CardTitle>
+            <p className="mt-1 text-sm text-slate-500">
+              Add your CV and the job description you are preparing for. These tailor your
+              practice. You can manage multiple CVs on the{" "}
+              <Link to="/cvs" className="font-medium text-brand-700 hover:underline">
+                CVs page
+              </Link>
+              .
+            </p>
+            <form onSubmit={saveContext} className="mt-4 grid grid-cols-1 gap-5 md:grid-cols-2">
+              <div>
+                <Label>CV</Label>
+                <label
+                  className={`inline-flex items-center rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 ${
+                    uploading ? "cursor-default opacity-70" : "cursor-pointer"
+                  }`}
+                >
+                  {uploading ? "Extracting text…" : cvFilename ? "Replace CV file" : "Choose a CV file"}
+                  <input
+                    type="file"
+                    accept=".pdf,.docx,.txt"
+                    onChange={onCvFile}
+                    disabled={uploading}
+                    className="hidden"
+                  />
+                </label>
+                {!uploading && cvFilename && (
+                  <p className="mt-1 text-xs text-slate-500">Uploaded: {cvFilename}</p>
                 )}
-              </li>
-            ))}
-          </ol>
-        )}
-      </section>
+                {uploadError && <p className="mt-1 text-xs text-red-600">{uploadError}</p>}
+                <TextArea
+                  value={cv}
+                  onChange={(e) => setCv(e.target.value)}
+                  rows={7}
+                  placeholder="Upload a file above or paste your CV…"
+                  className="mt-2"
+                />
+              </div>
+              <div>
+                <Label>Job description</Label>
+                <TextArea
+                  value={jd}
+                  onChange={(e) => setJd(e.target.value)}
+                  rows={7}
+                  placeholder="Paste the job description…"
+                />
+              </div>
+              <div className="flex items-center gap-3 md:col-span-2">
+                <Button type="submit" loading={saving}>
+                  Save context
+                </Button>
+                {saved && <span className="text-sm text-green-600">Saved</span>}
+              </div>
+            </form>
+          </CardBody>
+        </Card>
 
-      <ChatTest />
-    </main>
+        {/* Company research */}
+        <Card>
+          <CardBody>
+            <CardTitle>Company research</CardTitle>
+            <p className="mt-1 text-sm text-slate-500">
+              Research the company from your saved job description, so questions match how they
+              interview.
+            </p>
+            <div className="mt-4">
+              <Button variant="secondary" onClick={runResearch} loading={researching}>
+                Research company
+              </Button>
+            </div>
+            {researchError && <p className="mt-3 text-sm text-red-600">{researchError}</p>}
+            {research && (
+              <div className="mt-4">
+                <p className="font-medium text-slate-900">
+                  {research.company || "Company"}
+                  {research.role && <span className="text-slate-500"> · {research.role}</span>}
+                </p>
+                <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-slate-600">
+                  {research.company_context}
+                </p>
+              </div>
+            )}
+          </CardBody>
+        </Card>
+
+        {/* Likely questions */}
+        <Card>
+          <CardBody>
+            <CardTitle>Likely interview questions</CardTitle>
+            <p className="mt-1 text-sm text-slate-500">
+              Generate questions tailored to your saved CV and job description.
+            </p>
+            <div className="mt-4">
+              <Button variant="secondary" onClick={generate} loading={generating}>
+                Generate questions
+              </Button>
+            </div>
+            {genError && <p className="mt-3 text-sm text-red-600">{genError}</p>}
+            {questions.length > 0 && (
+              <ol className="mt-4 space-y-3">
+                {questions.map((q, i) => (
+                  <li key={i} className="text-sm text-slate-800">
+                    <span className="mr-2 font-semibold text-brand-700">{i + 1}.</span>
+                    {q.question}
+                    {q.rationale && <p className="mt-0.5 ml-6 text-xs text-slate-500">{q.rationale}</p>}
+                  </li>
+                ))}
+              </ol>
+            )}
+          </CardBody>
+        </Card>
+      </div>
+    </div>
   );
 }

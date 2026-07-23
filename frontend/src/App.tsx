@@ -1,5 +1,7 @@
+import { type ReactNode } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { AuthProvider } from "./auth/AuthContext";
+import Layout from "./components/Layout";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Dashboard from "./pages/Dashboard";
 import History from "./pages/History";
@@ -8,6 +10,15 @@ import Login from "./pages/Login";
 import Results from "./pages/Results";
 import Signup from "./pages/Signup";
 
+// A protected page wrapped in the app shell (nav + container).
+function Page({ children }: { children: ReactNode }) {
+  return (
+    <ProtectedRoute>
+      <Layout>{children}</Layout>
+    </ProtectedRoute>
+  );
+}
+
 export default function App() {
   return (
     <AuthProvider>
@@ -15,38 +26,10 @@ export default function App() {
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
-          <Route
-            path="/"
-            element={
-              <ProtectedRoute>
-                <Dashboard />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/interview"
-            element={
-              <ProtectedRoute>
-                <Interview />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/results/:id"
-            element={
-              <ProtectedRoute>
-                <Results />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/history"
-            element={
-              <ProtectedRoute>
-                <History />
-              </ProtectedRoute>
-            }
-          />
+          <Route path="/" element={<Page><Dashboard /></Page>} />
+          <Route path="/interview" element={<Page><Interview /></Page>} />
+          <Route path="/results/:id" element={<Page><Results /></Page>} />
+          <Route path="/history" element={<Page><History /></Page>} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>

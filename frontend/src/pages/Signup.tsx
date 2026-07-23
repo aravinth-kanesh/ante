@@ -1,7 +1,9 @@
 import { useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
+import Logo from "../components/Logo";
 import PasswordField from "../components/PasswordField";
+import { Button, Card, CardBody, Input, Label } from "../components/ui";
 
 export default function Signup() {
   const { signup } = useAuth();
@@ -31,44 +33,57 @@ export default function Signup() {
   }
 
   return (
-    <main style={{ maxWidth: 360, margin: "4rem auto", fontFamily: "system-ui, sans-serif" }}>
-      <h1>Sign up</h1>
-      <form onSubmit={submit}>
-        <label>
-          Email
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            style={{ width: "100%", padding: "0.5rem", margin: "0.25rem 0 1rem" }}
-          />
-        </label>
-        <PasswordField
-          label="Password"
-          value={password}
-          onChange={setPassword}
-          minLength={8}
-          autoComplete="new-password"
-        />
-        <p style={{ fontSize: "0.85rem", color: "#666", margin: "-0.75rem 0 1rem" }}>
-          At least 8 characters.
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-50 via-white to-brand-50 px-4">
+      <div className="w-full max-w-sm">
+        <div className="mb-6 flex flex-col items-center gap-3 text-center">
+          <Logo size={44} />
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Create your account</h1>
+            <p className="mt-1 text-sm text-slate-500">Start practising for your interviews.</p>
+          </div>
+        </div>
+        <Card>
+          <CardBody>
+            <form onSubmit={submit}>
+              <div className="mb-4">
+                <Label>Email</Label>
+                <Input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  autoComplete="email"
+                />
+              </div>
+              <PasswordField
+                label="Password"
+                value={password}
+                onChange={setPassword}
+                minLength={8}
+                autoComplete="new-password"
+              />
+              <p className="-mt-2 mb-4 text-xs text-slate-500">At least 8 characters.</p>
+              <PasswordField
+                label="Confirm password"
+                value={confirm}
+                onChange={setConfirm}
+                minLength={8}
+                autoComplete="new-password"
+              />
+              {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
+              <Button type="submit" loading={busy} className="w-full">
+                Sign up
+              </Button>
+            </form>
+          </CardBody>
+        </Card>
+        <p className="mt-5 text-center text-sm text-slate-500">
+          Already have an account?{" "}
+          <Link to="/login" className="font-medium text-brand-700 hover:underline">
+            Log in
+          </Link>
         </p>
-        <PasswordField
-          label="Confirm password"
-          value={confirm}
-          onChange={setConfirm}
-          minLength={8}
-          autoComplete="new-password"
-        />
-        <button type="submit" disabled={busy} style={{ width: "100%", padding: "0.5rem" }}>
-          {busy ? "Creating account..." : "Sign up"}
-        </button>
-      </form>
-      {error && <p style={{ color: "crimson" }}>{error}</p>}
-      <p>
-        Already have an account? <Link to="/login">Log in</Link>
-      </p>
-    </main>
+      </div>
+    </div>
   );
 }
