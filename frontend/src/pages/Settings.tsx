@@ -1,8 +1,17 @@
 import { useEffect, useState } from "react";
 import { WhyAnteFull } from "../components/WhyAnte";
-import { Button, Card, CardBody, CardTitle, Label, Select, SpeakerIcon } from "../components/ui";
+import {
+  Button,
+  Card,
+  CardBody,
+  CardTitle,
+  Label,
+  Select,
+  SpeakerIcon,
+  SpeakingIndicator,
+} from "../components/ui";
 import { getVoiceURI, setVoiceURI } from "../settings";
-import { listEnglishVoices, onVoicesReady, speak } from "../speech";
+import { cancelSpeech, listEnglishVoices, onVoicesReady, speak } from "../speech";
 
 const SAMPLE =
   "Hello, thanks for coming in today. Could you start by telling me a little about yourself?";
@@ -11,6 +20,10 @@ export default function Settings() {
   const supported = "speechSynthesis" in window;
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
   const [selected, setSelected] = useState("");
+  const [speaking, setSpeaking] = useState(false);
+
+  // Stop any preview if the user navigates away.
+  useEffect(() => cancelSpeech, []);
 
   useEffect(() => {
     return onVoicesReady(() => {
@@ -22,10 +35,21 @@ export default function Settings() {
     });
   }, []);
 
+  function preview(uri: string) {
+    if (!uri) return;
+    setSpeaking(true);
+    speak(SAMPLE, { voiceURI: uri, onEnd: () => setSpeaking(false) });
+  }
+
   function choose(uri: string) {
     setSelected(uri);
     setVoiceURI(uri || null);
-    if (uri) speak(SAMPLE, { voiceURI: uri });
+    preview(uri);
+  }
+
+  function stopPreview() {
+    cancelSpeech();
+    setSpeaking(false);
   }
 
   return (
@@ -60,12 +84,23 @@ export default function Settings() {
                   ))}
                 </Select>
               </div>
-              <Button
-                variant="secondary"
-                onClick={() => selected && speak(SAMPLE, { voiceURI: selected })}
-              >
-                <SpeakerIcon className="h-4 w-4" /> Test voice
-              </Button>
+              <div className="flex items-center gap-3">
+                <Button
+                  variant="secondary"
+                  onClick={() => (speaking ? stopPreview() : preview(selected))}
+                >
+                  {speaking ? (
+                    <>
+                      <SpeakingIndicator className="h-4 text-brand-600" /> Stop
+                    </>
+                  ) : (
+                    <>
+                      <SpeakerIcon className="h-4 w-4" /> Test voice
+                    </>
+                  )}
+                </Button>
+                {speaking && <span className="text-sm text-slate-500">Playing...</span>}
+              </div>
               <p className="text-xs leading-relaxed text-slate-500">
                 Voices are provided by your device and browser, and their names usually indicate
                 the speaker (male or female). For the most natural voices, Chrome or Edge on macOS

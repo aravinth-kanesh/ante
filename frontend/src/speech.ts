@@ -57,7 +57,11 @@ export function speak(text: string, opts: SpeakOptions = {}): void {
   const utterance = new SpeechSynthesisUtterance(text);
   utterance.lang = EN_GB;
   utterance.rate = 1;
-  if (opts.onEnd) utterance.onend = opts.onEnd;
+  if (opts.onEnd) {
+    // fires on natural end, and on cancel or failure, so callers can reset state
+    utterance.onend = opts.onEnd;
+    utterance.onerror = opts.onEnd;
+  }
 
   const voice = opts.voiceURI
     ? synth.getVoices().find((v) => v.voiceURI === opts.voiceURI) ?? pickVoice()
