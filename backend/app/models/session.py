@@ -18,6 +18,7 @@ class InterviewSession(Base):
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
     status: Mapped[str] = mapped_column(String, default="active")  # active | finished
     mode: Mapped[str] = mapped_column(String, default="text")  # text | voice
+    interview_type: Mapped[str] = mapped_column(String, default="general")
     cv_snapshot: Mapped[str] = mapped_column(Text, default="")
     jd_snapshot: Mapped[str] = mapped_column(Text, default="")
     company_context_snapshot: Mapped[str] = mapped_column(Text, default="")

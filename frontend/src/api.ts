@@ -155,13 +155,15 @@ export async function generateQuestions(): Promise<PrepQuestion[]> {
 }
 
 export type InterviewMode = "text" | "voice";
+export type InterviewType = "general" | "behavioural" | "competency" | "technical" | "strengths";
 
 export async function startInterview(
   mode: InterviewMode = "text",
+  interviewType: InterviewType = "general",
 ): Promise<{ session_id: number; question: string; mode: InterviewMode }> {
   return request("/api/interview/start", {
     method: "POST",
-    body: JSON.stringify({ mode }),
+    body: JSON.stringify({ mode, interview_type: interviewType }),
   });
 }
 
@@ -231,6 +233,7 @@ export async function finishInterview(sessionId: number): Promise<{ feedback: st
 export interface SessionSummary {
   id: number;
   mode: InterviewMode;
+  interview_type: InterviewType;
   status: string;
   created_at: string;
   question_count: number;

@@ -27,6 +27,42 @@ def test_start_requires_cv(client, monkeypatch):
     assert client.post("/api/interview/start", headers=auth_header(client)).status_code == 400
 
 
+def test_interview_type_defaults_to_general(client, monkeypatch):
+    mock_llm(monkeypatch)
+    headers = auth_header(client)
+    save_cv(client, headers)
+    assert client.post("/api/interview/start", headers=headers).json()["interview_type"] == "general"
+
+
+def test_interview_type_shapes_the_prompt(client, monkeypatch):
+    captured = {}
+
+    def fake_chat(messages, *args, **kwargs):
+        captured["system"] = messages[0]["content"]
+        return "Tell me about a time when you led a team."
+
+    monkeypatch.setattr(interview.llm, "chat", fake_chat)
+    monkeypatch.setattr(interview.moderation, "moderate_output", lambda t: Verdict(allowed=True))
+    headers = auth_header(client)
+    save_cv(client, headers)
+
+    res = client.post(
+        "/api/interview/start", headers=headers, json={"interview_type": "competency"}
+    ).json()
+    assert res["interview_type"] == "competency"
+    assert "competency-based interview" in captured["system"]
+    # every type must forbid questions the candidate cannot answer out loud
+    assert "write or run code" in captured["system"]
+
+
+def test_interview_type_rejects_unknown(client, monkeypatch):
+    mock_llm(monkeypatch)
+    headers = auth_header(client)
+    save_cv(client, headers)
+    res = client.post("/api/interview/start", headers=headers, json={"interview_type": "coding"})
+    assert res.status_code == 422
+
+
 def test_start_and_answer_flow(client, monkeypatch):
     mock_llm(monkeypatch)
     monkeypatch.setattr(interview.settings, "interview_max_questions", 2)

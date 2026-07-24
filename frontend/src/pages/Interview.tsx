@@ -7,6 +7,7 @@ import {
   startInterview,
   transcribeAudio,
   type DeliveryMetrics,
+  type InterviewType,
   type NonverbalMetrics,
 } from "../api";
 import { recordingSupported, startCapture, type Capture } from "../capture";
@@ -16,7 +17,9 @@ import {
   Card,
   CardBody,
   CardTitle,
+  Label,
   MicIcon,
+  Select,
   SpeakerIcon,
   TextArea,
   Toggle,
@@ -34,6 +37,14 @@ function message(err: unknown) {
   return err instanceof Error ? err.message : String(err);
 }
 
+const INTERVIEW_TYPE_HINTS: Record<InterviewType, string> = {
+  general: "A realistic blend: an opener, then behavioural, competency and role-specific questions.",
+  behavioural: "Questions about you, your motivation and your fit, like why this role and company.",
+  competency: "Structured 'tell me about a time when you...' questions that probe specific competencies.",
+  technical: "Spoken role knowledge and problem-solving, discussed out loud. No coding exercises.",
+  strengths: "What you enjoy, what you are good at, and how your strengths fit the role.",
+};
+
 export default function Interview() {
   const [sessionId, setSessionId] = useState<number | null>(null);
   const [question, setQuestion] = useState<string | null>(null);
@@ -46,6 +57,7 @@ export default function Interview() {
   const [error, setError] = useState("");
 
   const supported = recordingSupported();
+  const [interviewType, setInterviewType] = useState<InterviewType>("general");
   const [voiceMode, setVoiceMode] = useState(supported);
   const [cameraOn, setCameraOn] = useState(false);
   const [recording, setRecording] = useState(false);
@@ -126,7 +138,7 @@ export default function Interview() {
     setMetrics(null);
     setNonverbal(null);
     try {
-      const res = await startInterview(voiceMode ? "voice" : "text");
+      const res = await startInterview(voiceMode ? "voice" : "text", interviewType);
       setSessionId(res.session_id);
       setQuestion(res.question);
     } catch (err) {
@@ -203,6 +215,22 @@ export default function Interview() {
         <Card>
           <CardBody className="space-y-4">
             <CardTitle>Set up your interview</CardTitle>
+            <div>
+              <Label>Interview type</Label>
+              <Select
+                value={interviewType}
+                onChange={(e) => setInterviewType(e.target.value as InterviewType)}
+              >
+                <option value="general">General (a realistic mix)</option>
+                <option value="behavioural">Behavioural (about you and your fit)</option>
+                <option value="competency">Competency-based (tell me about a time when...)</option>
+                <option value="technical">Technical (spoken, no coding)</option>
+                <option value="strengths">Strengths-based</option>
+              </Select>
+              <p className="mt-1.5 text-xs text-slate-500">
+                {INTERVIEW_TYPE_HINTS[interviewType]}
+              </p>
+            </div>
             {supported ? (
               <div className="space-y-3">
                 <Toggle

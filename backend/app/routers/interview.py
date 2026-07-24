@@ -56,6 +56,7 @@ def start(
     db: Session = Depends(get_db),
 ) -> StartResponse:
     mode = data.mode if data else "text"
+    interview_type = data.interview_type if data else "general"
     profile = _get_or_create(db, current_user)
     if not profile.cv_text.strip():
         raise HTTPException(status_code=400, detail="Add your CV before starting an interview")
@@ -71,11 +72,22 @@ def start(
 
     try:
         session, question = interview.start(
-            db, current_user, profile.cv_text, profile.jd_text, profile.company_context, mode
+            db,
+            current_user,
+            profile.cv_text,
+            profile.jd_text,
+            profile.company_context,
+            mode,
+            interview_type,
         )
     except Exception as exc:
         raise HTTPException(status_code=502, detail=f"Could not start interview: {exc}") from exc
-    return StartResponse(session_id=session.id, question=question, mode=session.mode)
+    return StartResponse(
+        session_id=session.id,
+        question=question,
+        mode=session.mode,
+        interview_type=session.interview_type,
+    )
 
 
 @router.post("/{session_id}/answer", response_model=AnswerResponse)
@@ -128,6 +140,7 @@ def list_sessions(
             SessionSummary(
                 id=session.id,
                 mode=session.mode,
+                interview_type=session.interview_type,
                 status=session.status,
                 created_at=session.created_at,
                 question_count=len(questions),

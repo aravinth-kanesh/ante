@@ -4,16 +4,19 @@ from typing import Literal
 from pydantic import BaseModel
 
 Mode = Literal["text", "voice"]
+InterviewType = Literal["general", "behavioural", "competency", "technical", "strengths"]
 
 
 class StartRequest(BaseModel):
     mode: Mode = "text"
+    interview_type: InterviewType = "general"
 
 
 class StartResponse(BaseModel):
     session_id: int
     question: str
     mode: Mode
+    interview_type: InterviewType
 
 
 class DeliveryMetrics(BaseModel):
@@ -137,6 +140,7 @@ class TranscriptResponse(BaseModel):
 class SessionSummary(BaseModel):
     id: int
     mode: Mode
+    interview_type: InterviewType
     status: str
     created_at: datetime
     question_count: int

@@ -5,12 +5,14 @@ from app.models.session import InterviewSession, Turn
 from app.models.user import User
 from app.schemas.interview import DeliveryMetrics, NonverbalMetrics
 from app.services import llm, moderation
-from app.services.prompts import FEEDBACK_PROMPT, INTERVIEWER_PROMPT
+from app.services.prompts import FEEDBACK_PROMPT, INTERVIEW_STYLES, INTERVIEWER_PROMPT
 from app.services.text import strip_markdown
 
 
 def _system(session: InterviewSession) -> dict:
+    style = INTERVIEW_STYLES.get(session.interview_type, INTERVIEW_STYLES["general"])
     content = INTERVIEWER_PROMPT.format(
+        style=style,
         cv=session.cv_snapshot or "(not provided)",
         jd=session.jd_snapshot or "(not provided)",
         context=session.company_context_snapshot or "(not researched)",
@@ -102,11 +104,18 @@ def _delivery_block(session: InterviewSession) -> str:
 
 
 def start(
-    db: Session, user: User, cv: str, jd: str, context: str, mode: str = "text"
+    db: Session,
+    user: User,
+    cv: str,
+    jd: str,
+    context: str,
+    mode: str = "text",
+    interview_type: str = "general",
 ) -> tuple[InterviewSession, str]:
     session = InterviewSession(
         user_id=user.id,
         mode=mode,
+        interview_type=interview_type,
         cv_snapshot=cv,
         jd_snapshot=jd,
         company_context_snapshot=context,

@@ -12,6 +12,14 @@ function formatDate(iso: string): string {
   return Number.isNaN(date.getTime()) ? iso : date.toLocaleString("en-GB");
 }
 
+const TYPE_LABELS: Record<string, string> = {
+  general: "General",
+  behavioural: "Behavioural",
+  competency: "Competency",
+  technical: "Technical",
+  strengths: "Strengths",
+};
+
 export default function History() {
   const [sessions, setSessions] = useState<SessionSummary[] | null>(null);
   const [error, setError] = useState("");
@@ -75,6 +83,7 @@ export default function History() {
                 </p>
               </Link>
               <div className="flex shrink-0 items-center gap-2">
+                <Badge color="slate">{TYPE_LABELS[s.interview_type] ?? s.interview_type}</Badge>
                 <Badge color={s.mode === "voice" ? "brand" : "slate"}>{s.mode}</Badge>
                 <Badge color={s.status === "finished" ? "green" : "amber"}>{s.status}</Badge>
                 {confirmId === s.id ? (

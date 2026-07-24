@@ -19,7 +19,10 @@ class Base(DeclarativeBase):
 # not ALTER existing tables, so for the long-lived SQLite dev database we add any
 # missing columns here at startup. This stays lightweight in place of Alembic.
 _ADDED_COLUMNS: dict[str, dict[str, str]] = {
-    "interview_sessions": {"mode": "VARCHAR NOT NULL DEFAULT 'text'"},
+    "interview_sessions": {
+        "mode": "VARCHAR NOT NULL DEFAULT 'text'",
+        "interview_type": "VARCHAR NOT NULL DEFAULT 'general'",
+    },
     "turns": {"metrics": "TEXT", "nonverbal": "TEXT"},
     "profiles": {"selected_cv_id": "INTEGER"},
 }
