@@ -8,6 +8,22 @@ function message(err: unknown) {
   return err instanceof Error ? err.message : String(err);
 }
 
+const TYPE_LABELS: Record<string, string> = {
+  general: "General",
+  behavioural: "Behavioural",
+  competency: "Competency-based",
+  technical: "Technical",
+  strengths: "Strengths-based",
+};
+
+// Mirrors the session title the backend builds for the history list.
+function describeSession(detail: InterviewDetail): string {
+  const label = TYPE_LABELS[detail.interview_type] ?? "General";
+  let title = detail.company ? `${detail.company} - ${label} Interview` : `${label} Interview`;
+  if (detail.role) title += ` for ${detail.role}`;
+  return title;
+}
+
 export default function Results() {
   const { id } = useParams();
   const [detail, setDetail] = useState<InterviewDetail | null>(null);
@@ -34,9 +50,13 @@ export default function Results() {
         <div>
           <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Interview results</h1>
           {detail && (
-            <p className="mt-1 text-sm text-slate-500">
-              {detail.status === "finished" ? "Completed" : "In progress"} · {detail.mode} interview
-            </p>
+            <>
+              <p className="mt-1 font-medium text-slate-700">{describeSession(detail)}</p>
+              <p className="mt-0.5 text-sm text-slate-500">
+                {detail.status === "finished" ? "Completed" : "In progress"} · {detail.mode}{" "}
+                interview
+              </p>
+            </>
           )}
         </div>
         <Link to="/history" className="text-sm font-medium text-brand-700 hover:underline">

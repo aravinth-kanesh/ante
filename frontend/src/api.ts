@@ -245,6 +245,7 @@ export interface SessionSummary {
   status: string;
   created_at: string;
   question_count: number;
+  title: string;
   preview: string;
 }
 
@@ -259,6 +260,9 @@ export interface TurnRead {
 export interface InterviewDetail {
   status: string;
   mode: InterviewMode;
+  interview_type: InterviewType;
+  company: string;
+  role: string;
   turns: TurnRead[];
 }
 

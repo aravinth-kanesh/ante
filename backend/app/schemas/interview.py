@@ -134,6 +134,9 @@ class TurnRead(BaseModel):
 class TranscriptResponse(BaseModel):
     status: str
     mode: Mode
+    interview_type: InterviewType
+    company: str = ""
+    role: str = ""
     turns: list[TurnRead]
 
 
@@ -144,4 +147,5 @@ class SessionSummary(BaseModel):
     status: str
     created_at: datetime
     question_count: int
+    title: str
     preview: str

@@ -79,6 +79,8 @@ def start(
             profile.company_context,
             mode,
             interview_type,
+            profile.company,
+            profile.role,
         )
     except Exception as exc:
         raise HTTPException(status_code=502, detail=f"Could not start interview: {exc}") from exc
@@ -133,6 +135,15 @@ def list_sessions(
         .order_by(InterviewSession.created_at.desc(), InterviewSession.id.desc())
         .all()
     )
+    # Number repeats of the same interview type for the same company and role,
+    # counting from the oldest so a session's number never changes.
+    seen: dict[tuple[str, str, str], int] = {}
+    seq_by_id: dict[int, int] = {}
+    for session in sorted(sessions, key=lambda s: (s.created_at, s.id)):
+        key = (session.company, session.role, session.interview_type)
+        seen[key] = seen.get(key, 0) + 1
+        seq_by_id[session.id] = seen[key]
+
     summaries: list[SessionSummary] = []
     for session in sessions:
         questions = [t for t in session.turns if t.kind == "question"]
@@ -144,6 +155,9 @@ def list_sessions(
                 status=session.status,
                 created_at=session.created_at,
                 question_count=len(questions),
+                title=interview.session_title(
+                    session.company, session.role, session.interview_type, seq_by_id[session.id]
+                ),
                 preview=questions[0].content if questions else "(no questions)",
             )
         )
@@ -160,6 +174,9 @@ def transcript(
     return TranscriptResponse(
         status=session.status,
         mode=session.mode,
+        interview_type=session.interview_type,
+        company=session.company,
+        role=session.role,
         turns=[_turn_read(t) for t in session.turns],
     )
 

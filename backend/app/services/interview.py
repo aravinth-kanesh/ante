@@ -9,6 +9,33 @@ from app.services.prompts import FEEDBACK_PROMPT, INTERVIEW_STYLES, INTERVIEWER_
 from app.services.text import strip_markdown
 
 
+TYPE_LABELS = {
+    "general": "General",
+    "behavioural": "Behavioural",
+    "competency": "Competency-based",
+    "technical": "Technical",
+    "strengths": "Strengths-based",
+}
+
+
+def session_title(company: str, role: str, interview_type: str, seq: int = 1) -> str:
+    """A readable session title, e.g. 'Cognizant - Behavioural Interview for Analyst 2'.
+
+    `seq` numbers repeats of the same interview type for the same company and role;
+    the first of a kind is unnumbered.
+    """
+    label = TYPE_LABELS.get(interview_type, TYPE_LABELS["general"])
+    company = (company or "").strip()
+    role = (role or "").strip()
+
+    title = f"{company} - {label} Interview" if company else f"{label} Interview"
+    if role:
+        title += f" for {role}"
+    if seq > 1:
+        title += f" {seq}"
+    return title
+
+
 def _system(session: InterviewSession) -> dict:
     style = INTERVIEW_STYLES.get(session.interview_type, INTERVIEW_STYLES["general"])
     content = INTERVIEWER_PROMPT.format(
@@ -111,11 +138,15 @@ def start(
     context: str,
     mode: str = "text",
     interview_type: str = "general",
+    company: str = "",
+    role: str = "",
 ) -> tuple[InterviewSession, str]:
     session = InterviewSession(
         user_id=user.id,
         mode=mode,
         interview_type=interview_type,
+        company=company,
+        role=role,
         cv_snapshot=cv,
         jd_snapshot=jd,
         company_context_snapshot=context,

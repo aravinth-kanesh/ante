@@ -12,14 +12,6 @@ function formatDate(iso: string): string {
   return Number.isNaN(date.getTime()) ? iso : date.toLocaleString("en-GB");
 }
 
-const TYPE_LABELS: Record<string, string> = {
-  general: "General",
-  behavioural: "Behavioural",
-  competency: "Competency",
-  technical: "Technical",
-  strengths: "Strengths",
-};
-
 export default function History() {
   const [sessions, setSessions] = useState<SessionSummary[] | null>(null);
   const [error, setError] = useState("");
@@ -76,14 +68,13 @@ export default function History() {
           <Card key={s.id} className="transition-shadow hover:shadow-lift">
             <div className="flex items-center justify-between gap-4 p-5">
               <Link to={`/results/${s.id}`} className="min-w-0 flex-1">
-                <p className="truncate font-medium text-slate-900">{s.preview}</p>
+                <p className="truncate font-medium text-slate-900">{s.title}</p>
                 <p className="mt-1 text-xs text-slate-500">
                   {formatDate(s.created_at)} · {s.question_count} question
                   {s.question_count === 1 ? "" : "s"}
                 </p>
               </Link>
               <div className="flex shrink-0 items-center gap-2">
-                <Badge color="slate">{TYPE_LABELS[s.interview_type] ?? s.interview_type}</Badge>
                 <Badge color={s.mode === "voice" ? "brand" : "slate"}>{s.mode}</Badge>
                 <Badge color={s.status === "finished" ? "green" : "amber"}>{s.status}</Badge>
                 {confirmId === s.id ? (

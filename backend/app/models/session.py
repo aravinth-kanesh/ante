@@ -19,6 +19,8 @@ class InterviewSession(Base):
     status: Mapped[str] = mapped_column(String, default="active")  # active | finished
     mode: Mapped[str] = mapped_column(String, default="text")  # text | voice
     interview_type: Mapped[str] = mapped_column(String, default="general")
+    company: Mapped[str] = mapped_column(String, default="")  # snapshot, for the session title
+    role: Mapped[str] = mapped_column(String, default="")
     cv_snapshot: Mapped[str] = mapped_column(Text, default="")
     jd_snapshot: Mapped[str] = mapped_column(Text, default="")
     company_context_snapshot: Mapped[str] = mapped_column(Text, default="")

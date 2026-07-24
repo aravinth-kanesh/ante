@@ -22,6 +22,8 @@ _ADDED_COLUMNS: dict[str, dict[str, str]] = {
     "interview_sessions": {
         "mode": "VARCHAR NOT NULL DEFAULT 'text'",
         "interview_type": "VARCHAR NOT NULL DEFAULT 'general'",
+        "company": "VARCHAR NOT NULL DEFAULT ''",
+        "role": "VARCHAR NOT NULL DEFAULT ''",
     },
     "turns": {"metrics": "TEXT", "nonverbal": "TEXT"},
     "profiles": {"selected_cv_id": "INTEGER"},

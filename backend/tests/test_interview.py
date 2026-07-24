@@ -1,4 +1,4 @@
-from app.services import interview
+from app.services import interview, research
 from app.services.moderation import Verdict
 
 
@@ -297,6 +297,41 @@ def test_list_sessions_newest_first_and_scoped(client, monkeypatch):
 
 def test_list_sessions_requires_auth(client):
     assert client.get("/api/interview").status_code == 401
+
+
+def test_session_title_formats():
+    assert (
+        interview.session_title("Cognizant", "Software Engineer Intern", "behavioural")
+        == "Cognizant - Behavioural Interview for Software Engineer Intern"
+    )
+    # repeats of the same kind are numbered, the first is not
+    assert (
+        interview.session_title("Cognizant", "Software Engineer Intern", "behavioural", 2)
+        == "Cognizant - Behavioural Interview for Software Engineer Intern 2"
+    )
+    # graceful when the company or role is unknown
+    assert interview.session_title("", "", "technical") == "Technical Interview"
+    assert interview.session_title("", "Analyst", "general") == "General Interview for Analyst"
+
+
+def test_list_sessions_titles_number_repeats(client, monkeypatch):
+    mock_llm(monkeypatch)
+    headers = auth_header(client, "titles@example.com")
+    save_cv(client, headers)
+    # research fills company/role on the profile, which the session snapshots
+    monkeypatch.setattr(research, "extract_company_role", lambda jd: ("Cognizant", "Analyst"))
+    monkeypatch.setattr(research, "research_company", lambda c, r: "context")
+    client.put("/api/profile", headers=headers, json={"jd_text": "Cognizant analyst role"})
+
+    for _ in range(2):
+        client.post("/api/interview/start", headers=headers, json={"interview_type": "behavioural"})
+
+    titles = [s["title"] for s in client.get("/api/interview", headers=headers).json()]
+    # newest first, so the second (numbered) session comes first
+    assert titles == [
+        "Cognizant - Behavioural Interview for Analyst 2",
+        "Cognizant - Behavioural Interview for Analyst",
+    ]
 
 
 def test_delete_session(client, monkeypatch):
