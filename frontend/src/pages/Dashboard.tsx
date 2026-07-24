@@ -30,8 +30,9 @@ export default function Dashboard() {
 
   const [activeCv, setActiveCv] = useState<Cv | null>(null);
   const [jd, setJd] = useState("");
+  const [savedJd, setSavedJd] = useState(""); // what is persisted, to show saved state
   const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
+  const [saveError, setSaveError] = useState("");
 
   const [questions, setQuestions] = useState<PrepQuestion[]>([]);
   const [generating, setGenerating] = useState(false);
@@ -49,7 +50,10 @@ export default function Dashboard() {
       })
       .catch(() => setHealth("down"));
     getProfile()
-      .then((p) => setJd(p.jd_text))
+      .then((p) => {
+        setJd(p.jd_text);
+        setSavedJd(p.jd_text);
+      })
       .catch(() => {});
     listCvs()
       .then((cvs) => setActiveCv(cvs.find((c) => c.selected) ?? null))
@@ -59,10 +63,12 @@ export default function Dashboard() {
   async function saveContext(e: FormEvent) {
     e.preventDefault();
     setSaving(true);
-    setSaved(false);
+    setSaveError("");
     try {
       await saveJobDescription(jd);
-      setSaved(true);
+      setSavedJd(jd);
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : String(err));
     } finally {
       setSaving(false);
     }
@@ -91,6 +97,8 @@ export default function Dashboard() {
       setResearching(false);
     }
   }
+
+  const jdChanged = jd !== savedJd;
 
   return (
     <div className="space-y-6">
@@ -175,10 +183,16 @@ export default function Dashboard() {
                 placeholder="Paste the job description..."
               />
               <div className="mt-3 flex items-center gap-3">
-                <Button type="submit" loading={saving}>
+                <Button type="submit" loading={saving} disabled={!jdChanged}>
                   Save
                 </Button>
-                {saved && <span className="text-sm text-green-600">Saved</span>}
+                {saveError && <span className="text-sm text-red-600">{saveError}</span>}
+                {!saveError && jdChanged && (
+                  <span className="text-sm text-amber-600">Unsaved changes</span>
+                )}
+                {!saveError && !jdChanged && jd.trim() && (
+                  <span className="text-sm text-green-600">Saved</span>
+                )}
               </div>
             </form>
           </CardBody>
