@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
+import { listServerVoices, type ServerVoice } from "../api";
 import { WhyAnteFull } from "../components/WhyAnte";
 import {
+  Badge,
   Button,
   Card,
   CardBody,
@@ -10,47 +12,65 @@ import {
   SpeakerIcon,
   SpeakingIndicator,
 } from "../components/ui";
-import { getVoiceURI, setVoiceURI } from "../settings";
-import { cancelSpeech, listEnglishVoices, onVoicesReady, speak } from "../speech";
+import { getVoiceId, setVoiceId } from "../settings";
+import { listEnglishVoices, onVoicesReady } from "../speech";
+import { BROWSER_PREFIX, SERVER_PREFIX, cancelVoice, speakText } from "../voice";
 
 const SAMPLE =
   "Hello, thanks for coming in today. Could you start by telling me a little about yourself?";
 
 export default function Settings() {
-  const supported = "speechSynthesis" in window;
-  const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
+  const [serverVoices, setServerVoices] = useState<ServerVoice[]>([]);
+  const [serverAvailable, setServerAvailable] = useState<boolean | null>(null);
+  const [browserVoices, setBrowserVoices] = useState<SpeechSynthesisVoice[]>([]);
   const [selected, setSelected] = useState("");
   const [speaking, setSpeaking] = useState(false);
 
   // Stop any preview if the user navigates away.
-  useEffect(() => cancelSpeech, []);
+  useEffect(() => cancelVoice, []);
 
   useEffect(() => {
-    return onVoicesReady(() => {
-      const list = listEnglishVoices();
-      setVoices(list);
-      const saved = getVoiceURI();
-      const fallback = list.find((v) => v.lang === "en-GB")?.voiceURI ?? list[0]?.voiceURI ?? "";
-      setSelected(saved && list.some((v) => v.voiceURI === saved) ? saved : fallback);
-    });
+    listServerVoices()
+      .then((res) => {
+        setServerVoices(res.voices);
+        setServerAvailable(res.available);
+      })
+      .catch(() => setServerAvailable(false));
   }, []);
 
-  function preview(uri: string) {
-    if (!uri) return;
+  useEffect(() => onVoicesReady(() => setBrowserVoices(listEnglishVoices())), []);
+
+  // Pick up the saved choice once the options are known, else default to the
+  // best available: a server voice if there is one.
+  useEffect(() => {
+    if (serverAvailable === null) return;
+    const saved = getVoiceId();
+    if (saved) {
+      setSelected(saved);
+      return;
+    }
+    if (serverVoices.length > 0) setSelected(SERVER_PREFIX + serverVoices[0].id);
+    else if (browserVoices.length > 0) setSelected(BROWSER_PREFIX + browserVoices[0].voiceURI);
+  }, [serverAvailable, serverVoices, browserVoices]);
+
+  function preview(id: string) {
+    if (!id) return;
     setSpeaking(true);
-    speak(SAMPLE, { voiceURI: uri, onEnd: () => setSpeaking(false) });
+    speakText(SAMPLE, { voiceId: id, onEnd: () => setSpeaking(false) });
   }
 
-  function choose(uri: string) {
-    setSelected(uri);
-    setVoiceURI(uri || null);
-    preview(uri);
+  function choose(id: string) {
+    setSelected(id);
+    setVoiceId(id);
+    preview(id);
   }
 
   function stopPreview() {
-    cancelSpeech();
+    cancelVoice();
     setSpeaking(false);
   }
+
+  const hasAnyVoice = serverVoices.length > 0 || browserVoices.length > 0;
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
@@ -61,29 +81,43 @@ export default function Settings() {
 
       <Card>
         <CardBody className="space-y-4">
-          <CardTitle>Interviewer voice</CardTitle>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <CardTitle>Interviewer voice</CardTitle>
+            {serverAvailable === true && <Badge color="green">Natural voices installed</Badge>}
+            {serverAvailable === false && <Badge color="slate">Using your device voices</Badge>}
+          </div>
           <p className="text-sm text-slate-500">
             Choose the voice that reads out the interviewer's questions.
           </p>
 
-          {!supported ? (
-            <p className="text-sm text-slate-500">
-              Your browser does not support speech synthesis. Chrome or Edge work best.
-            </p>
-          ) : voices.length === 0 ? (
+          {!hasAnyVoice ? (
             <p className="text-sm text-slate-500">No voices were found on this device.</p>
           ) : (
             <>
               <div>
                 <Label>Voice</Label>
                 <Select value={selected} onChange={(e) => choose(e.target.value)}>
-                  {voices.map((v) => (
-                    <option key={v.voiceURI} value={v.voiceURI}>
-                      {v.name} - {v.lang}
-                    </option>
-                  ))}
+                  {serverVoices.length > 0 && (
+                    <optgroup label="Natural voices (recommended)">
+                      {serverVoices.map((v) => (
+                        <option key={v.id} value={SERVER_PREFIX + v.id}>
+                          {v.label}
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
+                  {browserVoices.length > 0 && (
+                    <optgroup label="Your device's voices">
+                      {browserVoices.map((v) => (
+                        <option key={v.voiceURI} value={BROWSER_PREFIX + v.voiceURI}>
+                          {v.name} - {v.lang}
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
                 </Select>
               </div>
+
               <div className="flex items-center gap-3">
                 <Button
                   variant="secondary"
@@ -101,10 +135,12 @@ export default function Settings() {
                 </Button>
                 {speaking && <span className="text-sm text-slate-500">Playing...</span>}
               </div>
+
               <p className="text-xs leading-relaxed text-slate-500">
-                Voices are provided by your device and browser, and their names usually indicate
-                the speaker (male or female). For the most natural voices, Chrome or Edge on macOS
-                or Windows offer higher-quality options. Your choice is saved on this device.
+                {serverAvailable
+                  ? "The natural voices are generated on the server by a local model, so they sound close to a real person and nothing you type is sent to a third party. Your device's own voices are listed as a fallback."
+                  : "Your device's voices are being used. For much more natural speech, install the voice model on the server (see the README), which runs locally and free."}{" "}
+                Your choice is saved on this device.
               </p>
             </>
           )}

@@ -23,12 +23,13 @@ import {
   MicIcon,
   Select,
   SpeakerIcon,
+  SpeakingIndicator,
   TextArea,
   Toggle,
   VideoIcon,
 } from "../components/ui";
 import { deliverySummary, nonverbalSummary } from "../format";
-import { cancelSpeech, speak } from "../speech";
+import { cancelVoice, speakText } from "../voice";
 
 interface Exchange {
   question: string;
@@ -65,18 +66,33 @@ export default function Interview() {
   const [recording, setRecording] = useState(false);
   const [starting, setStarting] = useState(false);
   const [analysing, setAnalysing] = useState(false);
+  const [speaking, setSpeaking] = useState(false);
   const captureRef = useRef<Capture | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
 
   // Speak each new interviewer question while voice mode is on.
   useEffect(() => {
-    if (voiceMode && question) speak(question);
+    if (voiceMode && question) {
+      setSpeaking(true);
+      speakText(question, { onEnd: () => setSpeaking(false) });
+    }
   }, [question, voiceMode]);
+
+  function replayQuestion() {
+    if (!question) return;
+    setSpeaking(true);
+    speakText(question, { onEnd: () => setSpeaking(false) });
+  }
+
+  function stopSpeaking() {
+    cancelVoice();
+    setSpeaking(false);
+  }
 
   // Stop any speech or capture if the user leaves the page.
   useEffect(() => {
     return () => {
-      cancelSpeech();
+      cancelVoice();
       captureRef.current?.cancel();
     };
   }, []);
@@ -86,14 +102,16 @@ export default function Interview() {
     captureRef.current = null;
     if (videoRef.current) videoRef.current.srcObject = null;
     setRecording(false);
-    cancelSpeech();
+    cancelVoice();
+    setSpeaking(false);
   }
 
   async function startAnswer() {
     if (starting || recording) return; // guard against a double click during load
     setStarting(true);
     setError("");
-    cancelSpeech(); // do not record the interviewer's own voice
+    cancelVoice(); // do not record the interviewer's own voice
+    setSpeaking(false);
     try {
       const capture = await startCapture({ video: cameraOn });
       captureRef.current = capture;
@@ -290,8 +308,20 @@ export default function Interview() {
                 <div className="flex items-center justify-between">
                   <Badge color="brand">Question {history.length + 1}</Badge>
                   {voiceMode && (
-                    <Button variant="ghost" size="sm" onClick={() => speak(question)}>
-                      <SpeakerIcon className="h-4 w-4" /> Replay
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => (speaking ? stopSpeaking() : replayQuestion())}
+                    >
+                      {speaking ? (
+                        <>
+                          <SpeakingIndicator className="h-4 text-brand-600" /> Speaking
+                        </>
+                      ) : (
+                        <>
+                          <SpeakerIcon className="h-4 w-4" /> Replay
+                        </>
+                      )}
                     </Button>
                   )}
                 </div>

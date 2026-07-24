@@ -45,6 +45,17 @@ class Settings(BaseSettings):
     smile_threshold: float = 0.3  # mean smile blendshape at or above this counts as smiling
     nonverbal_max_samples: int = 3000  # cap the per-answer sample array defensively
 
+    # Interviewer voice. Kokoro is a small open-weight model run locally, so the
+    # question text never leaves this machine and there is no API key or cost.
+    # Fetch the model with `python scripts/fetch_tts_model.py`; without it the
+    # frontend falls back to the browser's own voices.
+    tts_enabled: bool = True
+    tts_model_path: str = "models/kokoro-v1.0.onnx"
+    tts_voices_path: str = "models/voices-v1.0.bin"
+    tts_voice: str = "bf_emma"  # British female by default
+    tts_speed: float = 1.0
+    tts_max_chars: int = 800
+
     @property
     def cors_origins(self) -> list[str]:
         return [o.strip() for o in self.backend_cors_origins.split(",") if o.strip()]

@@ -34,8 +34,15 @@ source .venv/bin/activate
 pip install -r requirements.txt
 
 cp .env.example .env        # then put your real key in .env
+python scripts/fetch_tts_model.py   # one-off: the interviewer's voice model
 uvicorn app.main:app --reload --port 8000
 ```
+
+`fetch_tts_model.py` downloads the Kokoro voice model (about 340 MB, gitignored)
+used to speak the interviewer's questions. It runs locally on CPU, so there is no
+API key or cost and the question text never leaves the machine. Skip it if you
+like: the app falls back to the browser's own voices, which sound noticeably more
+robotic.
 
 Check it (health is public; chat requires a logged-in user):
 
@@ -85,6 +92,10 @@ with passwords hashed using bcrypt. Auth is via JWT bearer tokens. Set a strong
 - `POST /api/speech/transcribe` transcribes a spoken answer (multipart audio) with
   faster-whisper and returns the transcript plus delivery metrics (speaking pace,
   pauses, filler words).
+- `GET /api/speech/voices` lists the interviewer voices this server can synthesise,
+  and `POST /api/speech/say` returns WAV audio for a line of text, spoken by a
+  local Kokoro model (British and American voices, no API key, nothing sent
+  externally). The frontend falls back to browser voices when the model is absent.
 - `POST /api/vision/analyse` aggregates webcam samples (sent from the browser, no
   image data) into nonverbal metrics (eye contact, head steadiness, expression,
   posture). Delivery and nonverbal metrics are attached to the answer and inform

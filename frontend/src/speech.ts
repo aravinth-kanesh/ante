@@ -2,8 +2,6 @@
 // speechSynthesis. Answer capture is handled separately (recorded and transcribed
 // server-side). The interviewer voice is user-selectable (see settings.ts).
 
-import { getVoiceURI } from "./settings";
-
 const EN_GB = "en-GB";
 // Names that tend to mark a higher-quality (more natural) system voice.
 const HIGH_QUALITY = /premium|enhanced|natural|neural/i;
@@ -32,13 +30,8 @@ export function onVoicesReady(cb: () => void): () => void {
   return () => window.speechSynthesis.removeEventListener("voiceschanged", handler);
 }
 
+/** The best default browser voice: British English, higher quality first. */
 function pickVoice(): SpeechSynthesisVoice | null {
-  const voices = window.speechSynthesis.getVoices();
-  const saved = getVoiceURI();
-  if (saved) {
-    const match = voices.find((v) => v.voiceURI === saved);
-    if (match) return match;
-  }
   const english = listEnglishVoices();
   return english.find((v) => v.lang === EN_GB) ?? english[0] ?? null;
 }

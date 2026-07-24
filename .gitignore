@@ -18,6 +18,9 @@ dist/
 # MediaPipe assets (fetched by `npm run setup`, not committed)
 frontend/public/mediapipe/
 
+# Kokoro voice model (fetched by `python scripts/fetch_tts_model.py`)
+backend/models/
+
 # Editor / OS
 .DS_Store
 .vscode/

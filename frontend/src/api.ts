@@ -194,6 +194,26 @@ export async function transcribeAudio(
   return request("/api/speech/transcribe", { method: "POST", body: form });
 }
 
+export interface ServerVoice {
+  id: string;
+  label: string;
+}
+
+export async function listServerVoices(): Promise<{ available: boolean; voices: ServerVoice[] }> {
+  return request("/api/speech/voices");
+}
+
+/** Synthesise the interviewer's voice on the server. Returns WAV audio. */
+export async function synthesizeSpeech(text: string, voice: string): Promise<Blob> {
+  const res = await fetch("/api/speech/say", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+    body: JSON.stringify({ text, voice }),
+  });
+  if (!res.ok) throw new Error("Could not synthesise speech");
+  return res.blob();
+}
+
 export interface NonverbalSample {
   face_detected: boolean;
   yaw: number;
