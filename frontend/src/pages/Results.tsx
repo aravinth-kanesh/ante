@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { getInterview, type InterviewDetail } from "../api";
+import FeedbackView from "../components/FeedbackView";
 import { Badge, Card, CardBody, CardTitle, MicIcon, VideoIcon } from "../components/ui";
 import { deliverySummary, nonverbalSummary } from "../format";
 
@@ -41,7 +42,6 @@ export default function Results() {
   }, [id]);
 
   const turns = detail?.turns ?? [];
-  const feedback = turns.find((t) => t.kind === "feedback");
   const exchanges = turns.filter((t) => t.kind === "question" || t.kind === "answer");
 
   return (
@@ -103,13 +103,13 @@ export default function Results() {
           <Card>
             <CardBody>
               <CardTitle>Feedback</CardTitle>
-              {feedback ? (
-                <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-slate-700">
-                  {feedback.content}
-                </p>
-              ) : (
-                <p className="mt-3 text-sm text-slate-500">This interview has no feedback yet.</p>
-              )}
+              <div className="mt-3">
+                {detail.feedback ? (
+                  <FeedbackView report={detail.feedback} />
+                ) : (
+                  <p className="text-sm text-slate-500">This interview has no feedback yet.</p>
+                )}
+              </div>
             </CardBody>
           </Card>
         </>

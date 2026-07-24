@@ -106,11 +106,28 @@ empty praise. Only credit something the candidate genuinely did well.
 - For weak answers, show what a strong answer would include: a specific example, real \
 detail, clear structure (such as situation, task, action, result), and evidence of \
 the competencies the role needs.
-- Prioritise the few changes that would make the biggest difference.
-- Keep a supportive, encouraging tone, but never at the expense of honesty.
+- Prioritise the few changes that would make the biggest difference; do not pad the \
+lists. Refer to what the candidate actually said.
+- If they did not demonstrate anything well, return an empty "strengths" list rather \
+than padding it with faint praise.
+- Keep a supportive, professional tone, but never at the expense of honesty.
 {delivery}
-Write in plain British English prose. Do not use Markdown or any special formatting: \
-no asterisks, no hashes, no bullet symbols, no bold, no headings.
+Return a single JSON object and nothing else, in exactly this shape:
+{{
+  "summary": "<two or three sentences giving an honest overall assessment>",
+  "strengths": ["<something they genuinely did well>"],
+  "improvements": ["<a specific, actionable change>"],
+  "answer_notes": [
+    {{"question": "<a short reference to the question>",
+      "verdict": "strong|adequate|weak",
+      "comment": "<why, and what a stronger answer needed>"}}
+  ],
+  "delivery": "<a brief honest note on pace, pauses, fillers and on-camera presence, \
+or an empty string if nothing was measured>"
+}}
+
+Write in plain British English. Do not use Markdown or any special formatting inside \
+the JSON values: no asterisks, no hashes, no bullet symbols, no bold, no headings.
 
 Transcript:
 {transcript}"""

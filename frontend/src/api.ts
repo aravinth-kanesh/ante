@@ -234,7 +234,21 @@ export async function answerInterview(
   });
 }
 
-export async function finishInterview(sessionId: number): Promise<{ feedback: string }> {
+export interface AnswerNote {
+  question: string;
+  verdict: "strong" | "adequate" | "weak";
+  comment: string;
+}
+
+export interface FeedbackReport {
+  summary: string;
+  strengths: string[];
+  improvements: string[];
+  answer_notes: AnswerNote[];
+  delivery: string;
+}
+
+export async function finishInterview(sessionId: number): Promise<{ feedback: FeedbackReport }> {
   return request(`/api/interview/${sessionId}/finish`, { method: "POST" });
 }
 
@@ -263,6 +277,7 @@ export interface InterviewDetail {
   interview_type: InterviewType;
   company: string;
   role: string;
+  feedback: FeedbackReport | null;
   turns: TurnRead[];
 }
 

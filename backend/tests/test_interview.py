@@ -220,17 +220,34 @@ def test_feedback_includes_nonverbal_when_present(client, monkeypatch):
     assert "diagnose emotion" in prompt
 
 
-def test_feedback_is_plain_text(client, monkeypatch):
-    monkeypatch.setattr(
-        interview.llm, "chat", lambda *a, **k: "### **Feedback**\n1. **Weak** answer.\n- vague"
+def test_feedback_is_structured_and_plain_text(client, monkeypatch):
+    reply = (
+        '{"summary": "### **Weak** overall.", "strengths": [], '
+        '"improvements": ["Give a **specific** example."], '
+        '"answer_notes": [{"question": "About you", "verdict": "weak", "comment": "Too vague."}], '
+        '"delivery": "Slow pace."}'
     )
+    monkeypatch.setattr(interview.llm, "chat", lambda *a, **k: reply)
     monkeypatch.setattr(interview.moderation, "moderate_output", lambda t: Verdict(allowed=True))
     headers = auth_header(client)
     save_cv(client, headers)
     sid = client.post("/api/interview/start", headers=headers).json()["session_id"]
 
-    feedback = client.post(f"/api/interview/{sid}/finish", headers=headers).json()["feedback"]
-    assert "*" not in feedback and "#" not in feedback
+    report = client.post(f"/api/interview/{sid}/finish", headers=headers).json()["feedback"]
+    assert report["summary"] == "Weak overall."  # markdown stripped
+    assert report["strengths"] == []  # not padded with faint praise
+    assert report["improvements"] == ["Give a specific example."]
+    assert report["answer_notes"][0]["verdict"] == "weak"
+
+    # the stored transcript exposes the same structured report
+    detail = client.get(f"/api/interview/{sid}", headers=headers).json()
+    assert detail["feedback"]["summary"] == "Weak overall."
+
+
+def test_parse_feedback_falls_back_to_prose():
+    report = interview.parse_feedback("Just some prose, no JSON here.")
+    assert report.summary == "Just some prose, no JSON here."
+    assert report.strengths == [] and report.improvements == []
 
 
 def test_feedback_has_no_delivery_block_for_typed_answers(client, monkeypatch):

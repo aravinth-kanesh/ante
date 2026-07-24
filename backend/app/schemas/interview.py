@@ -119,8 +119,24 @@ class AnswerResponse(BaseModel):
     done: bool = False
 
 
+class AnswerNote(BaseModel):
+    question: str
+    verdict: Literal["strong", "adequate", "weak"]
+    comment: str
+
+
+class FeedbackReport(BaseModel):
+    """Structured interview feedback. Lists may be empty when nothing applies."""
+
+    summary: str
+    strengths: list[str] = []
+    improvements: list[str] = []
+    answer_notes: list[AnswerNote] = []
+    delivery: str = ""
+
+
 class FeedbackResponse(BaseModel):
-    feedback: str
+    feedback: FeedbackReport
 
 
 class TurnRead(BaseModel):
@@ -137,6 +153,7 @@ class TranscriptResponse(BaseModel):
     interview_type: InterviewType
     company: str = ""
     role: str = ""
+    feedback: FeedbackReport | None = None
     turns: list[TurnRead]
 
 

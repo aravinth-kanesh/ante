@@ -1,9 +1,12 @@
+import json
+import re
+
 from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.models.session import InterviewSession, Turn
 from app.models.user import User
-from app.schemas.interview import DeliveryMetrics, NonverbalMetrics
+from app.schemas.interview import DeliveryMetrics, FeedbackReport, NonverbalMetrics
 from app.services import llm, moderation
 from app.services.prompts import FEEDBACK_PROMPT, INTERVIEW_STYLES, INTERVIEWER_PROMPT
 from app.services.text import strip_markdown
@@ -179,20 +182,51 @@ def answer(
     return question
 
 
-def finish(db: Session, session: InterviewSession) -> str:
+_JSON_OBJECT = re.compile(r"\{.*\}", re.DOTALL)
+
+
+def parse_feedback(raw: str) -> FeedbackReport:
+    """Parse the model's JSON assessment, falling back to a summary-only report."""
+    match = _JSON_OBJECT.search(raw)
+    if match:
+        try:
+            report = FeedbackReport.model_validate(json.loads(match.group()))
+        except ValueError:
+            report = None
+        if report is not None:
+            return FeedbackReport(
+                summary=strip_markdown(report.summary),
+                strengths=[strip_markdown(s) for s in report.strengths if s.strip()],
+                improvements=[strip_markdown(s) for s in report.improvements if s.strip()],
+                answer_notes=[
+                    note.model_copy(
+                        update={
+                            "question": strip_markdown(note.question),
+                            "comment": strip_markdown(note.comment),
+                        }
+                    )
+                    for note in report.answer_notes
+                ],
+                delivery=strip_markdown(report.delivery),
+            )
+    # The model did not return usable JSON; keep its prose as the summary.
+    return FeedbackReport(summary=strip_markdown(raw))
+
+
+def finish(db: Session, session: InterviewSession) -> FeedbackReport:
     transcript = "\n".join(
         f"{'Interviewer' if t.role == 'interviewer' else 'Candidate'}: {t.content}"
         for t in session.turns
         if t.kind in ("question", "answer")
     )
     prompt = FEEDBACK_PROMPT.format(transcript=transcript, delivery=_delivery_block(session))
-    feedback = llm.chat([{"role": "user", "content": prompt}])
-    if not moderation.moderate_output(feedback).allowed:
-        feedback = llm.chat([{"role": "user", "content": prompt}])
-    feedback = strip_markdown(feedback)
+    raw = llm.chat([{"role": "user", "content": prompt}])
+    if not moderation.moderate_output(raw).allowed:
+        raw = llm.chat([{"role": "user", "content": prompt}])
+    report = parse_feedback(raw)
 
-    _add_turn(db, session, "interviewer", "feedback", feedback)
+    _add_turn(db, session, "interviewer", "feedback", report.model_dump_json())
     session.status = "finished"
     db.commit()
     db.refresh(session)
-    return feedback
+    return report

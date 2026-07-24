@@ -7,10 +7,12 @@ import {
   startInterview,
   transcribeAudio,
   type DeliveryMetrics,
+  type FeedbackReport,
   type InterviewType,
   type NonverbalMetrics,
 } from "../api";
 import { recordingSupported, startCapture, type Capture } from "../capture";
+import FeedbackView from "../components/FeedbackView";
 import {
   Badge,
   Button,
@@ -52,7 +54,7 @@ export default function Interview() {
   const [metrics, setMetrics] = useState<DeliveryMetrics | null>(null);
   const [nonverbal, setNonverbal] = useState<NonverbalMetrics | null>(null);
   const [history, setHistory] = useState<Exchange[]>([]);
-  const [feedback, setFeedback] = useState("");
+  const [feedback, setFeedback] = useState<FeedbackReport | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -132,7 +134,7 @@ export default function Interview() {
   async function begin() {
     setLoading(true);
     setError("");
-    setFeedback("");
+    setFeedback(null);
     setHistory([]);
     setAnswer("");
     setMetrics(null);
@@ -378,7 +380,7 @@ export default function Interview() {
         <Card>
           <CardBody className="space-y-4">
             <CardTitle>Feedback</CardTitle>
-            <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-700">{feedback}</p>
+            <FeedbackView report={feedback} />
             <div className="flex flex-wrap items-center gap-3 pt-1">
               <Button onClick={begin} loading={loading}>
                 Start another interview

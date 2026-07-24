@@ -9,6 +9,7 @@ from app.schemas.interview import (
     AnswerRequest,
     AnswerResponse,
     DeliveryMetrics,
+    FeedbackReport,
     FeedbackResponse,
     NonverbalMetrics,
     SessionSummary,
@@ -119,10 +120,10 @@ def finish(
 ) -> FeedbackResponse:
     session = _owned(db, session_id, current_user)
     try:
-        feedback = interview.finish(db, session)
+        report = interview.finish(db, session)
     except Exception as exc:
         raise HTTPException(status_code=502, detail=f"Could not generate feedback: {exc}") from exc
-    return FeedbackResponse(feedback=feedback)
+    return FeedbackResponse(feedback=report)
 
 
 @router.get("", response_model=list[SessionSummary])
@@ -171,12 +172,20 @@ def transcript(
     db: Session = Depends(get_db),
 ) -> TranscriptResponse:
     session = _owned(db, session_id, current_user)
+    feedback_turn = next((t for t in session.turns if t.kind == "feedback"), None)
+    feedback = None
+    if feedback_turn:
+        # Newer sessions store a JSON report; older ones stored plain prose.
+        feedback = _parse(FeedbackReport, feedback_turn.content) or FeedbackReport(
+            summary=feedback_turn.content
+        )
     return TranscriptResponse(
         status=session.status,
         mode=session.mode,
         interview_type=session.interview_type,
         company=session.company,
         role=session.role,
+        feedback=feedback,
         turns=[_turn_read(t) for t in session.turns],
     )
 
