@@ -62,9 +62,12 @@ with passwords hashed using bcrypt. Auth is via JWT bearer tokens. Set a strong
 
 - `POST /api/auth/signup` and `POST /api/auth/login` return an access token.
 - `GET /api/auth/me` returns the current user.
-- `GET`/`PUT /api/profile` store the user's CV and job description text.
-- `POST /api/profile/cv` uploads a CV file (PDF, Word or plain text, 2 MB limit),
-  extracts the text and saves it to the account.
+- `GET`/`PUT /api/profile` store the user's job description text (and mirror the
+  active CV's text used by the interview).
+- `GET`/`POST /api/cv`, `POST /api/cv/upload`, `GET`/`PATCH`/`DELETE /api/cv/{id}`
+  and `POST /api/cv/{id}/select` manage a per-account CV library: keep several
+  labelled CVs (e.g. "Finance CV", "Tech CV"), uploaded (PDF/Word/text, 2 MB limit)
+  or pasted, and choose the active one used for interviews and question generation.
 - `POST /api/profile/research` reads the saved job description to identify the
   company and role and writes a short briefing on how they interview.
 - `POST /api/chat` now requires a bearer token.
@@ -119,14 +122,15 @@ npm run setup   # downloads the MediaPipe webcam models into public/ (one-off)
 npm run dev
 ```
 
-Open `http://localhost:5173`. You are taken to a login page; sign up for an
-account, then the dashboard shows the backend health status, a form to save your
-CV and job description, and a box to send a prompt to the model. From the
-dashboard you can start a mock interview or open your interview history. After an
-interview you land on a results page showing every question, your answers with
-their delivery and nonverbal readouts, and the feedback; the history page lists
-past sessions and reopens any of them. The dev server proxies `/api` to the
-backend on port 8000, so run the backend first.
+The frontend is a React + Vite + TypeScript app styled with Tailwind CSS. Open
+`http://localhost:5173` and sign up. The dashboard shows the active CV, a job
+description form, company research and likely questions, and a link to start a
+mock interview. The **CVs** page manages a library of labelled CVs (upload or
+paste, rename, select, delete). **Settings** lets you choose the interviewer's
+voice. After an interview you land on a results page showing every question, your
+answers with their delivery and nonverbal readouts, and the feedback; the history
+page lists past sessions and reopens any of them. The dev server proxies `/api` to
+the backend on port 8000, so run the backend first.
 
 `npm run setup` vendors the MediaPipe models used by the interview's optional
 camera feedback so they are served from the app's own origin (no CDN). It is only
