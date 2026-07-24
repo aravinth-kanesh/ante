@@ -12,7 +12,7 @@ from app.routers import auth, chat, cv, health, interview, prepare, profile, spe
 Base.metadata.create_all(bind=engine)
 ensure_columns()
 
-app = FastAPI(title="AI Interview Practice API")
+app = FastAPI(title="Ante API")
 
 app.add_middleware(
     CORSMiddleware,

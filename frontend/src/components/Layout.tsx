@@ -29,7 +29,7 @@ export default function Layout({ children }: { children: ReactNode }) {
         <div className="mx-auto flex h-16 max-w-5xl items-center justify-between gap-4 px-4">
           <Link to="/" className="flex items-center gap-2.5">
             <Logo />
-            <span className="font-semibold tracking-tight text-slate-900">Interview Coach</span>
+            <span className="font-semibold tracking-tight text-slate-900">Ante</span>
           </Link>
           <nav className="hidden items-center gap-1 sm:flex">
             <NavItem to="/">Dashboard</NavItem>

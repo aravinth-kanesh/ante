@@ -1,12 +1,14 @@
-# AI-Powered Interview Training Application for Students
+# Ante
 
-Foundation for the AI interview training application described in the KURF
-report. It stands up an end-to-end slice: a React frontend calls a FastAPI
-backend, which calls a large language model and returns the reply.
+**Ante** is the AI-powered interview training application for students described
+in the KURF report. A React frontend calls a FastAPI backend, which grounds a
+large language model in the candidate's CV, the job description and research on
+the company, runs an adaptive spoken mock interview, and measures how the
+candidate delivers their answers.
 
-The structure is intentionally minimal but laid out to grow: retrieval over the
-CV and job description, computer-vision analysis, and speech analysis are added
-later as new services and routers.
+The name is Latin for "before": the stake you put down before the hand is played,
+and the antechamber you wait in before the room that matters. It is the
+preparation you do before the interview.
 
 ## Language model endpoint
 

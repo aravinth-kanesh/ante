@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 import Logo from "../components/Logo";
 import PasswordField from "../components/PasswordField";
+import { WhyAnteShort } from "../components/WhyAnte";
 import { Button, Card, CardBody, Input, Label } from "../components/ui";
 
 export default function Login() {
@@ -69,6 +70,9 @@ export default function Login() {
             Sign up
           </Link>
         </p>
+        <div className="mt-8 border-t border-slate-200 pt-5">
+          <WhyAnteShort />
+        </div>
       </div>
     </div>
   );

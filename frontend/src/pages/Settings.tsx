@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { WhyAnteFull } from "../components/WhyAnte";
 import { Button, Card, CardBody, CardTitle, Label, Select, SpeakerIcon } from "../components/ui";
 import { getVoiceURI, setVoiceURI } from "../settings";
 import { listEnglishVoices, onVoicesReady, speak } from "../speech";
@@ -72,6 +73,13 @@ export default function Settings() {
               </p>
             </>
           )}
+        </CardBody>
+      </Card>
+
+      <Card>
+        <CardBody className="space-y-4">
+          <CardTitle>Why it is called Ante</CardTitle>
+          <WhyAnteFull />
         </CardBody>
       </Card>
     </div>
