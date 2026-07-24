@@ -258,3 +258,7 @@ export async function listSessions(): Promise<SessionSummary[]> {
 export async function getInterview(sessionId: number): Promise<InterviewDetail> {
   return request(`/api/interview/${sessionId}`);
 }
+
+export async function deleteInterview(sessionId: number): Promise<{ ok: boolean }> {
+  return request(`/api/interview/${sessionId}`, { method: "DELETE" });
+}

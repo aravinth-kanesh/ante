@@ -263,6 +263,29 @@ def test_list_sessions_requires_auth(client):
     assert client.get("/api/interview").status_code == 401
 
 
+def test_delete_session(client, monkeypatch):
+    mock_llm(monkeypatch)
+    headers = auth_header(client)
+    save_cv(client, headers)
+    sid = client.post("/api/interview/start", headers=headers).json()["session_id"]
+
+    assert client.delete(f"/api/interview/{sid}", headers=headers).status_code == 200
+    assert client.get(f"/api/interview/{sid}", headers=headers).status_code == 404
+    assert client.get("/api/interview", headers=headers).json() == []
+
+
+def test_delete_session_ownership(client, monkeypatch):
+    mock_llm(monkeypatch)
+    owner = auth_header(client, "del-owner@example.com")
+    save_cv(client, owner)
+    sid = client.post("/api/interview/start", headers=owner).json()["session_id"]
+
+    intruder = auth_header(client, "del-intruder@example.com")
+    assert client.delete(f"/api/interview/{sid}", headers=intruder).status_code == 404
+    # still there for the owner
+    assert client.get(f"/api/interview/{sid}", headers=owner).status_code == 200
+
+
 def test_transcript(client, monkeypatch):
     mock_llm(monkeypatch)
     headers = auth_header(client)

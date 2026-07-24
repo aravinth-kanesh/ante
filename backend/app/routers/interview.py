@@ -149,3 +149,16 @@ def transcript(
         mode=session.mode,
         turns=[_turn_read(t) for t in session.turns],
     )
+
+
+@router.delete("/{session_id}")
+def delete_session(
+    session_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> dict:
+    # A candidate can delete their own past interviews (their own data).
+    session = _owned(db, session_id, current_user)
+    db.delete(session)
+    db.commit()
+    return {"ok": True}
