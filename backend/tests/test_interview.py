@@ -316,6 +316,27 @@ def test_list_sessions_requires_auth(client):
     assert client.get("/api/interview").status_code == 401
 
 
+def test_list_backfills_company_for_older_sessions(client, monkeypatch):
+    mock_llm(monkeypatch)
+    headers = auth_header(client, "backfill@example.com")
+    save_cv(client, headers)
+    client.put("/api/profile", headers=headers, json={"jd_text": "Ciena engineer role"})
+
+    # the first run could not identify the company, so the session recorded none
+    monkeypatch.setattr(research, "extract_company_role", lambda jd: ("", ""))
+    monkeypatch.setattr(research, "research_company", lambda c, r: "")
+    client.post("/api/interview/start", headers=headers)
+    assert client.get("/api/interview", headers=headers).json()[0]["title"] == "General Interview"
+
+    # research later identifies the company for the same job description
+    monkeypatch.setattr(research, "extract_company_role", lambda jd: ("Ciena", "Engineer"))
+    monkeypatch.setattr(research, "research_company", lambda c, r: "context")
+    client.post("/api/profile/research", headers=headers)
+
+    titles = [s["title"] for s in client.get("/api/interview", headers=headers).json()]
+    assert titles == ["Ciena - General Interview for Engineer"]
+
+
 def test_session_title_formats():
     assert (
         interview.session_title("Cognizant", "Software Engineer Intern", "behavioural")

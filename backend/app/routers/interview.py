@@ -136,6 +136,19 @@ def list_sessions(
         .order_by(InterviewSession.created_at.desc(), InterviewSession.id.desc())
         .all()
     )
+    # Sessions created before the company and role were recorded show a generic
+    # title. Adopt the profile's company and role when the session was run against
+    # the same job description, so old runs are still identifiable.
+    profile = _get_or_create(db, current_user)
+    backfilled = False
+    for session in sessions:
+        if not session.company and profile.company and session.jd_snapshot == profile.jd_text:
+            session.company = profile.company
+            session.role = profile.role
+            backfilled = True
+    if backfilled:
+        db.commit()
+
     # Number repeats of the same interview type for the same company and role,
     # counting from the oldest so a session's number never changes.
     seen: dict[tuple[str, str, str], int] = {}
