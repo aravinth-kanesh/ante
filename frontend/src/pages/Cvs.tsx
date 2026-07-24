@@ -118,7 +118,7 @@ export default function Cvs() {
                 adding ? "cursor-default opacity-70" : "cursor-pointer"
               }`}
             >
-              {adding ? "Working…" : "Upload a file"}
+              {adding ? "Working..." : "Upload a file"}
               <input
                 type="file"
                 accept=".pdf,.docx,.txt"
@@ -135,7 +135,7 @@ export default function Cvs() {
               value={newText}
               onChange={(e) => setNewText(e.target.value)}
               rows={5}
-              placeholder="Paste your CV text…"
+              placeholder="Paste your CV text..."
             />
           </div>
           <div className="flex items-center gap-3">
@@ -148,7 +148,7 @@ export default function Cvs() {
       </Card>
 
       {/* List */}
-      {!cvs && <p className="text-sm text-slate-500">Loading…</p>}
+      {!cvs && <p className="text-sm text-slate-500">Loading...</p>}
       {cvs && cvs.length === 0 && (
         <p className="text-sm text-slate-500">No CVs yet. Add one above to get started.</p>
       )}

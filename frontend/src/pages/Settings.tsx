@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Button, Card, CardBody, CardTitle, Label, Select } from "../components/ui";
+import { Button, Card, CardBody, CardTitle, Label, Select, SpeakerIcon } from "../components/ui";
 import { getVoiceURI, setVoiceURI } from "../settings";
 import { listEnglishVoices, onVoicesReady, speak } from "../speech";
 
@@ -54,7 +54,7 @@ export default function Settings() {
                 <Select value={selected} onChange={(e) => choose(e.target.value)}>
                   {voices.map((v) => (
                     <option key={v.voiceURI} value={v.voiceURI}>
-                      {v.name} — {v.lang}
+                      {v.name} - {v.lang}
                     </option>
                   ))}
                 </Select>
@@ -63,7 +63,7 @@ export default function Settings() {
                 variant="secondary"
                 onClick={() => selected && speak(SAMPLE, { voiceURI: selected })}
               >
-                🔊 Test voice
+                <SpeakerIcon className="h-4 w-4" /> Test voice
               </Button>
               <p className="text-xs leading-relaxed text-slate-500">
                 Voices are provided by your device and browser, and their names usually indicate

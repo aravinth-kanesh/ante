@@ -15,6 +15,13 @@ def test_strip_markdown_normalises_bullets():
         assert line.strip().startswith("- ")
 
 
+def test_strip_markdown_normalises_em_dashes_and_ellipsis():
+    out = strip_markdown("Tell me about C++—could you walk me through a project…")
+    assert "—" not in out and "…" not in out
+    assert "C++ - could" in out
+    assert out.endswith("...")
+
+
 def test_strip_markdown_leaves_plain_text_untouched():
     plain = "The candidate gave a clear, specific example and structured it well."
     assert strip_markdown(plain) == plain

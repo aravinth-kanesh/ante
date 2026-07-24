@@ -10,7 +10,18 @@ import {
   type NonverbalMetrics,
 } from "../api";
 import { recordingSupported, startCapture, type Capture } from "../capture";
-import { Badge, Button, Card, CardBody, CardTitle, TextArea, Toggle } from "../components/ui";
+import {
+  Badge,
+  Button,
+  Card,
+  CardBody,
+  CardTitle,
+  MicIcon,
+  SpeakerIcon,
+  TextArea,
+  Toggle,
+  VideoIcon,
+} from "../components/ui";
 import { deliverySummary, nonverbalSummary } from "../format";
 import { cancelSpeech, speak } from "../speech";
 
@@ -203,13 +214,13 @@ export default function Interview() {
                     }
                     setVoiceMode(v);
                   }}
-                  label="Voice mode — questions are read aloud and you answer by speaking"
+                  label="Voice mode - questions are read aloud and you answer by speaking"
                 />
                 {voiceMode && (
                   <Toggle
                     checked={cameraOn}
                     onChange={setCameraOn}
-                    label="Camera — adds eye contact, composure and posture feedback (nothing is recorded)"
+                    label="Camera - adds eye contact, composure and posture feedback (nothing is recorded)"
                   />
                 )}
               </div>
@@ -250,7 +261,7 @@ export default function Interview() {
                   <Badge color="brand">Question {history.length + 1}</Badge>
                   {voiceMode && (
                     <Button variant="ghost" size="sm" onClick={() => speak(question)}>
-                      🔊 Replay
+                      <SpeakerIcon className="h-4 w-4" /> Replay
                     </Button>
                   )}
                 </div>
@@ -270,20 +281,28 @@ export default function Interview() {
                   value={answer}
                   onChange={(e) => setAnswer(e.target.value)}
                   rows={5}
-                  placeholder={voiceMode ? "Speak your answer, or type it here…" : "Your answer…"}
+                  placeholder={voiceMode ? "Speak your answer, or type it here..." : "Your answer..."}
                 />
 
                 {(metrics || nonverbal) && (
                   <div className="flex flex-wrap gap-2">
-                    {metrics && <Badge color="brand">🎙 {deliverySummary(metrics)}</Badge>}
-                    {nonverbal && <Badge color="slate">🎥 {nonverbalSummary(nonverbal)}</Badge>}
+                    {metrics && (
+                      <Badge color="brand">
+                        <MicIcon className="h-3.5 w-3.5" /> {deliverySummary(metrics)}
+                      </Badge>
+                    )}
+                    {nonverbal && (
+                      <Badge color="slate">
+                        <VideoIcon className="h-3.5 w-3.5" /> {nonverbalSummary(nonverbal)}
+                      </Badge>
+                    )}
                   </div>
                 )}
 
                 {recording && (
                   <p className="text-sm text-slate-500">
                     <span className="mr-1.5 inline-block h-2 w-2 animate-pulse rounded-full bg-red-500 align-middle" />
-                    Recording… press Stop when you have finished your answer.
+                    Recording... press Stop when you have finished your answer.
                   </p>
                 )}
 
@@ -295,7 +314,15 @@ export default function Interview() {
                       loading={analysing || starting}
                       disabled={loading}
                     >
-                      {recording ? "Stop recording" : analysing ? "Analysing…" : "🎤 Speak answer"}
+                      {recording ? (
+                        "Stop recording"
+                      ) : analysing ? (
+                        "Analysing..."
+                      ) : (
+                        <>
+                          <MicIcon className="h-4 w-4" /> Speak answer
+                        </>
+                      )}
                     </Button>
                   )}
                   <Button onClick={submit} loading={loading} disabled={busy || !answer.trim()}>

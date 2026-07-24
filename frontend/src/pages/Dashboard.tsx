@@ -12,7 +12,16 @@ import {
   type Research,
 } from "../api";
 import { useAuth } from "../auth/AuthContext";
-import { Badge, Button, Card, CardBody, CardTitle, Label, TextArea } from "../components/ui";
+import {
+  Badge,
+  Button,
+  Card,
+  CardBody,
+  CardTitle,
+  DocumentIcon,
+  Label,
+  TextArea,
+} from "../components/ui";
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -90,7 +99,7 @@ export default function Dashboard() {
           <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Dashboard</h1>
           <p className="mt-1 text-sm text-slate-500">Signed in as {user?.email}</p>
         </div>
-        {health === "checking" && <Badge color="slate">Checking backend…</Badge>}
+        {health === "checking" && <Badge color="slate">Checking backend...</Badge>}
         {health === "ok" && <Badge color="green">Connected · {model}</Badge>}
         {health === "down" && <Badge color="red">Backend unavailable</Badge>}
       </div>
@@ -125,7 +134,7 @@ export default function Dashboard() {
             {activeCv ? (
               <div className="mt-4 flex items-center gap-3">
                 <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-brand-50 text-brand-700">
-                  📄
+                  <DocumentIcon className="h-5 w-5" />
                 </span>
                 <div>
                   <p className="font-medium text-slate-900">{activeCv.label}</p>
@@ -163,7 +172,7 @@ export default function Dashboard() {
                 value={jd}
                 onChange={(e) => setJd(e.target.value)}
                 rows={7}
-                placeholder="Paste the job description…"
+                placeholder="Paste the job description..."
               />
               <div className="mt-3 flex items-center gap-3">
                 <Button type="submit" loading={saving}>

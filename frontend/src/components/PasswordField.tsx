@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { controlClass, Label, cn } from "./ui";
+import { controlClass, EyeIcon, EyeSlashIcon, Label, cn } from "./ui";
 
 interface Props {
   label: string;
@@ -30,9 +30,9 @@ export default function PasswordField({ label, value, onChange, minLength, autoC
           onClick={() => setShow((s) => !s)}
           aria-label={show ? "Hide password" : "Show password"}
           title={show ? "Hide password" : "Show password"}
-          className="absolute inset-y-0 right-0 flex items-center px-3 text-base text-slate-500 hover:text-slate-700"
+          className="absolute inset-y-0 right-0 flex items-center px-3 text-slate-400 hover:text-slate-600"
         >
-          {show ? "🙈" : "👁"}
+          {show ? <EyeSlashIcon className="h-5 w-5" /> : <EyeIcon className="h-5 w-5" />}
         </button>
       </div>
     </div>

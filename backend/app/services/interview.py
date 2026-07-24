@@ -32,7 +32,7 @@ def _generate(messages: list[dict]) -> str:
     reply = llm.chat(messages)
     if not moderation.moderate_output(reply).allowed:
         reply = llm.chat(messages)  # one retry
-    return reply.strip()
+    return strip_markdown(reply)
 
 
 def _add_turn(

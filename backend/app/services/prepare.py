@@ -2,6 +2,7 @@ import json
 import re
 
 from app.services import llm, moderation
+from app.services.text import strip_markdown
 
 _JSON_ARRAY = re.compile(r"\[.*\]", re.DOTALL)
 
@@ -43,4 +44,10 @@ def generate_questions(
     combined = "\n".join(str(item.get("question", "")) for item in items)
     if not moderation.moderate_output(combined).allowed:
         raise ValueError("generated questions failed moderation")
-    return items
+    return [
+        {
+            "question": strip_markdown(str(item.get("question", ""))),
+            "rationale": strip_markdown(str(item.get("rationale", ""))),
+        }
+        for item in items
+    ]

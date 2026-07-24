@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { getInterview, type InterviewDetail } from "../api";
-import { Badge, Card, CardBody, CardTitle } from "../components/ui";
+import { Badge, Card, CardBody, CardTitle, MicIcon, VideoIcon } from "../components/ui";
 import { deliverySummary, nonverbalSummary } from "../format";
 
 function message(err: unknown) {
@@ -40,12 +40,12 @@ export default function Results() {
           )}
         </div>
         <Link to="/history" className="text-sm font-medium text-brand-700 hover:underline">
-          ← History
+          Back to history
         </Link>
       </div>
 
       {error && <p className="text-sm text-red-600">{error}</p>}
-      {!error && !detail && <p className="text-sm text-slate-500">Loading…</p>}
+      {!error && !detail && <p className="text-sm text-slate-500">Loading...</p>}
 
       {detail && (
         <>
@@ -63,9 +63,15 @@ export default function Results() {
                       <span className="font-semibold text-slate-900">You.</span> {turn.content}
                     </p>
                     <div className="mt-2 flex flex-wrap gap-2">
-                      {turn.metrics && <Badge color="brand">🎙 {deliverySummary(turn.metrics)}</Badge>}
+                      {turn.metrics && (
+                        <Badge color="brand">
+                          <MicIcon className="h-3.5 w-3.5" /> {deliverySummary(turn.metrics)}
+                        </Badge>
+                      )}
                       {turn.nonverbal && (
-                        <Badge color="slate">🎥 {nonverbalSummary(turn.nonverbal)}</Badge>
+                        <Badge color="slate">
+                          <VideoIcon className="h-3.5 w-3.5" /> {nonverbalSummary(turn.nonverbal)}
+                        </Badge>
                       )}
                     </div>
                   </div>
