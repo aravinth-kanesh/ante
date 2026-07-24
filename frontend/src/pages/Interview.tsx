@@ -213,7 +213,7 @@ export default function Interview() {
       {/* Setup / start */}
       {sessionId === null && (
         <Card>
-          <CardBody className="space-y-4">
+          <CardBody className="space-y-6">
             <CardTitle>Set up your interview</CardTitle>
             <div>
               <Label>Interview type</Label>
@@ -227,12 +227,12 @@ export default function Interview() {
                 <option value="technical">Technical (spoken, no coding)</option>
                 <option value="strengths">Strengths-based</option>
               </Select>
-              <p className="mt-1.5 text-xs text-slate-500">
+              <p className="mt-2 text-xs leading-relaxed text-slate-500">
                 {INTERVIEW_TYPE_HINTS[interviewType]}
               </p>
             </div>
             {supported ? (
-              <div className="space-y-3">
+              <div className="space-y-4">
                 <Toggle
                   checked={voiceMode}
                   onChange={(v) => {

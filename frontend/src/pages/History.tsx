@@ -90,18 +90,18 @@ export default function History() {
                   <>
                     <Button
                       size="sm"
-                      variant="danger"
+                      variant="destructive"
                       loading={busyId === s.id}
                       onClick={() => remove(s.id)}
                     >
-                      Confirm
+                      Delete permanently
                     </Button>
                     <Button size="sm" variant="ghost" onClick={() => setConfirmId(null)}>
                       Cancel
                     </Button>
                   </>
                 ) : (
-                  <Button size="sm" variant="ghost" onClick={() => setConfirmId(s.id)}>
+                  <Button size="sm" variant="danger" onClick={() => setConfirmId(s.id)}>
                     Delete
                   </Button>
                 )}

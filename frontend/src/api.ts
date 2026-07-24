@@ -109,8 +109,16 @@ export async function uploadCvFile(file: File, label: string): Promise<CvDetail>
   return request("/api/cv/upload", { method: "POST", body: form });
 }
 
+export async function getCv(id: number): Promise<CvDetail> {
+  return request(`/api/cv/${id}`);
+}
+
 export async function renameCv(id: number, label: string): Promise<CvDetail> {
   return request(`/api/cv/${id}`, { method: "PATCH", body: JSON.stringify({ label }) });
+}
+
+export async function updateCvText(id: number, text: string): Promise<CvDetail> {
+  return request(`/api/cv/${id}`, { method: "PATCH", body: JSON.stringify({ text }) });
 }
 
 export async function selectCv(id: number): Promise<CvDetail> {

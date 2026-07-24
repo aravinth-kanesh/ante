@@ -2,7 +2,7 @@ import { type ButtonHTMLAttributes } from "react";
 import { cn } from "./cn";
 import Spinner from "./Spinner";
 
-type Variant = "primary" | "secondary" | "ghost" | "danger";
+type Variant = "primary" | "secondary" | "ghost" | "danger" | "destructive";
 type Size = "sm" | "md";
 
 interface Props extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -18,7 +18,9 @@ const variants: Record<Variant, string> = {
   primary: "bg-brand-600 text-white hover:bg-brand-700 shadow-sm",
   secondary: "bg-white text-slate-800 border border-slate-300 hover:bg-slate-50",
   ghost: "text-slate-600 hover:bg-slate-100",
-  danger: "bg-white text-red-600 border border-red-200 hover:bg-red-50",
+  // danger: signals a destructive action; destructive: the confirmed, irreversible step
+  danger: "bg-white text-red-600 border border-red-200 hover:bg-red-50 hover:border-red-300",
+  destructive: "bg-red-600 text-white hover:bg-red-700 shadow-sm",
 };
 
 const sizes: Record<Size, string> = {

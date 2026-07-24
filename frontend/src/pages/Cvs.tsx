@@ -2,9 +2,11 @@ import { useEffect, useState, type ChangeEvent } from "react";
 import {
   createCv,
   deleteCv,
+  getCv,
   listCvs,
   renameCv,
   selectCv,
+  updateCvText,
   uploadCvFile,
   type Cv,
 } from "../api";
@@ -26,6 +28,12 @@ export default function Cvs() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editLabel, setEditLabel] = useState("");
   const [busyId, setBusyId] = useState<number | null>(null);
+
+  const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
+  const [viewingId, setViewingId] = useState<number | null>(null);
+  const [viewText, setViewText] = useState("");
+  const [viewLoading, setViewLoading] = useState(false);
+  const [savingText, setSavingText] = useState(false);
 
   async function refresh() {
     try {
@@ -86,6 +94,39 @@ export default function Cvs() {
   function startRename(cv: Cv) {
     setEditingId(cv.id);
     setEditLabel(cv.label);
+  }
+
+  async function toggleView(cv: Cv) {
+    if (viewingId === cv.id) {
+      setViewingId(null);
+      return;
+    }
+    setViewingId(cv.id);
+    setViewText("");
+    setViewLoading(true);
+    setError("");
+    try {
+      const detail = await getCv(cv.id);
+      setViewText(detail.text);
+    } catch (err) {
+      setError(message(err));
+      setViewingId(null);
+    } finally {
+      setViewLoading(false);
+    }
+  }
+
+  async function saveText(id: number) {
+    setSavingText(true);
+    setError("");
+    try {
+      await updateCvText(id, viewText);
+      await refresh();
+    } catch (err) {
+      setError(message(err));
+    } finally {
+      setSavingText(false);
+    }
   }
 
   return (
@@ -155,7 +196,8 @@ export default function Cvs() {
       <div className="space-y-3">
         {cvs?.map((cv) => (
           <Card key={cv.id}>
-            <CardBody className="flex flex-wrap items-center justify-between gap-4 py-4">
+            <CardBody className="space-y-4 py-4">
+              <div className="flex flex-wrap items-center justify-between gap-4">
               <div className="min-w-0">
                 {editingId === cv.id ? (
                   <div className="flex items-center gap-2">
@@ -200,17 +242,69 @@ export default function Cvs() {
                       Use this CV
                     </Button>
                   )}
+                  <Button size="sm" variant="ghost" onClick={() => toggleView(cv)}>
+                    {viewingId === cv.id ? "Hide" : "View"}
+                  </Button>
                   <Button size="sm" variant="ghost" onClick={() => startRename(cv)}>
                     Rename
                   </Button>
-                  <Button
-                    size="sm"
-                    variant="danger"
-                    loading={busyId === cv.id}
-                    onClick={() => act(cv.id, () => deleteCv(cv.id))}
-                  >
-                    Delete
-                  </Button>
+                  {confirmDeleteId === cv.id ? (
+                    <>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        loading={busyId === cv.id}
+                        onClick={() =>
+                          act(cv.id, () => deleteCv(cv.id)).then(() => setConfirmDeleteId(null))
+                        }
+                      >
+                        Delete permanently
+                      </Button>
+                      <Button size="sm" variant="ghost" onClick={() => setConfirmDeleteId(null)}>
+                        Cancel
+                      </Button>
+                    </>
+                  ) : (
+                    <Button size="sm" variant="danger" onClick={() => setConfirmDeleteId(cv.id)}>
+                      Delete
+                    </Button>
+                  )}
+                </div>
+              )}
+              </div>
+
+              {viewingId === cv.id && (
+                <div className="border-t border-slate-200 pt-4">
+                  {viewLoading ? (
+                    <p className="text-sm text-slate-500">Loading...</p>
+                  ) : (
+                    <>
+                      <Label>Extracted CV text</Label>
+                      <p className="mb-2 text-xs text-slate-500">
+                        This is the text the interviewer reads. You can correct it if the file did
+                        not extract cleanly.
+                      </p>
+                      <TextArea
+                        value={viewText}
+                        onChange={(e) => setViewText(e.target.value)}
+                        rows={14}
+                        className="font-mono text-xs leading-relaxed"
+                      />
+                      <div className="mt-3 flex items-center gap-3">
+                        <Button
+                          size="sm"
+                          loading={savingText}
+                          disabled={!viewText.trim()}
+                          onClick={() => saveText(cv.id)}
+                        >
+                          Save changes
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={() => setViewingId(null)}>
+                          Close
+                        </Button>
+                      </div>
+                    </>
+                  )}
                 </div>
               )}
             </CardBody>
