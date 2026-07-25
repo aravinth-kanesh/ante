@@ -83,7 +83,6 @@ export default function Settings() {
         <CardBody className="space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <CardTitle>Interviewer voice</CardTitle>
-            {serverAvailable === true && <Badge color="green">Natural voices installed</Badge>}
             {serverAvailable === false && <Badge color="slate">Using your device voices</Badge>}
           </div>
           <p className="text-sm text-slate-500">

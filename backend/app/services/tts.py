@@ -57,8 +57,10 @@ def voices() -> list[dict]:
     """The English voices on offer, British first (this is a UK-focused tool)."""
     if not available():
         return []
+    default = settings.tts_voice
     english = [v for v in _get_model().get_voices() if v[:1] in ACCENTS]
-    english.sort(key=lambda v: (v[:1] != "b", v))  # British first, then alphabetical
+    # default voice first, then British, then alphabetical
+    english.sort(key=lambda v: (v != default, v[:1] != "b", v))
     return [{"id": v, "label": describe(v)} for v in english]
 
 
