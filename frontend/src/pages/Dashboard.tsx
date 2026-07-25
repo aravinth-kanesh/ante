@@ -4,6 +4,7 @@ import {
   generateQuestions,
   getHealth,
   getProfile,
+  getResearch,
   listCvs,
   researchCompany,
   saveJobDescription,
@@ -12,6 +13,7 @@ import {
   type Research,
 } from "../api";
 import { useAuth } from "../auth/AuthContext";
+import CompanyResearchView from "../components/CompanyResearchView";
 import {
   Badge,
   Button,
@@ -57,6 +59,11 @@ export default function Dashboard() {
       .catch(() => {});
     listCvs()
       .then((cvs) => setActiveCv(cvs.find((c) => c.selected) ?? null))
+      .catch(() => {});
+    getResearch()
+      .then((r) => {
+        if (r.research) setResearch(r);
+      })
       .catch(() => {});
   }, []);
 
@@ -212,15 +219,13 @@ export default function Dashboard() {
               </Button>
             </div>
             {researchError && <p className="mt-3 text-sm text-red-600">{researchError}</p>}
-            {research && (
-              <div className="mt-4">
-                <p className="font-medium text-slate-900">
-                  {research.company || "Company"}
-                  {research.role && <span className="text-slate-500"> · {research.role}</span>}
-                </p>
-                <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-slate-600">
-                  {research.company_context}
-                </p>
+            {research?.research && (
+              <div className="mt-5">
+                <CompanyResearchView
+                  company={research.company}
+                  role={research.role}
+                  research={research.research}
+                />
               </div>
             )}
           </CardBody>

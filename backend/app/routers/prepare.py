@@ -3,10 +3,10 @@ from sqlalchemy.orm import Session
 
 from app.db import get_db
 from app.models.user import User
-from app.routers.profile import _get_or_create
+from app.routers.profile import _get_or_create, run_research
 from app.schemas.prepare import PrepResponse
 from app.security import get_current_user
-from app.services import prepare, research
+from app.services import prepare
 
 router = APIRouter(prefix="/prepare", tags=["prepare"])
 
@@ -22,9 +22,7 @@ def questions(
     # research the company once and reuse it; a failure just means no company context
     if not profile.company_context.strip() and profile.jd_text.strip():
         try:
-            profile.company, profile.role = research.extract_company_role(profile.jd_text)
-            profile.company_context = research.research_company(profile.company, profile.role)
-            db.commit()
+            run_research(db, profile)
         except Exception:
             db.rollback()
 

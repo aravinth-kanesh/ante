@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from app.db import get_db
 from app.models.profile import Profile
 from app.models.user import User
-from app.schemas.profile import ProfileRead, ProfileUpdate, ResearchRead
+from app.schemas.profile import CompanyResearch, ProfileRead, ProfileUpdate, ResearchRead
 from app.security import get_current_user
 from app.services import research
 from app.services.cv_parse import SUPPORTED, extract_text
@@ -21,6 +21,32 @@ def _get_or_create(db: Session, user: User) -> Profile:
         db.commit()
         db.refresh(user)
     return user.profile
+
+
+def _stored_research(profile: Profile) -> CompanyResearch | None:
+    if not profile.company_research:
+        return None
+    try:
+        return CompanyResearch.model_validate_json(profile.company_research)
+    except ValueError:
+        return None
+
+
+def run_research(db: Session, profile: Profile) -> CompanyResearch:
+    """Research the company from the job description and store it on the profile.
+
+    Keeps a structured version for display and a flattened text version that the
+    interview and question prompts read as context.
+    """
+    company, role = research.extract_company_role(profile.jd_text)
+    report = research.research_company(company, role)
+    profile.company = company
+    profile.role = role
+    profile.company_research = report.model_dump_json()
+    profile.company_context = research.render(report)
+    db.commit()
+    db.refresh(profile)
+    return report
 
 
 @router.get("", response_model=ProfileRead)
@@ -50,23 +76,28 @@ def update_profile(
     return profile
 
 
+@router.get("/research", response_model=ResearchRead)
+def read_research(
+    current_user: User = Depends(get_current_user), db: Session = Depends(get_db)
+) -> ResearchRead:
+    profile = _get_or_create(db, current_user)
+    return ResearchRead(
+        company=profile.company, role=profile.role, research=_stored_research(profile)
+    )
+
+
 @router.post("/research", response_model=ResearchRead)
 def research_profile(
     current_user: User = Depends(get_current_user), db: Session = Depends(get_db)
-) -> Profile:
+) -> ResearchRead:
     profile = _get_or_create(db, current_user)
     if not profile.jd_text.strip():
         raise HTTPException(status_code=400, detail="Add a job description first")
     try:
-        company, role = research.extract_company_role(profile.jd_text)
-        profile.company_context = research.research_company(company, role)
+        report = run_research(db, profile)
     except Exception as exc:
         raise HTTPException(status_code=502, detail=f"Research failed: {exc}") from exc
-    profile.company = company
-    profile.role = role
-    db.commit()
-    db.refresh(profile)
-    return profile
+    return ResearchRead(company=profile.company, role=profile.role, research=report)
 
 
 @router.post("/cv", response_model=ProfileRead)

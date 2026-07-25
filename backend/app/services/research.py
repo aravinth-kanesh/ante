@@ -1,6 +1,7 @@
 import json
 import re
 
+from app.schemas.profile import CompanyResearch
 from app.services import llm
 from app.services.text import strip_markdown
 
@@ -14,23 +15,20 @@ Job description:
 """
 
 RESEARCH_PROMPT = """You are briefing a candidate who is about to interview for the \
-role of {role} at {company}. Write practical preparation notes that help them walk in \
-ready.
+role of {role} at {company}. Return a structured briefing as a single JSON object and \
+nothing else, in exactly this shape:
+{{
+  "overview": "<what the company does and the values or culture it is known for>",
+  "interview_process": "<how it usually interviews for this role: the likely stages \
+and formats, and the themes questions tend to focus on such as behavioural, technical \
+or values-based>",
+  "skills": ["<a skill or competency it looks for for this role>"],
+  "tips": ["<a concrete thing the candidate should prepare or emphasise>"]
+}}
 
-Cover, in this order:
-- what the company does and the values or culture it is known for;
-- what it tends to look for in candidates for this kind of role (the competencies and \
-qualities that matter);
-- how it usually interviews for this role: the likely stages and formats, and the \
-themes questions tend to focus on (behavioural, technical, values-based);
-- a few concrete things the candidate should prepare or emphasise.
-
-If you are not confident about specifics for this company, say so plainly and give the \
-norms for this role and industry instead, rather than inventing details.
-
-Write in plain British English prose, in short paragraphs. Do not use Markdown or any \
-special formatting: no asterisks, no hashes, no bullet symbols, no bold, no headings. \
-Keep it under 250 words."""
+If you are not confident about specifics for this company, say so plainly in the \
+relevant field and give the norms for this role and industry instead, rather than \
+inventing details. Write in plain British English with no Markdown."""
 
 
 def extract_company_role(jd_text: str) -> tuple[str, str]:
@@ -49,8 +47,39 @@ def extract_company_role(jd_text: str) -> tuple[str, str]:
     return str(data.get("company", "")).strip(), str(data.get("role", "")).strip()
 
 
-def research_company(company: str, role: str) -> str:
+def _clean(report: CompanyResearch) -> CompanyResearch:
+    return CompanyResearch(
+        overview=strip_markdown(report.overview),
+        interview_process=strip_markdown(report.interview_process),
+        skills=[strip_markdown(s) for s in report.skills if s.strip()],
+        tips=[strip_markdown(s) for s in report.tips if s.strip()],
+    )
+
+
+def research_company(company: str, role: str) -> CompanyResearch:
     prompt = RESEARCH_PROMPT.format(
         company=company or "the employer", role=role or "the advertised role"
     )
-    return strip_markdown(llm.chat([{"role": "user", "content": prompt}], temperature=0.3))
+    raw = llm.chat([{"role": "user", "content": prompt}], temperature=0.3)
+    match = _JSON.search(raw)
+    if match:
+        try:
+            return _clean(CompanyResearch.model_validate_json(match.group()))
+        except ValueError:
+            pass
+    # not usable JSON; keep the prose as the overview
+    return CompanyResearch(overview=strip_markdown(raw))
+
+
+def render(report: CompanyResearch) -> str:
+    """Flatten the structured research into plain text for the model prompts."""
+    parts: list[str] = []
+    if report.overview:
+        parts.append(report.overview)
+    if report.interview_process:
+        parts.append(f"Interview process: {report.interview_process}")
+    if report.skills:
+        parts.append("Key skills: " + ", ".join(report.skills))
+    if report.tips:
+        parts.append("Preparation tips: " + "; ".join(report.tips))
+    return "\n\n".join(parts)

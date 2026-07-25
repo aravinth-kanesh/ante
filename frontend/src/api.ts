@@ -129,10 +129,21 @@ export async function deleteCv(id: number): Promise<{ ok: boolean }> {
   return request(`/api/cv/${id}`, { method: "DELETE" });
 }
 
+export interface CompanyResearch {
+  overview: string;
+  interview_process: string;
+  skills: string[];
+  tips: string[];
+}
+
 export interface Research {
   company: string;
   role: string;
-  company_context: string;
+  research: CompanyResearch | null;
+}
+
+export async function getResearch(): Promise<Research> {
+  return request("/api/profile/research");
 }
 
 export async function researchCompany(): Promise<Research> {

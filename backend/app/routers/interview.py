@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from app.db import get_db
 from app.models.session import InterviewSession, Turn
 from app.models.user import User
-from app.routers.profile import _get_or_create
+from app.routers.profile import _get_or_create, run_research
 from app.schemas.interview import (
     AnswerRequest,
     AnswerResponse,
@@ -19,7 +19,7 @@ from app.schemas.interview import (
     TurnRead,
 )
 from app.security import get_current_user
-from app.services import interview, research
+from app.services import interview
 
 router = APIRouter(prefix="/interview", tags=["interview"])
 
@@ -65,9 +65,7 @@ def start(
     # ground on the company if the job description is set but not yet researched
     if not profile.company_context.strip() and profile.jd_text.strip():
         try:
-            profile.company, profile.role = research.extract_company_role(profile.jd_text)
-            profile.company_context = research.research_company(profile.company, profile.role)
-            db.commit()
+            run_research(db, profile)
         except Exception:
             db.rollback()
 

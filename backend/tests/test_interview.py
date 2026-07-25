@@ -352,15 +352,17 @@ def test_list_backfills_company_for_older_sessions(client, monkeypatch):
     save_cv(client, headers)
     client.put("/api/profile", headers=headers, json={"jd_text": "Ciena engineer role"})
 
+    from app.schemas.profile import CompanyResearch
+
     # the first run could not identify the company, so the session recorded none
     monkeypatch.setattr(research, "extract_company_role", lambda jd: ("", ""))
-    monkeypatch.setattr(research, "research_company", lambda c, r: "")
+    monkeypatch.setattr(research, "research_company", lambda c, r: CompanyResearch())
     client.post("/api/interview/start", headers=headers)
     assert client.get("/api/interview", headers=headers).json()[0]["title"] == "General Interview"
 
     # research later identifies the company for the same job description
     monkeypatch.setattr(research, "extract_company_role", lambda jd: ("Ciena", "Engineer"))
-    monkeypatch.setattr(research, "research_company", lambda c, r: "context")
+    monkeypatch.setattr(research, "research_company", lambda c, r: CompanyResearch(overview="ctx"))
     client.post("/api/profile/research", headers=headers)
 
     titles = [s["title"] for s in client.get("/api/interview", headers=headers).json()]
@@ -387,8 +389,10 @@ def test_list_sessions_titles_number_repeats(client, monkeypatch):
     headers = auth_header(client, "titles@example.com")
     save_cv(client, headers)
     # research fills company/role on the profile, which the session snapshots
+    from app.schemas.profile import CompanyResearch
+
     monkeypatch.setattr(research, "extract_company_role", lambda jd: ("Cognizant", "Analyst"))
-    monkeypatch.setattr(research, "research_company", lambda c, r: "context")
+    monkeypatch.setattr(research, "research_company", lambda c, r: CompanyResearch(overview="ctx"))
     client.put("/api/profile", headers=headers, json={"jd_text": "Cognizant analyst role"})
 
     for _ in range(2):

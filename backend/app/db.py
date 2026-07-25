@@ -26,7 +26,7 @@ _ADDED_COLUMNS: dict[str, dict[str, str]] = {
         "role": "VARCHAR NOT NULL DEFAULT ''",
     },
     "turns": {"metrics": "TEXT", "nonverbal": "TEXT"},
-    "profiles": {"selected_cv_id": "INTEGER"},
+    "profiles": {"selected_cv_id": "INTEGER", "company_research": "TEXT NOT NULL DEFAULT ''"},
 }
 
 

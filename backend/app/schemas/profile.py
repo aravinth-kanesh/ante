@@ -14,9 +14,16 @@ class ProfileRead(BaseModel):
     model_config = {"from_attributes": True}
 
 
-class ResearchRead(BaseModel):
-    company: str
-    role: str
-    company_context: str
+class CompanyResearch(BaseModel):
+    """Structured company briefing for a candidate."""
 
-    model_config = {"from_attributes": True}
+    overview: str = ""
+    interview_process: str = ""
+    skills: list[str] = []
+    tips: list[str] = []
+
+
+class ResearchRead(BaseModel):
+    company: str = ""
+    role: str = ""
+    research: CompanyResearch | None = None

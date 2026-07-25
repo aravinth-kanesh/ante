@@ -22,7 +22,8 @@ class Profile(Base):
     jd_text: Mapped[str] = mapped_column(Text, default="")
     company: Mapped[str] = mapped_column(String, default="")
     role: Mapped[str] = mapped_column(String, default="")
-    company_context: Mapped[str] = mapped_column(Text, default="")
+    company_context: Mapped[str] = mapped_column(Text, default="")  # rendered text for prompts
+    company_research: Mapped[str] = mapped_column(Text, default="")  # structured JSON for display
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=_utcnow, onupdate=_utcnow
     )

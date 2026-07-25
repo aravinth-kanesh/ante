@@ -23,14 +23,27 @@ def test_extract_company_role_handles_no_json(monkeypatch):
     assert research.extract_company_role("jd") == ("", "")
 
 
-def test_research_output_is_plain_text(monkeypatch):
-    markdown = "## Culture\n**Acme** values *craft*.\n* Fast-paced\n- Collaborative\nUse `git`."
-    monkeypatch.setattr(research.llm, "chat", lambda *a, **k: markdown)
-    out = research.research_company("Acme", "Engineer")
-    assert "*" not in out and "`" not in out
-    assert "#" not in out
-    assert "Acme values craft." in out
-    assert out.startswith("Culture")
+def test_research_output_is_structured_and_plain(monkeypatch):
+    reply = (
+        '{"overview": "## Culture\\n**Acme** values craft.", '
+        '"interview_process": "Two `stages`.", "skills": ["*Python*", "  "], "tips": []}'
+    )
+    monkeypatch.setattr(research.llm, "chat", lambda *a, **k: reply)
+    report = research.research_company("Acme", "Engineer")
+    assert "*" not in report.overview and "#" not in report.overview
+    assert "`" not in report.interview_process
+    assert "Acme values craft." in report.overview
+    assert report.skills == ["Python"]  # blank dropped, markdown stripped
+
+
+def test_render_flattens_structured_research():
+    from app.schemas.profile import CompanyResearch
+
+    text = research.render(
+        CompanyResearch(overview="Acme.", interview_process="Two stages.", skills=["Python", "SQL"])
+    )
+    assert "Acme." in text and "Interview process: Two stages." in text
+    assert "Key skills: Python, SQL" in text
 
 
 def test_research_endpoint_requires_jd(client):
@@ -38,26 +51,42 @@ def test_research_endpoint_requires_jd(client):
     assert res.status_code == 400
 
 
-def test_research_endpoint_persists(client, monkeypatch):
+def test_research_endpoint_persists_and_reads_back(client, monkeypatch):
+    from app.schemas.profile import CompanyResearch
+
+    report = CompanyResearch(
+        overview="Acme values craft.", interview_process="Two stages.", skills=["Python"]
+    )
     monkeypatch.setattr(research, "extract_company_role", lambda jd: ("Acme", "Engineer"))
-    monkeypatch.setattr(research, "research_company", lambda c, r: "Acme values craft.")
+    monkeypatch.setattr(research, "research_company", lambda c, r: report)
 
     headers = auth_header(client)
     client.put("/api/profile", headers=headers, json={"cv_text": "cv", "jd_text": "Acme role"})
-    res = client.post("/api/profile/research", headers=headers)
+    body = client.post("/api/profile/research", headers=headers).json()
+    assert body["company"] == "Acme" and body["role"] == "Engineer"
+    assert body["research"]["overview"] == "Acme values craft."
+    assert body["research"]["skills"] == ["Python"]
 
-    assert res.status_code == 200
-    body = res.json()
-    assert body == {"company": "Acme", "role": "Engineer", "company_context": "Acme values craft."}
+    # the stored research can be read back on load
+    got = client.get("/api/profile/research", headers=headers).json()
+    assert got["research"]["interview_process"] == "Two stages."
+
+
+def test_read_research_empty_when_none(client):
+    got = client.get("/api/profile/research", headers=auth_header(client, "noresearch@example.com"))
+    assert got.json()["research"] is None
 
 
 def test_questions_autoresearch_grounds_on_company(client, monkeypatch):
+    from app.schemas.profile import CompanyResearch
     from app.services import prepare
     from app.services.moderation import Verdict
 
     seen = {}
     monkeypatch.setattr(research, "extract_company_role", lambda jd: ("Acme", "Engineer"))
-    monkeypatch.setattr(research, "research_company", lambda c, r: "Acme values craftsmanship.")
+    monkeypatch.setattr(
+        research, "research_company", lambda c, r: CompanyResearch(overview="Acme values craftsmanship.")
+    )
 
     def fake_generate(cv, jd, context="", n=8):
         seen["context"] = context
