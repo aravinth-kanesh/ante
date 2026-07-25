@@ -24,6 +24,7 @@ class Profile(Base):
     role: Mapped[str] = mapped_column(String, default="")
     company_context: Mapped[str] = mapped_column(Text, default="")  # rendered text for prompts
     company_research: Mapped[str] = mapped_column(Text, default="")  # structured JSON for display
+    prep_questions: Mapped[str] = mapped_column(Text, default="")  # last generated questions (JSON)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=_utcnow, onupdate=_utcnow
     )

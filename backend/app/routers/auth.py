@@ -1,9 +1,11 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.config import settings
 from app.db import get_db
 from app.models.user import User
+from app.ratelimit import limiter
 from app.schemas.auth import LoginRequest, Token, UserCreate, UserRead
 from app.security import create_access_token, get_current_user, hash_password, verify_password
 
@@ -11,7 +13,8 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 
 
 @router.post("/signup", response_model=Token, status_code=status.HTTP_201_CREATED)
-def signup(data: UserCreate, db: Session = Depends(get_db)) -> Token:
+@limiter.limit(settings.auth_rate_limit)
+def signup(request: Request, data: UserCreate, db: Session = Depends(get_db)) -> Token:
     existing = db.scalar(select(User).where(User.email == data.email))
     if existing is not None:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email already registered")
@@ -24,7 +27,8 @@ def signup(data: UserCreate, db: Session = Depends(get_db)) -> Token:
 
 
 @router.post("/login", response_model=Token)
-def login(data: LoginRequest, db: Session = Depends(get_db)) -> Token:
+@limiter.limit(settings.auth_rate_limit)
+def login(request: Request, data: LoginRequest, db: Session = Depends(get_db)) -> Token:
     user = db.scalar(select(User).where(User.email == data.email))
     if user is None or not verify_password(data.password, user.hashed_password):
         raise HTTPException(

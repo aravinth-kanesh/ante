@@ -63,11 +63,28 @@ curl -X POST localhost:8000/api/chat \
 
 Interactive API docs are served at `http://localhost:8000/docs`.
 
-### Accounts and auth
+### Accounts, auth and security
 
-Accounts are stored in a local SQLite database (`backend/app.db`, gitignored),
-with passwords hashed using bcrypt. Auth is via JWT bearer tokens. Set a strong
-`JWT_SECRET` in `backend/.env` before deploying. Endpoints:
+Accounts are stored in the database (SQLite in development, PostgreSQL in
+production), with passwords hashed using bcrypt (per-password salt). Auth is via
+JWT bearer tokens with an expiry. Data access is ownership-checked, so a user can
+only read their own CVs and interviews, and all queries go through the SQLAlchemy
+ORM (no string-built SQL).
+
+For a real deployment:
+
+- Set `ENVIRONMENT=production` and a strong `JWT_SECRET`
+  (`python -c "import secrets;print(secrets.token_urlsafe(48))"`). In production the
+  app refuses to start on the default secret and sends an HSTS header.
+- Terminate TLS in front of the app (reverse proxy or platform) so tokens and
+  passwords are never sent in the clear.
+- Point `DATABASE_URL` at PostgreSQL, e.g.
+  `postgresql://user:password@host:5432/ante` (the `psycopg2-binary` driver is in
+  `requirements.txt`).
+- Login and signup are rate limited per IP (`AUTH_RATE_LIMIT`, default
+  `10/minute`) to slow brute-force attempts.
+
+Endpoints:
 
 - `POST /api/auth/signup` and `POST /api/auth/login` return an access token.
 - `GET /api/auth/me` returns the current user.

@@ -6,6 +6,11 @@ from sqlalchemy.pool import StaticPool
 
 from app.db import Base, get_db
 from app.main import app
+from app.ratelimit import limiter
+
+# The tests hit auth many times from one client; rate limiting is exercised
+# separately in test_auth, so disable it for the rest of the suite.
+limiter.enabled = False
 
 
 @pytest.fixture

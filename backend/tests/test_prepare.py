@@ -49,3 +49,12 @@ def test_questions_generated(client, monkeypatch):
     groups = res.json()["groups"]
     assert [g["category"] for g in groups] == ["Common questions", "Role and technical"]
     assert groups[0]["questions"][0]["question"] == "Tell me about yourself."
+
+    # generated questions are persisted and can be read back (survive a reload)
+    got = client.get("/api/prepare/questions", headers=headers)
+    assert got.json()["groups"][0]["questions"][0]["question"] == "Tell me about yourself."
+
+
+def test_stored_questions_empty_by_default(client):
+    got = client.get("/api/prepare/questions", headers=auth_header(client, "empty-q@example.com"))
+    assert got.json() == {"groups": []}

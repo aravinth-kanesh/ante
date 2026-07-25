@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import {
   generateQuestions,
   getHealth,
+  getPrepQuestions,
   getProfile,
   getResearch,
   listCvs,
@@ -64,6 +65,9 @@ export default function Dashboard() {
       .then((r) => {
         if (r.research) setResearch(r);
       })
+      .catch(() => {});
+    getPrepQuestions()
+      .then((groups) => setQuestions(groups))
       .catch(() => {});
   }, []);
 
@@ -213,10 +217,13 @@ export default function Dashboard() {
               Research the company from your saved job description, so questions match how they
               interview.
             </p>
-            <div className="mt-4">
+            <div className="mt-4 flex items-center gap-3">
               <Button variant="secondary" onClick={runResearch} loading={researching}>
-                Research company
+                {research?.research ? "Re-research company" : "Research company"}
               </Button>
+              {research?.research && !researching && (
+                <span className="text-sm text-green-600">Researched</span>
+              )}
             </div>
             {researchError && <p className="mt-3 text-sm text-red-600">{researchError}</p>}
             {research?.research && (
@@ -238,10 +245,13 @@ export default function Dashboard() {
             <p className="mt-1 text-sm text-slate-500">
               Generate questions tailored to your active CV and job description.
             </p>
-            <div className="mt-4">
+            <div className="mt-4 flex items-center gap-3">
               <Button variant="secondary" onClick={generate} loading={generating}>
-                Generate questions
+                {questions.length > 0 ? "Regenerate questions" : "Generate questions"}
               </Button>
+              {questions.length > 0 && !generating && (
+                <span className="text-sm text-green-600">Generated</span>
+              )}
             </div>
             {genError && <p className="mt-3 text-sm text-red-600">{genError}</p>}
             {questions.length > 0 && (
@@ -253,12 +263,14 @@ export default function Dashboard() {
                     </h3>
                     <ol className="mt-2 space-y-3">
                       {group.questions.map((q, i) => (
-                        <li key={i} className="text-sm text-slate-800">
-                          <span className="mr-2 font-semibold text-brand-700">{i + 1}.</span>
-                          {q.question}
-                          {q.rationale && (
-                            <p className="mt-0.5 ml-6 text-xs text-slate-500">{q.rationale}</p>
-                          )}
+                        <li key={i} className="flex gap-2.5 text-sm text-slate-800">
+                          <span className="font-semibold text-brand-700">{i + 1}.</span>
+                          <div>
+                            <p>{q.question}</p>
+                            {q.rationale && (
+                              <p className="mt-0.5 text-xs text-slate-500">{q.rationale}</p>
+                            )}
+                          </div>
                         </li>
                       ))}
                     </ol>

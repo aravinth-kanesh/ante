@@ -1,5 +1,7 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+DEFAULT_JWT_SECRET = "change-me-in-env"
+
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
@@ -11,10 +13,18 @@ class Settings(BaseSettings):
 
     backend_cors_origins: str = "http://localhost:5173"
 
+    environment: str = "development"  # set to "production" to enforce a real secret
     database_url: str = "sqlite:///./app.db"
-    jwt_secret: str = "change-me-in-env"
+    jwt_secret: str = DEFAULT_JWT_SECRET
     jwt_algorithm: str = "HS256"
     access_token_expire_minutes: int = 60
+
+    # Auth rate limits (requests per window, per client IP), for brute-force defence.
+    auth_rate_limit: str = "10/minute"
+
+    @property
+    def is_production(self) -> bool:
+        return self.environment.lower() == "production"
 
     # Moderation. Each check is a separate model call, so a chat message can cost
     # up to three calls; turn input checking off if the provider rate-limits.

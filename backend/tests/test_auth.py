@@ -45,3 +45,19 @@ def test_me_with_token(client):
     res = client.get("/api/auth/me", headers={"Authorization": f"Bearer {token}"})
     assert res.status_code == 200
     assert res.json()["email"] == "alice@example.com"
+
+
+def test_login_is_rate_limited(client):
+    from app.ratelimit import limiter
+
+    limiter.enabled = True
+    try:
+        codes = [
+            client.post(
+                "/api/auth/login", json={"email": "nobody@example.com", "password": "nope"}
+            ).status_code
+            for _ in range(25)
+        ]
+        assert 429 in codes  # brute-force attempts are throttled
+    finally:
+        limiter.enabled = False

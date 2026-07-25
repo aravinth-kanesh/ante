@@ -180,6 +180,11 @@ export async function generateQuestions(): Promise<PrepGroup[]> {
   return data.groups;
 }
 
+export async function getPrepQuestions(): Promise<PrepGroup[]> {
+  const data = await request("/api/prepare/questions");
+  return data.groups;
+}
+
 export type InterviewMode = "text" | "voice";
 export type InterviewType = "general" | "behavioural" | "competency" | "technical" | "strengths";
 
