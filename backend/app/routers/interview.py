@@ -126,6 +126,22 @@ def finish(
     return FeedbackResponse(feedback=report)
 
 
+@router.post("/{session_id}/feedback", response_model=FeedbackResponse)
+def regenerate_feedback(
+    session_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> FeedbackResponse:
+    session = _owned(db, session_id, current_user)
+    if not any(t.kind == "answer" for t in session.turns):
+        raise HTTPException(status_code=400, detail="This interview has no answers to assess")
+    try:
+        report = interview.regenerate_feedback(db, session)
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"Could not generate feedback: {exc}") from exc
+    return FeedbackResponse(feedback=report)
+
+
 @router.get("", response_model=list[SessionSummary])
 def list_sessions(
     current_user: User = Depends(get_current_user), db: Session = Depends(get_db)

@@ -244,6 +244,36 @@ def test_feedback_is_structured_and_plain_text(client, monkeypatch):
     assert detail["feedback"]["summary"] == "Weak overall."
 
 
+def test_regenerate_upgrades_legacy_feedback(client, monkeypatch):
+    # finish once with the old plain-text style stored directly on the turn
+    mock_llm(monkeypatch)
+    headers = auth_header(client, "regen@example.com")
+    save_cv(client, headers)
+    sid = client.post("/api/interview/start", headers=headers).json()["session_id"]
+    client.post(f"/api/interview/{sid}/answer", headers=headers, json={"answer": "an answer"})
+    client.post(f"/api/interview/{sid}/finish", headers=headers)
+
+    # now the model returns a structured assessment; regenerate should adopt it
+    structured = '{"summary": "Solid.", "strengths": ["Clear example"], "improvements": []}'
+    monkeypatch.setattr(interview.llm, "chat", lambda *a, **k: structured)
+    report = client.post(f"/api/interview/{sid}/feedback", headers=headers).json()["feedback"]
+    assert report["summary"] == "Solid."
+    assert report["strengths"] == ["Clear example"]
+
+    # the transcript exposes the upgraded feedback and only one feedback turn exists
+    detail = client.get(f"/api/interview/{sid}", headers=headers).json()
+    assert detail["feedback"]["strengths"] == ["Clear example"]
+    assert sum(1 for t in detail["turns"] if t["kind"] == "feedback") == 1
+
+
+def test_regenerate_requires_answers(client, monkeypatch):
+    mock_llm(monkeypatch)
+    headers = auth_header(client, "regen-empty@example.com")
+    save_cv(client, headers)
+    sid = client.post("/api/interview/start", headers=headers).json()["session_id"]
+    assert client.post(f"/api/interview/{sid}/feedback", headers=headers).status_code == 400
+
+
 def test_parse_feedback_falls_back_to_prose():
     report = interview.parse_feedback("Just some prose, no JSON here.")
     assert report.summary == "Just some prose, no JSON here."

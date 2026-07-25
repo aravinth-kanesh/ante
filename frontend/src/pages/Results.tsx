@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { getInterview, type InterviewDetail } from "../api";
+import { getInterview, regenerateFeedback, type InterviewDetail } from "../api";
 import FeedbackView from "../components/FeedbackView";
-import { Badge, Card, CardBody, CardTitle, MicIcon, VideoIcon } from "../components/ui";
+import { Badge, Button, Card, CardBody, CardTitle, MicIcon, VideoIcon } from "../components/ui";
 import { deliverySummary, nonverbalSummary } from "../format";
 
 function message(err: unknown) {
@@ -29,6 +29,7 @@ export default function Results() {
   const { id } = useParams();
   const [detail, setDetail] = useState<InterviewDetail | null>(null);
   const [error, setError] = useState("");
+  const [regenerating, setRegenerating] = useState(false);
 
   useEffect(() => {
     const sessionId = Number(id);
@@ -41,8 +42,27 @@ export default function Results() {
       .catch((err) => setError(message(err)));
   }, [id]);
 
+  async function regenerate() {
+    const sessionId = Number(id);
+    setRegenerating(true);
+    setError("");
+    try {
+      const res = await regenerateFeedback(sessionId);
+      setDetail((d) => (d ? { ...d, feedback: res.feedback } : d));
+    } catch (err) {
+      setError(message(err));
+    } finally {
+      setRegenerating(false);
+    }
+  }
+
   const turns = detail?.turns ?? [];
   const exchanges = turns.filter((t) => t.kind === "question" || t.kind === "answer");
+  const fb = detail?.feedback;
+  // Feedback from before the structured format has only a summary.
+  const isLegacyFeedback =
+    !!fb && fb.strengths.length === 0 && fb.improvements.length === 0 && fb.answer_notes.length === 0;
+  const hasAnswers = exchanges.some((t) => t.kind === "answer");
 
   return (
     <div className="space-y-6">
@@ -102,10 +122,25 @@ export default function Results() {
 
           <Card>
             <CardBody>
-              <CardTitle>Feedback</CardTitle>
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <CardTitle>Feedback</CardTitle>
+                {hasAnswers && (
+                  <Button variant="secondary" size="sm" onClick={regenerate} loading={regenerating}>
+                    {fb ? "Regenerate feedback" : "Generate feedback"}
+                  </Button>
+                )}
+              </div>
+
+              {isLegacyFeedback && (
+                <p className="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                  This interview predates the structured feedback. Regenerate it for the full
+                  breakdown of strengths, improvements and per-answer notes.
+                </p>
+              )}
+
               <div className="mt-3">
-                {detail.feedback ? (
-                  <FeedbackView report={detail.feedback} />
+                {fb ? (
+                  <FeedbackView report={fb} />
                 ) : (
                   <p className="text-sm text-slate-500">This interview has no feedback yet.</p>
                 )}

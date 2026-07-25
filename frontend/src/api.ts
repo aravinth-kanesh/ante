@@ -272,6 +272,10 @@ export async function finishInterview(sessionId: number): Promise<{ feedback: Fe
   return request(`/api/interview/${sessionId}/finish`, { method: "POST" });
 }
 
+export async function regenerateFeedback(sessionId: number): Promise<{ feedback: FeedbackReport }> {
+  return request(`/api/interview/${sessionId}/feedback`, { method: "POST" });
+}
+
 export interface SessionSummary {
   id: number;
   mode: InterviewMode;

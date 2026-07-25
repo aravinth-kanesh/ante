@@ -213,7 +213,7 @@ def parse_feedback(raw: str) -> FeedbackReport:
     return FeedbackReport(summary=strip_markdown(raw))
 
 
-def finish(db: Session, session: InterviewSession) -> FeedbackReport:
+def _generate_feedback(session: InterviewSession) -> FeedbackReport:
     transcript = "\n".join(
         f"{'Interviewer' if t.role == 'interviewer' else 'Candidate'}: {t.content}"
         for t in session.turns
@@ -223,10 +223,33 @@ def finish(db: Session, session: InterviewSession) -> FeedbackReport:
     raw = llm.chat([{"role": "user", "content": prompt}])
     if not moderation.moderate_output(raw).allowed:
         raw = llm.chat([{"role": "user", "content": prompt}])
-    report = parse_feedback(raw)
+    return parse_feedback(raw)
 
+
+def finish(db: Session, session: InterviewSession) -> FeedbackReport:
+    report = _generate_feedback(session)
     _add_turn(db, session, "interviewer", "feedback", report.model_dump_json())
     session.status = "finished"
     db.commit()
     db.refresh(session)
+    return report
+
+
+def regenerate_feedback(db: Session, session: InterviewSession) -> FeedbackReport:
+    """Re-assess a finished interview, replacing its stored feedback.
+
+    Used to upgrade older interviews to the structured report from their saved
+    transcript, and to refresh feedback on demand.
+    """
+    report = _generate_feedback(session)
+    for turn in list(session.turns):
+        if turn.kind == "feedback":
+            db.delete(turn)
+    db.commit()
+    db.refresh(session)
+    _add_turn(db, session, "interviewer", "feedback", report.model_dump_json())
+    if session.status != "finished":
+        session.status = "finished"
+        db.commit()
+        db.refresh(session)
     return report
