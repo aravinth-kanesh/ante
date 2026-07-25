@@ -4,10 +4,20 @@ from app.services import prepare
 from app.services.moderation import Verdict
 
 QUESTIONS_JSON = json.dumps(
-    [
-        {"question": "Tell me about a project you led.", "rationale": "shows leadership"},
-        {"question": "How do you approach debugging a failing test?", "rationale": "technical"},
-    ]
+    {
+        "groups": [
+            {
+                "category": "Common questions",
+                "questions": [{"question": "Tell me about yourself.", "rationale": "opener"}],
+            },
+            {
+                "category": "Role and technical",
+                "questions": [
+                    {"question": "How do you approach debugging?", "rationale": "technical"}
+                ],
+            },
+        ]
+    }
 )
 
 
@@ -36,6 +46,6 @@ def test_questions_generated(client, monkeypatch):
     res = client.post("/api/prepare/questions", headers=headers)
 
     assert res.status_code == 200
-    questions = res.json()["questions"]
-    assert len(questions) == 2
-    assert questions[0]["question"] == "Tell me about a project you led."
+    groups = res.json()["groups"]
+    assert [g["category"] for g in groups] == ["Common questions", "Role and technical"]
+    assert groups[0]["questions"][0]["question"] == "Tell me about yourself."

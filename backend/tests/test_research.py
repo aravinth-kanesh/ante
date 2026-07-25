@@ -88,9 +88,9 @@ def test_questions_autoresearch_grounds_on_company(client, monkeypatch):
         research, "research_company", lambda c, r: CompanyResearch(overview="Acme values craftsmanship.")
     )
 
-    def fake_generate(cv, jd, context="", n=8):
+    def fake_generate(cv, jd, context=""):
         seen["context"] = context
-        return [{"question": "Q", "rationale": "r"}]
+        return [{"category": "Common questions", "questions": [{"question": "Q", "rationale": "r"}]}]
 
     monkeypatch.setattr(prepare, "generate_questions", fake_generate)
     monkeypatch.setattr(prepare.moderation, "moderate_output", lambda t: Verdict(allowed=True))

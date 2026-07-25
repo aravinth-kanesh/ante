@@ -27,9 +27,9 @@ def questions(
             db.rollback()
 
     try:
-        items = prepare.generate_questions(
+        groups = prepare.generate_questions(
             profile.cv_text, profile.jd_text, profile.company_context
         )
     except Exception as exc:
         raise HTTPException(status_code=502, detail=f"Could not generate questions: {exc}") from exc
-    return PrepResponse(questions=items)
+    return PrepResponse(groups=groups)

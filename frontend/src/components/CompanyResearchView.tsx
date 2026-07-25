@@ -9,6 +9,21 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
+function Chips({ items }: { items: string[] }) {
+  return (
+    <div className="flex flex-wrap gap-2">
+      {items.map((item, i) => (
+        <span
+          key={i}
+          className="rounded-full bg-brand-50 px-2.5 py-1 text-xs font-medium text-brand-700"
+        >
+          {item}
+        </span>
+      ))}
+    </div>
+  );
+}
+
 export default function CompanyResearchView({
   company,
   role,
@@ -39,20 +54,26 @@ export default function CompanyResearchView({
         </Section>
       )}
 
-      {research.skills.length > 0 && (
-        <Section title="Skills they look for">
-          <div className="flex flex-wrap gap-2">
-            {research.skills.map((skill, i) => (
-              <span
-                key={i}
-                className="rounded-full bg-brand-50 px-2.5 py-1 text-xs font-medium text-brand-700"
-              >
-                {skill}
-              </span>
-            ))}
-          </div>
+      {research.technical_skills.length > 0 && (
+        <Section title="Technical skills">
+          <Chips items={research.technical_skills} />
         </Section>
       )}
+
+      {research.soft_skills.length > 0 && (
+        <Section title="Soft skills">
+          <Chips items={research.soft_skills} />
+        </Section>
+      )}
+
+      {/* older research saved before the split */}
+      {research.technical_skills.length === 0 &&
+        research.soft_skills.length === 0 &&
+        research.skills.length > 0 && (
+          <Section title="Skills they look for">
+            <Chips items={research.skills} />
+          </Section>
+        )}
 
       {research.tips.length > 0 && (
         <Section title="How to prepare">

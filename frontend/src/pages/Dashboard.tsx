@@ -9,7 +9,7 @@ import {
   researchCompany,
   saveJobDescription,
   type Cv,
-  type PrepQuestion,
+  type PrepGroup,
   type Research,
 } from "../api";
 import { useAuth } from "../auth/AuthContext";
@@ -36,7 +36,7 @@ export default function Dashboard() {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
 
-  const [questions, setQuestions] = useState<PrepQuestion[]>([]);
+  const [questions, setQuestions] = useState<PrepGroup[]>([]);
   const [generating, setGenerating] = useState(false);
   const [genError, setGenError] = useState("");
 
@@ -245,15 +245,26 @@ export default function Dashboard() {
             </div>
             {genError && <p className="mt-3 text-sm text-red-600">{genError}</p>}
             {questions.length > 0 && (
-              <ol className="mt-4 space-y-3">
-                {questions.map((q, i) => (
-                  <li key={i} className="text-sm text-slate-800">
-                    <span className="mr-2 font-semibold text-brand-700">{i + 1}.</span>
-                    {q.question}
-                    {q.rationale && <p className="mt-0.5 ml-6 text-xs text-slate-500">{q.rationale}</p>}
-                  </li>
+              <div className="mt-5 space-y-5">
+                {questions.map((group) => (
+                  <div key={group.category}>
+                    <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      {group.category}
+                    </h3>
+                    <ol className="mt-2 space-y-3">
+                      {group.questions.map((q, i) => (
+                        <li key={i} className="text-sm text-slate-800">
+                          <span className="mr-2 font-semibold text-brand-700">{i + 1}.</span>
+                          {q.question}
+                          {q.rationale && (
+                            <p className="mt-0.5 ml-6 text-xs text-slate-500">{q.rationale}</p>
+                          )}
+                        </li>
+                      ))}
+                    </ol>
+                  </div>
                 ))}
-              </ol>
+              </div>
             )}
           </CardBody>
         </Card>

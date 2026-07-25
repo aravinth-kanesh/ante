@@ -19,7 +19,9 @@ class CompanyResearch(BaseModel):
 
     overview: str = ""
     interview_process: str = ""
-    skills: list[str] = []
+    technical_skills: list[str] = []
+    soft_skills: list[str] = []
+    skills: list[str] = []  # legacy: research saved before skills were split
     tips: list[str] = []
 
 

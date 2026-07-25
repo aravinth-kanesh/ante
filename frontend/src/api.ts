@@ -132,7 +132,9 @@ export async function deleteCv(id: number): Promise<{ ok: boolean }> {
 export interface CompanyResearch {
   overview: string;
   interview_process: string;
-  skills: string[];
+  technical_skills: string[];
+  soft_skills: string[];
+  skills: string[]; // legacy fallback
   tips: string[];
 }
 
@@ -168,9 +170,14 @@ export interface PrepQuestion {
   rationale: string;
 }
 
-export async function generateQuestions(): Promise<PrepQuestion[]> {
+export interface PrepGroup {
+  category: string;
+  questions: PrepQuestion[];
+}
+
+export async function generateQuestions(): Promise<PrepGroup[]> {
   const data = await request("/api/prepare/questions", { method: "POST" });
-  return data.questions;
+  return data.groups;
 }
 
 export type InterviewMode = "text" | "voice";

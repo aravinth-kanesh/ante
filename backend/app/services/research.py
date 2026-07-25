@@ -22,7 +22,10 @@ nothing else, in exactly this shape:
   "interview_process": "<how it usually interviews for this role: the likely stages \
 and formats, and the themes questions tend to focus on such as behavioural, technical \
 or values-based>",
-  "skills": ["<a skill or competency it looks for for this role>"],
+  "technical_skills": ["<a hard or technical skill the role needs, e.g. a language, \
+tool, or domain knowledge>"],
+  "soft_skills": ["<an interpersonal or behavioural quality the role needs, e.g. \
+teamwork or communication>"],
   "tips": ["<a concrete thing the candidate should prepare or emphasise>"]
 }}
 
@@ -47,12 +50,18 @@ def extract_company_role(jd_text: str) -> tuple[str, str]:
     return str(data.get("company", "")).strip(), str(data.get("role", "")).strip()
 
 
+def _list(items: list[str]) -> list[str]:
+    return [strip_markdown(s) for s in items if s.strip()]
+
+
 def _clean(report: CompanyResearch) -> CompanyResearch:
     return CompanyResearch(
         overview=strip_markdown(report.overview),
         interview_process=strip_markdown(report.interview_process),
-        skills=[strip_markdown(s) for s in report.skills if s.strip()],
-        tips=[strip_markdown(s) for s in report.tips if s.strip()],
+        technical_skills=_list(report.technical_skills),
+        soft_skills=_list(report.soft_skills),
+        skills=_list(report.skills),
+        tips=_list(report.tips),
     )
 
 
@@ -78,6 +87,10 @@ def render(report: CompanyResearch) -> str:
         parts.append(report.overview)
     if report.interview_process:
         parts.append(f"Interview process: {report.interview_process}")
+    if report.technical_skills:
+        parts.append("Technical skills: " + ", ".join(report.technical_skills))
+    if report.soft_skills:
+        parts.append("Soft skills: " + ", ".join(report.soft_skills))
     if report.skills:
         parts.append("Key skills: " + ", ".join(report.skills))
     if report.tips:

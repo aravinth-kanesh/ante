@@ -6,5 +6,10 @@ class PrepQuestion(BaseModel):
     rationale: str = ""
 
 
-class PrepResponse(BaseModel):
+class PrepGroup(BaseModel):
+    category: str
     questions: list[PrepQuestion]
+
+
+class PrepResponse(BaseModel):
+    groups: list[PrepGroup]
