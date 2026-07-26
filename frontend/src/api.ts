@@ -42,6 +42,7 @@ async function request(path: string, options: RequestInit = {}) {
     }
     throw new Error(detail);
   }
+  if (res.status === 204) return null; // no content (e.g. account deletion)
   return res.json();
 }
 
@@ -67,6 +68,10 @@ export async function authLogin(email: string, password: string): Promise<string
 
 export async function authMe(): Promise<User> {
   return request("/api/auth/me");
+}
+
+export async function deleteAccount(): Promise<void> {
+  await request("/api/auth/me", { method: "DELETE" });
 }
 
 export async function getProfile(): Promise<Profile> {

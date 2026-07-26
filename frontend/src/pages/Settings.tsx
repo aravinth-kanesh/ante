@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { listServerVoices, type ServerVoice } from "../api";
+import { deleteAccount, listServerVoices, type ServerVoice } from "../api";
+import { useAuth } from "../auth/AuthContext";
 import { WhyAnteFull } from "../components/WhyAnte";
 import {
   Badge,
@@ -7,6 +8,7 @@ import {
   Card,
   CardBody,
   CardTitle,
+  Input,
   Label,
   Select,
   SpeakerIcon,
@@ -20,11 +22,27 @@ const SAMPLE =
   "Hello, thanks for coming in today. Could you start by telling me a little about yourself?";
 
 export default function Settings() {
+  const { user, logout } = useAuth();
   const [serverVoices, setServerVoices] = useState<ServerVoice[]>([]);
   const [serverAvailable, setServerAvailable] = useState<boolean | null>(null);
   const [browserVoices, setBrowserVoices] = useState<SpeechSynthesisVoice[]>([]);
   const [selected, setSelected] = useState("");
   const [speaking, setSpeaking] = useState(false);
+  const [confirmEmail, setConfirmEmail] = useState("");
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
+
+  async function removeAccount() {
+    setDeleting(true);
+    setDeleteError("");
+    try {
+      await deleteAccount();
+      logout(); // clears the token and returns to the login screen
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : String(err));
+      setDeleting(false);
+    }
+  }
 
   // Stop any preview if the user navigates away.
   useEffect(() => cancelVoice, []);
@@ -150,6 +168,35 @@ export default function Settings() {
         <CardBody className="space-y-4">
           <CardTitle>Why it is called Ante</CardTitle>
           <WhyAnteFull />
+        </CardBody>
+      </Card>
+
+      <Card className="border-red-200">
+        <CardBody className="space-y-4">
+          <CardTitle>Delete account</CardTitle>
+          <p className="text-sm text-slate-600">
+            Permanently delete your account and all of your data, including your CVs, saved job
+            description and every interview and its feedback. This cannot be undone. To confirm,
+            type your email address <span className="font-medium text-slate-900">{user?.email}</span>{" "}
+            below.
+          </p>
+          <div className="max-w-sm">
+            <Input
+              value={confirmEmail}
+              onChange={(e) => setConfirmEmail(e.target.value)}
+              placeholder="your email"
+              autoComplete="off"
+            />
+          </div>
+          {deleteError && <p className="text-sm text-red-600">{deleteError}</p>}
+          <Button
+            variant="destructive"
+            loading={deleting}
+            disabled={confirmEmail.trim().toLowerCase() !== (user?.email ?? "").toLowerCase()}
+            onClick={removeAccount}
+          >
+            Delete my account
+          </Button>
         </CardBody>
       </Card>
     </div>

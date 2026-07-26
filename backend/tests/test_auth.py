@@ -61,3 +61,24 @@ def test_login_is_rate_limited(client):
         assert 429 in codes  # brute-force attempts are throttled
     finally:
         limiter.enabled = False
+
+
+def test_delete_account_removes_user_and_data(client):
+    token = signup(client).json()["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+    # give the account some data
+    client.post("/api/cv", headers=headers, json={"label": "CV", "text": "my cv"})
+    client.put("/api/profile", headers=headers, json={"jd_text": "a role"})
+
+    assert client.delete("/api/auth/me", headers=headers).status_code == 204
+
+    # the token no longer resolves to a user, and the account cannot log in
+    assert client.get("/api/auth/me", headers=headers).status_code == 401
+    login = client.post(
+        "/api/auth/login", json={"email": "alice@example.com", "password": "password123"}
+    )
+    assert login.status_code == 401
+
+
+def test_delete_account_requires_auth(client):
+    assert client.delete("/api/auth/me").status_code == 401
