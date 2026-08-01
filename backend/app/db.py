@@ -30,6 +30,7 @@ _ADDED_COLUMNS: dict[str, dict[str, str]] = {
         "selected_cv_id": "INTEGER",
         "company_research": "TEXT NOT NULL DEFAULT ''",
         "prep_questions": "TEXT NOT NULL DEFAULT ''",
+        "preparation": "TEXT NOT NULL DEFAULT ''",
     },
 }
 
