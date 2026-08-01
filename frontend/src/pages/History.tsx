@@ -21,11 +21,13 @@ const TYPES = [
   { value: "strengths", label: "Strengths" },
 ] as const;
 
+// Buckets are mutually exclusive and ordered newest-first, so the labels say
+// "earlier this week/month" to make clear each one sits below the ones above it.
 const BUCKETS = [
   { key: "today", label: "Today" },
-  { key: "week", label: "This week" },
-  { key: "month", label: "This month" },
-  { key: "earlier", label: "Earlier" },
+  { key: "week", label: "Earlier this week" },
+  { key: "month", label: "Earlier this month" },
+  { key: "earlier", label: "Older" },
 ] as const;
 
 function bucketOf(iso: string): string {

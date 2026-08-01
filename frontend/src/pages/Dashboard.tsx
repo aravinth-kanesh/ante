@@ -15,16 +15,8 @@ import {
 } from "../api";
 import { useAuth } from "../auth/AuthContext";
 import CompanyResearchView from "../components/CompanyResearchView";
-import {
-  Badge,
-  Button,
-  Card,
-  CardBody,
-  CardTitle,
-  DocumentIcon,
-  Label,
-  TextArea,
-} from "../components/ui";
+import Logo from "../components/Logo";
+import { Badge, Button, Card, CardBody, CardTitle, Label, TextArea } from "../components/ui";
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -152,9 +144,7 @@ export default function Dashboard() {
             </div>
             {activeCv ? (
               <div className="mt-4 flex items-center gap-3">
-                <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-brand-50 text-brand-700">
-                  <DocumentIcon className="h-5 w-5" />
-                </span>
+                <Logo size={40} />
                 <div>
                   <p className="font-medium text-slate-900">{activeCv.label}</p>
                   {activeCv.filename && (
