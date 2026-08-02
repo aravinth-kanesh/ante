@@ -1,7 +1,8 @@
-from fastapi import APIRouter, Depends, File, HTTPException, Response, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, Request, Response, UploadFile
 
 from app.config import settings
 from app.models.user import User
+from app.ratelimit import limiter
 from app.schemas.interview import TranscribeResponse
 from app.schemas.speech import SayRequest, VoicesResponse
 from app.security import get_current_user
@@ -11,7 +12,9 @@ router = APIRouter(prefix="/speech", tags=["speech"])
 
 
 @router.post("/transcribe", response_model=TranscribeResponse)
+@limiter.limit(settings.speech_rate_limit)
 async def transcribe(
+    request: Request,
     audio: UploadFile = File(...),
     current_user: User = Depends(get_current_user),
 ) -> TranscribeResponse:
@@ -36,7 +39,9 @@ def list_voices(current_user: User = Depends(get_current_user)) -> VoicesRespons
 
 
 @router.post("/say")
+@limiter.limit(settings.speech_rate_limit)
 def say(
+    request: Request,
     data: SayRequest,
     current_user: User = Depends(get_current_user),
 ) -> Response:

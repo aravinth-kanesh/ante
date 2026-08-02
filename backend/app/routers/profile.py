@@ -1,9 +1,11 @@
-from fastapi import APIRouter, Depends, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile
 from sqlalchemy.orm import Session
 
+from app.config import settings
 from app.db import get_db
 from app.models.profile import Profile
 from app.models.user import User
+from app.ratelimit import limiter
 from app.schemas.profile import CompanyResearch, ProfileRead, ProfileUpdate, ResearchRead
 from app.security import get_current_user
 from app.services import research
@@ -87,8 +89,9 @@ def read_research(
 
 
 @router.post("/research", response_model=ResearchRead)
+@limiter.limit(settings.llm_rate_limit)
 def research_profile(
-    current_user: User = Depends(get_current_user), db: Session = Depends(get_db)
+    request: Request, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)
 ) -> ResearchRead:
     profile = _get_or_create(db, current_user)
     if not profile.jd_text.strip():
@@ -101,7 +104,9 @@ def research_profile(
 
 
 @router.post("/cv", response_model=ProfileRead)
+@limiter.limit(settings.upload_rate_limit)
 async def upload_cv(
+    request: Request,
     file: UploadFile,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),

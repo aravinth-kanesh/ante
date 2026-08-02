@@ -1,7 +1,8 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 
 from app.config import settings
 from app.models.user import User
+from app.ratelimit import limiter
 from app.schemas.interview import AnalyseRequest, NonverbalMetrics
 from app.security import get_current_user
 from app.services import vision
@@ -10,7 +11,9 @@ router = APIRouter(prefix="/vision", tags=["vision"])
 
 
 @router.post("/analyse", response_model=NonverbalMetrics)
+@limiter.limit(settings.vision_rate_limit)
 def analyse(
+    request: Request,
     data: AnalyseRequest,
     current_user: User = Depends(get_current_user),
 ) -> NonverbalMetrics:

@@ -28,8 +28,23 @@ class Settings(BaseSettings):
     cookie_samesite: str = "lax"
     csrf_enabled: bool = True
 
-    # Auth rate limits (requests per window, per client IP), for brute-force defence.
+    # Rate limits (requests per window, per client IP). Auth guards brute force; the
+    # others protect the expensive model and media endpoints from abuse.
     auth_rate_limit: str = "10/minute"
+    llm_rate_limit: str = "30/minute"
+    speech_rate_limit: str = "60/minute"
+    vision_rate_limit: str = "120/minute"
+    upload_rate_limit: str = "20/minute"
+    # In-memory by default (per process); point at Redis for a multi-worker deployment,
+    # e.g. redis://localhost:6379.
+    rate_limit_storage_uri: str = ""
+
+    # Reject request bodies larger than this many bytes (defends against memory abuse).
+    max_request_bytes: int = 10 * 1024 * 1024
+
+    # Content-Security-Policy. Starts in report-only so it can be checked in the
+    # browser before it is enforced; set CSP_REPORT_ONLY=false to enforce.
+    csp_report_only: bool = True
 
     # Account security. Lockout throttles password guessing; the breach check rejects
     # passwords found in known breaches; verification is enforced in production.

@@ -1,10 +1,12 @@
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
 from sqlalchemy.orm import Session
 
+from app.config import settings
 from app.db import get_db
 from app.models.cv import CV
 from app.models.profile import Profile
 from app.models.user import User
+from app.ratelimit import limiter
 from app.routers.profile import MAX_CV_BYTES, _get_or_create
 from app.schemas.cv import CVCreate, CVRead, CVSummary, CVUpdate
 from app.security import get_current_user
@@ -92,7 +94,9 @@ def create_cv(
 
 
 @router.post("/upload", response_model=CVRead)
+@limiter.limit(settings.upload_rate_limit)
 async def upload_cv(
+    request: Request,
     file: UploadFile = File(...),
     label: str = Form(""),
     current_user: User = Depends(get_current_user),

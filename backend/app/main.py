@@ -19,6 +19,25 @@ from app.security import ACCESS_COOKIE, CSRF_COOKIE, REFRESH_COOKIE, require_ver
 
 SAFE_METHODS = {"GET", "HEAD", "OPTIONS", "TRACE"}
 
+# Content-Security-Policy. 'wasm-unsafe-eval' is required by the in-browser MediaPipe
+# models; blob: covers the synthesised audio and worker; 'unsafe-inline' styles are
+# needed for the inline style attributes the app uses.
+CSP_POLICY = (
+    "default-src 'self'; "
+    "img-src 'self' data:; "
+    "font-src 'self' data:; "
+    "media-src 'self' blob:; "
+    "worker-src 'self' blob:; "
+    "script-src 'self' 'wasm-unsafe-eval'; "
+    "style-src 'self' 'unsafe-inline'; "
+    "connect-src 'self'; "
+    "object-src 'none'; "
+    "frame-ancestors 'none'; "
+    "base-uri 'self'; "
+    "form-action 'self'"
+)
+PERMISSIONS_POLICY = "camera=(self), microphone=(self), geolocation=(), payment=()"
+
 logger = logging.getLogger("app")
 
 # Refuse to run with the default signing secret in production; warn in development.
@@ -52,6 +71,14 @@ app.add_middleware(
 
 
 @app.middleware("http")
+async def limit_body_size(request: Request, call_next):
+    content_length = request.headers.get("content-length")
+    if content_length and content_length.isdigit() and int(content_length) > settings.max_request_bytes:
+        return JSONResponse(status_code=413, content={"detail": "Request body too large"})
+    return await call_next(request)
+
+
+@app.middleware("http")
 async def csrf_protect(request: Request, call_next):
     # Double-submit CSRF: a state-changing request that carries an auth cookie must
     # echo the CSRF cookie in the X-CSRF-Token header. Requests without an auth
@@ -74,6 +101,11 @@ async def security_headers(request: Request, call_next):
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["Referrer-Policy"] = "no-referrer"
+    response.headers["Permissions-Policy"] = PERMISSIONS_POLICY
+    response.headers["Cross-Origin-Opener-Policy"] = "same-origin"
+    response.headers["Cross-Origin-Resource-Policy"] = "same-origin"
+    csp_header = "Content-Security-Policy-Report-Only" if settings.csp_report_only else "Content-Security-Policy"
+    response.headers[csp_header] = CSP_POLICY
     if settings.is_production:
         # Assumes TLS is terminated in front of the app (reverse proxy / platform).
         response.headers["Strict-Transport-Security"] = "max-age=63072000; includeSubDomains"

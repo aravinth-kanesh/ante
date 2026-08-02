@@ -1,9 +1,11 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 
+from app.config import settings
 from app.db import get_db
 from app.models.session import InterviewSession, Turn
 from app.models.user import User
+from app.ratelimit import limiter
 from app.routers.profile import _get_or_create, run_research
 from app.schemas.interview import (
     AnswerRequest,
@@ -51,7 +53,9 @@ def _turn_read(turn: Turn) -> TurnRead:
 
 
 @router.post("/start", response_model=StartResponse)
+@limiter.limit(settings.llm_rate_limit)
 def start(
+    request: Request,
     data: StartRequest | None = None,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -92,7 +96,9 @@ def start(
 
 
 @router.post("/{session_id}/answer", response_model=AnswerResponse)
+@limiter.limit(settings.llm_rate_limit)
 def answer(
+    request: Request,
     session_id: int,
     data: AnswerRequest,
     current_user: User = Depends(get_current_user),
@@ -111,7 +117,9 @@ def answer(
 
 
 @router.post("/{session_id}/finish", response_model=FeedbackResponse)
+@limiter.limit(settings.llm_rate_limit)
 def finish(
+    request: Request,
     session_id: int,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -125,7 +133,9 @@ def finish(
 
 
 @router.post("/{session_id}/feedback", response_model=FeedbackResponse)
+@limiter.limit(settings.llm_rate_limit)
 def regenerate_feedback(
+    request: Request,
     session_id: int,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),

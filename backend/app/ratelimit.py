@@ -1,6 +1,11 @@
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 
-# Per-client-IP rate limiter. In-memory, so limits are per process; a multi-process
-# or multi-host deployment would point this at Redis via a storage_uri.
-limiter = Limiter(key_func=get_remote_address)
+from app.config import settings
+
+# Per-client-IP rate limiter. In-memory by default, so limits are per process; set
+# rate_limit_storage_uri to a Redis URL for a multi-process or multi-host deployment.
+limiter = Limiter(
+    key_func=get_remote_address,
+    storage_uri=settings.rate_limit_storage_uri or "memory://",
+)

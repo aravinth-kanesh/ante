@@ -1,9 +1,11 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 
+from app.config import settings
 from app.db import get_db
 from app.models.profile import Profile
 from app.models.user import User
+from app.ratelimit import limiter
 from app.routers.profile import _get_or_create, run_research
 from app.schemas.prepare import PrepResponse
 from app.schemas.preparation import PreparationReport
@@ -48,8 +50,9 @@ def read_questions(
 
 
 @router.post("/questions", response_model=PrepResponse)
+@limiter.limit(settings.llm_rate_limit)
 def questions(
-    current_user: User = Depends(get_current_user), db: Session = Depends(get_db)
+    request: Request, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)
 ) -> PrepResponse:
     profile = _get_or_create(db, current_user)
     if not profile.cv_text.strip() and not profile.jd_text.strip():
@@ -77,8 +80,9 @@ def read_plan(
 
 
 @router.post("/plan", response_model=PreparationReport)
+@limiter.limit(settings.llm_rate_limit)
 def make_plan(
-    current_user: User = Depends(get_current_user), db: Session = Depends(get_db)
+    request: Request, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)
 ) -> PreparationReport:
     profile = _get_or_create(db, current_user)
     if not profile.cv_text.strip():

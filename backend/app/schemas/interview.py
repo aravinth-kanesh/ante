@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 Mode = Literal["text", "voice"]
 InterviewType = Literal["general", "behavioural", "competency", "technical", "strengths"]
@@ -75,7 +75,7 @@ class NonverbalSample(BaseModel):
 
 
 class AnalyseRequest(BaseModel):
-    samples: list[NonverbalSample]
+    samples: list[NonverbalSample] = Field(..., max_length=5000)
 
 
 class NonverbalMetrics(BaseModel):
@@ -109,7 +109,7 @@ class NonverbalMetrics(BaseModel):
 
 
 class AnswerRequest(BaseModel):
-    answer: str
+    answer: str = Field("", max_length=20000)
     metrics: DeliveryMetrics | None = None
     nonverbal: NonverbalMetrics | None = None
 

@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class Voice(BaseModel):
@@ -12,5 +12,5 @@ class VoicesResponse(BaseModel):
 
 
 class SayRequest(BaseModel):
-    text: str
-    voice: str = ""
+    text: str = Field(..., max_length=4000)
+    voice: str = Field("", max_length=100)
