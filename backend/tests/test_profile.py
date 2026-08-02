@@ -1,8 +1,9 @@
-def auth_header(client, email="bob@example.com"):
-    token = client.post(
+def auth_cookies(client, email="bob@example.com"):
+    res = client.post(
         "/api/auth/signup", json={"email": email, "password": "password123"}
-    ).json()["access_token"]
-    return {"Authorization": f"Bearer {token}"}
+    )
+    client.cookies.clear()  # keep the jar empty so per-request cookies are unambiguous
+    return {"access_token": res.cookies["access_token"]}
 
 
 def test_profile_requires_auth(client):
@@ -10,13 +11,13 @@ def test_profile_requires_auth(client):
 
 
 def test_profile_defaults_empty(client):
-    res = client.get("/api/profile", headers=auth_header(client))
+    res = client.get("/api/profile", cookies=auth_cookies(client))
     assert res.status_code == 200
     assert res.json() == {"cv_text": "", "cv_filename": "", "jd_text": ""}
 
 
 def test_profile_roundtrip(client):
-    headers = auth_header(client)
-    client.put("/api/profile", headers=headers, json={"cv_text": "my cv", "jd_text": "my jd"})
-    res = client.get("/api/profile", headers=headers)
+    cookies = auth_cookies(client)
+    client.put("/api/profile", cookies=cookies, json={"cv_text": "my cv", "jd_text": "my jd"})
+    res = client.get("/api/profile", cookies=cookies)
     assert res.json() == {"cv_text": "my cv", "cv_filename": "", "jd_text": "my jd"}

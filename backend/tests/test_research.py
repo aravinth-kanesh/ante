@@ -1,11 +1,12 @@
 from app.services import research
 
 
-def auth_header(client, email="research@example.com"):
-    token = client.post(
+def auth_cookies(client, email="research@example.com"):
+    res = client.post(
         "/api/auth/signup", json={"email": email, "password": "password123"}
-    ).json()["access_token"]
-    return {"Authorization": f"Bearer {token}"}
+    )
+    client.cookies.clear()  # keep the jar empty so per-request cookies are unambiguous
+    return {"access_token": res.cookies["access_token"]}
 
 
 def test_extract_company_role_parses_json(monkeypatch):
@@ -47,7 +48,7 @@ def test_render_flattens_structured_research():
 
 
 def test_research_endpoint_requires_jd(client):
-    res = client.post("/api/profile/research", headers=auth_header(client))
+    res = client.post("/api/profile/research", cookies=auth_cookies(client))
     assert res.status_code == 400
 
 
@@ -60,20 +61,20 @@ def test_research_endpoint_persists_and_reads_back(client, monkeypatch):
     monkeypatch.setattr(research, "extract_company_role", lambda jd: ("Acme", "Engineer"))
     monkeypatch.setattr(research, "research_company", lambda c, r: report)
 
-    headers = auth_header(client)
-    client.put("/api/profile", headers=headers, json={"cv_text": "cv", "jd_text": "Acme role"})
-    body = client.post("/api/profile/research", headers=headers).json()
+    cookies = auth_cookies(client)
+    client.put("/api/profile", cookies=cookies, json={"cv_text": "cv", "jd_text": "Acme role"})
+    body = client.post("/api/profile/research", cookies=cookies).json()
     assert body["company"] == "Acme" and body["role"] == "Engineer"
     assert body["research"]["overview"] == "Acme values craft."
     assert body["research"]["skills"] == ["Python"]
 
     # the stored research can be read back on load
-    got = client.get("/api/profile/research", headers=headers).json()
+    got = client.get("/api/profile/research", cookies=cookies).json()
     assert got["research"]["interview_process"] == "Two stages."
 
 
 def test_read_research_empty_when_none(client):
-    got = client.get("/api/profile/research", headers=auth_header(client, "noresearch@example.com"))
+    got = client.get("/api/profile/research", cookies=auth_cookies(client, "noresearch@example.com"))
     assert got.json()["research"] is None
 
 
@@ -95,9 +96,9 @@ def test_questions_autoresearch_grounds_on_company(client, monkeypatch):
     monkeypatch.setattr(prepare, "generate_questions", fake_generate)
     monkeypatch.setattr(prepare.moderation, "moderate_output", lambda t: Verdict(allowed=True))
 
-    headers = auth_header(client, "research2@example.com")
-    client.put("/api/profile", headers=headers, json={"cv_text": "cv", "jd_text": "Acme role"})
-    res = client.post("/api/prepare/questions", headers=headers)
+    cookies = auth_cookies(client, "research2@example.com")
+    client.put("/api/profile", cookies=cookies, json={"cv_text": "cv", "jd_text": "Acme role"})
+    res = client.post("/api/prepare/questions", cookies=cookies)
 
     assert res.status_code == 200
     assert seen["context"] == "Acme values craftsmanship."  # research fed into generation

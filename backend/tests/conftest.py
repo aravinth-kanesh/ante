@@ -10,6 +10,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
+from app.config import settings
 from app.db import Base, get_db
 from app.main import app
 from app.ratelimit import limiter
@@ -17,6 +18,9 @@ from app.ratelimit import limiter
 # The tests hit auth many times from one client; rate limiting is exercised
 # separately in test_auth, so disable it for the rest of the suite.
 limiter.enabled = False
+# CSRF is exercised on its own in test_auth; disable it elsewhere so the suite does
+# not have to thread a CSRF header through every mutating request.
+settings.csrf_enabled = False
 
 
 @pytest.fixture

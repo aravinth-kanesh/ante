@@ -2,11 +2,12 @@ from app.services import speech
 from app.services.speech import Word, delivery_metrics
 
 
-def auth_header(client, email="speech@example.com"):
-    token = client.post(
+def auth_cookies(client, email="speech@example.com"):
+    res = client.post(
         "/api/auth/signup", json={"email": email, "password": "password123"}
-    ).json()["access_token"]
-    return {"Authorization": f"Bearer {token}"}
+    )
+    client.cookies.clear()  # keep the jar empty so per-request cookies are unambiguous
+    return {"access_token": res.cookies["access_token"]}
 
 
 def audio_file(data=b"fake-audio-bytes"):
@@ -80,7 +81,7 @@ def test_transcribe_endpoint_returns_transcript_and_metrics(client, monkeypatch)
     monkeypatch.setattr(speech, "transcribe", lambda data: ("I um built", spoken, 1.2))
 
     res = client.post(
-        "/api/speech/transcribe", headers=auth_header(client), files=audio_file()
+        "/api/speech/transcribe", cookies=auth_cookies(client), files=audio_file()
     )
     assert res.status_code == 200
     body = res.json()
@@ -95,7 +96,7 @@ def test_transcribe_requires_auth(client):
 
 def test_transcribe_rejects_empty_audio(client):
     res = client.post(
-        "/api/speech/transcribe", headers=auth_header(client), files=audio_file(b"")
+        "/api/speech/transcribe", cookies=auth_cookies(client), files=audio_file(b"")
     )
     assert res.status_code == 400
 

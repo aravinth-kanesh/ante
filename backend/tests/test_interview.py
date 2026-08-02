@@ -2,15 +2,16 @@ from app.services import interview, research
 from app.services.moderation import Verdict
 
 
-def auth_header(client, email="iv@example.com"):
-    token = client.post(
+def auth_cookies(client, email="iv@example.com"):
+    res = client.post(
         "/api/auth/signup", json={"email": email, "password": "password123"}
-    ).json()["access_token"]
-    return {"Authorization": f"Bearer {token}"}
+    )
+    client.cookies.clear()  # keep the jar empty so per-request cookies are unambiguous
+    return {"access_token": res.cookies["access_token"]}
 
 
-def save_cv(client, headers):
-    client.put("/api/profile", headers=headers, json={"cv_text": "my cv", "jd_text": ""})
+def save_cv(client, cookies):
+    client.put("/api/profile", cookies=cookies, json={"cv_text": "my cv", "jd_text": ""})
 
 
 def mock_llm(monkeypatch):
@@ -24,14 +25,14 @@ def test_requires_auth(client):
 
 def test_start_requires_cv(client, monkeypatch):
     mock_llm(monkeypatch)
-    assert client.post("/api/interview/start", headers=auth_header(client)).status_code == 400
+    assert client.post("/api/interview/start", cookies=auth_cookies(client)).status_code == 400
 
 
 def test_interview_type_defaults_to_general(client, monkeypatch):
     mock_llm(monkeypatch)
-    headers = auth_header(client)
-    save_cv(client, headers)
-    assert client.post("/api/interview/start", headers=headers).json()["interview_type"] == "general"
+    cookies = auth_cookies(client)
+    save_cv(client, cookies)
+    assert client.post("/api/interview/start", cookies=cookies).json()["interview_type"] == "general"
 
 
 def test_interview_type_shapes_the_prompt(client, monkeypatch):
@@ -43,11 +44,11 @@ def test_interview_type_shapes_the_prompt(client, monkeypatch):
 
     monkeypatch.setattr(interview.llm, "chat", fake_chat)
     monkeypatch.setattr(interview.moderation, "moderate_output", lambda t: Verdict(allowed=True))
-    headers = auth_header(client)
-    save_cv(client, headers)
+    cookies = auth_cookies(client)
+    save_cv(client, cookies)
 
     res = client.post(
-        "/api/interview/start", headers=headers, json={"interview_type": "competency"}
+        "/api/interview/start", cookies=cookies, json={"interview_type": "competency"}
     ).json()
     assert res["interview_type"] == "competency"
     assert "competency-based interview" in captured["system"]
@@ -57,57 +58,57 @@ def test_interview_type_shapes_the_prompt(client, monkeypatch):
 
 def test_interview_type_rejects_unknown(client, monkeypatch):
     mock_llm(monkeypatch)
-    headers = auth_header(client)
-    save_cv(client, headers)
-    res = client.post("/api/interview/start", headers=headers, json={"interview_type": "coding"})
+    cookies = auth_cookies(client)
+    save_cv(client, cookies)
+    res = client.post("/api/interview/start", cookies=cookies, json={"interview_type": "coding"})
     assert res.status_code == 422
 
 
 def test_start_and_answer_flow(client, monkeypatch):
     mock_llm(monkeypatch)
     monkeypatch.setattr(interview.settings, "interview_max_questions", 2)
-    headers = auth_header(client)
-    save_cv(client, headers)
+    cookies = auth_cookies(client)
+    save_cv(client, cookies)
 
-    started = client.post("/api/interview/start", headers=headers).json()
+    started = client.post("/api/interview/start", cookies=cookies).json()
     sid = started["session_id"]
     assert started["question"]
 
     first = client.post(
-        f"/api/interview/{sid}/answer", headers=headers, json={"answer": "I built X."}
+        f"/api/interview/{sid}/answer", cookies=cookies, json={"answer": "I built X."}
     ).json()
     assert first["done"] is False and first["question"]
 
     second = client.post(
-        f"/api/interview/{sid}/answer", headers=headers, json={"answer": "And Y."}
+        f"/api/interview/{sid}/answer", cookies=cookies, json={"answer": "And Y."}
     ).json()
     assert second["done"] is True and second["question"] is None
 
 
 def test_finish_and_locks_session(client, monkeypatch):
     mock_llm(monkeypatch)
-    headers = auth_header(client)
-    save_cv(client, headers)
-    sid = client.post("/api/interview/start", headers=headers).json()["session_id"]
+    cookies = auth_cookies(client)
+    save_cv(client, cookies)
+    sid = client.post("/api/interview/start", cookies=cookies).json()["session_id"]
 
-    feedback = client.post(f"/api/interview/{sid}/finish", headers=headers).json()
+    feedback = client.post(f"/api/interview/{sid}/finish", cookies=cookies).json()
     assert feedback["feedback"]
 
-    later = client.post(f"/api/interview/{sid}/answer", headers=headers, json={"answer": "x"})
+    later = client.post(f"/api/interview/{sid}/answer", cookies=cookies, json={"answer": "x"})
     assert later.status_code == 400
 
 
 def test_ownership(client, monkeypatch):
     mock_llm(monkeypatch)
-    owner = auth_header(client, "owner@example.com")
+    owner = auth_cookies(client, "owner@example.com")
     save_cv(client, owner)
-    sid = client.post("/api/interview/start", headers=owner).json()["session_id"]
+    sid = client.post("/api/interview/start", cookies=owner).json()["session_id"]
 
-    intruder = auth_header(client, "intruder@example.com")
-    assert client.get(f"/api/interview/{sid}", headers=intruder).status_code == 404
+    intruder = auth_cookies(client, "intruder@example.com")
+    assert client.get(f"/api/interview/{sid}", cookies=intruder).status_code == 404
     assert (
         client.post(
-            f"/api/interview/{sid}/answer", headers=intruder, json={"answer": "x"}
+            f"/api/interview/{sid}/answer", cookies=intruder, json={"answer": "x"}
         ).status_code
         == 404
     )
@@ -115,31 +116,31 @@ def test_ownership(client, monkeypatch):
 
 def test_start_defaults_to_text_mode(client, monkeypatch):
     mock_llm(monkeypatch)
-    headers = auth_header(client)
-    save_cv(client, headers)
+    cookies = auth_cookies(client)
+    save_cv(client, cookies)
 
-    started = client.post("/api/interview/start", headers=headers).json()
+    started = client.post("/api/interview/start", cookies=cookies).json()
     assert started["mode"] == "text"
 
 
 def test_start_records_voice_mode(client, monkeypatch):
     mock_llm(monkeypatch)
-    headers = auth_header(client)
-    save_cv(client, headers)
+    cookies = auth_cookies(client)
+    save_cv(client, cookies)
 
-    started = client.post("/api/interview/start", headers=headers, json={"mode": "voice"}).json()
+    started = client.post("/api/interview/start", cookies=cookies, json={"mode": "voice"}).json()
     assert started["mode"] == "voice"
 
-    transcript = client.get(f"/api/interview/{started['session_id']}", headers=headers).json()
+    transcript = client.get(f"/api/interview/{started['session_id']}", cookies=cookies).json()
     assert transcript["mode"] == "voice"
 
 
 def test_start_rejects_unknown_mode(client, monkeypatch):
     mock_llm(monkeypatch)
-    headers = auth_header(client)
-    save_cv(client, headers)
+    cookies = auth_cookies(client)
+    save_cv(client, cookies)
 
-    res = client.post("/api/interview/start", headers=headers, json={"mode": "telepathy"})
+    res = client.post("/api/interview/start", cookies=cookies, json={"mode": "telepathy"})
     assert res.status_code == 422
 
 
@@ -170,18 +171,18 @@ def _capture_prompts(monkeypatch):
 
 def test_feedback_includes_delivery_when_metrics_present(client, monkeypatch):
     prompts = _capture_prompts(monkeypatch)
-    headers = auth_header(client)
-    save_cv(client, headers)
+    cookies = auth_cookies(client)
+    save_cv(client, cookies)
     sid = client.post(
-        "/api/interview/start", headers=headers, json={"mode": "voice"}
+        "/api/interview/start", cookies=cookies, json={"mode": "voice"}
     ).json()["session_id"]
 
     client.post(
         f"/api/interview/{sid}/answer",
-        headers=headers,
+        cookies=cookies,
         json={"answer": "I built X.", "metrics": VOICE_METRICS},
     )
-    client.post(f"/api/interview/{sid}/finish", headers=headers)
+    client.post(f"/api/interview/{sid}/finish", cookies=cookies)
 
     feedback_prompt = prompts[-1]
     assert "speaking pace, pauses and filler words" in feedback_prompt
@@ -201,18 +202,18 @@ NONVERBAL_METRICS = {
 
 def test_feedback_includes_nonverbal_when_present(client, monkeypatch):
     prompts = _capture_prompts(monkeypatch)
-    headers = auth_header(client)
-    save_cv(client, headers)
+    cookies = auth_cookies(client)
+    save_cv(client, cookies)
     sid = client.post(
-        "/api/interview/start", headers=headers, json={"mode": "voice"}
+        "/api/interview/start", cookies=cookies, json={"mode": "voice"}
     ).json()["session_id"]
 
     client.post(
         f"/api/interview/{sid}/answer",
-        headers=headers,
+        cookies=cookies,
         json={"answer": "I led the team.", "metrics": VOICE_METRICS, "nonverbal": NONVERBAL_METRICS},
     )
-    client.post(f"/api/interview/{sid}/finish", headers=headers)
+    client.post(f"/api/interview/{sid}/finish", cookies=cookies)
 
     prompt = prompts[-1]
     assert "eye contact, composure and posture" in prompt
@@ -229,49 +230,49 @@ def test_feedback_is_structured_and_plain_text(client, monkeypatch):
     )
     monkeypatch.setattr(interview.llm, "chat", lambda *a, **k: reply)
     monkeypatch.setattr(interview.moderation, "moderate_output", lambda t: Verdict(allowed=True))
-    headers = auth_header(client)
-    save_cv(client, headers)
-    sid = client.post("/api/interview/start", headers=headers).json()["session_id"]
+    cookies = auth_cookies(client)
+    save_cv(client, cookies)
+    sid = client.post("/api/interview/start", cookies=cookies).json()["session_id"]
 
-    report = client.post(f"/api/interview/{sid}/finish", headers=headers).json()["feedback"]
+    report = client.post(f"/api/interview/{sid}/finish", cookies=cookies).json()["feedback"]
     assert report["summary"] == "Weak overall."  # markdown stripped
     assert report["strengths"] == []  # not padded with faint praise
     assert report["improvements"] == ["Give a specific example."]
     assert report["answer_notes"][0]["verdict"] == "weak"
 
     # the stored transcript exposes the same structured report
-    detail = client.get(f"/api/interview/{sid}", headers=headers).json()
+    detail = client.get(f"/api/interview/{sid}", cookies=cookies).json()
     assert detail["feedback"]["summary"] == "Weak overall."
 
 
 def test_regenerate_upgrades_legacy_feedback(client, monkeypatch):
     # finish once with the old plain-text style stored directly on the turn
     mock_llm(monkeypatch)
-    headers = auth_header(client, "regen@example.com")
-    save_cv(client, headers)
-    sid = client.post("/api/interview/start", headers=headers).json()["session_id"]
-    client.post(f"/api/interview/{sid}/answer", headers=headers, json={"answer": "an answer"})
-    client.post(f"/api/interview/{sid}/finish", headers=headers)
+    cookies = auth_cookies(client, "regen@example.com")
+    save_cv(client, cookies)
+    sid = client.post("/api/interview/start", cookies=cookies).json()["session_id"]
+    client.post(f"/api/interview/{sid}/answer", cookies=cookies, json={"answer": "an answer"})
+    client.post(f"/api/interview/{sid}/finish", cookies=cookies)
 
     # now the model returns a structured assessment; regenerate should adopt it
     structured = '{"summary": "Solid.", "strengths": ["Clear example"], "improvements": []}'
     monkeypatch.setattr(interview.llm, "chat", lambda *a, **k: structured)
-    report = client.post(f"/api/interview/{sid}/feedback", headers=headers).json()["feedback"]
+    report = client.post(f"/api/interview/{sid}/feedback", cookies=cookies).json()["feedback"]
     assert report["summary"] == "Solid."
     assert report["strengths"] == ["Clear example"]
 
     # the transcript exposes the upgraded feedback and only one feedback turn exists
-    detail = client.get(f"/api/interview/{sid}", headers=headers).json()
+    detail = client.get(f"/api/interview/{sid}", cookies=cookies).json()
     assert detail["feedback"]["strengths"] == ["Clear example"]
     assert sum(1 for t in detail["turns"] if t["kind"] == "feedback") == 1
 
 
 def test_regenerate_requires_answers(client, monkeypatch):
     mock_llm(monkeypatch)
-    headers = auth_header(client, "regen-empty@example.com")
-    save_cv(client, headers)
-    sid = client.post("/api/interview/start", headers=headers).json()["session_id"]
-    assert client.post(f"/api/interview/{sid}/feedback", headers=headers).status_code == 400
+    cookies = auth_cookies(client, "regen-empty@example.com")
+    save_cv(client, cookies)
+    sid = client.post("/api/interview/start", cookies=cookies).json()["session_id"]
+    assert client.post(f"/api/interview/{sid}/feedback", cookies=cookies).status_code == 400
 
 
 def test_parse_feedback_falls_back_to_prose():
@@ -282,30 +283,30 @@ def test_parse_feedback_falls_back_to_prose():
 
 def test_feedback_has_no_delivery_block_for_typed_answers(client, monkeypatch):
     prompts = _capture_prompts(monkeypatch)
-    headers = auth_header(client)
-    save_cv(client, headers)
-    sid = client.post("/api/interview/start", headers=headers).json()["session_id"]
+    cookies = auth_cookies(client)
+    save_cv(client, cookies)
+    sid = client.post("/api/interview/start", cookies=cookies).json()["session_id"]
 
-    client.post(f"/api/interview/{sid}/answer", headers=headers, json={"answer": "I built X."})
-    client.post(f"/api/interview/{sid}/finish", headers=headers)
+    client.post(f"/api/interview/{sid}/answer", cookies=cookies, json={"answer": "I built X."})
+    client.post(f"/api/interview/{sid}/finish", cookies=cookies)
 
     assert "was measured during the interview" not in prompts[-1]
 
 
 def test_transcript_exposes_metrics(client, monkeypatch):
     mock_llm(monkeypatch)
-    headers = auth_header(client)
-    save_cv(client, headers)
+    cookies = auth_cookies(client)
+    save_cv(client, cookies)
     sid = client.post(
-        "/api/interview/start", headers=headers, json={"mode": "voice"}
+        "/api/interview/start", cookies=cookies, json={"mode": "voice"}
     ).json()["session_id"]
     client.post(
         f"/api/interview/{sid}/answer",
-        headers=headers,
+        cookies=cookies,
         json={"answer": "spoken", "metrics": VOICE_METRICS, "nonverbal": NONVERBAL_METRICS},
     )
 
-    turns = client.get(f"/api/interview/{sid}", headers=headers).json()["turns"]
+    turns = client.get(f"/api/interview/{sid}", cookies=cookies).json()["turns"]
     answer_turn = next(t for t in turns if t["kind"] == "answer")
     assert answer_turn["metrics"]["wpm"] == 180
     assert answer_turn["nonverbal"]["eye_contact_pct"] == 78
@@ -315,28 +316,28 @@ def test_transcript_exposes_metrics(client, monkeypatch):
 
 def test_transcript_null_metrics_for_typed_answer(client, monkeypatch):
     mock_llm(monkeypatch)
-    headers = auth_header(client)
-    save_cv(client, headers)
-    sid = client.post("/api/interview/start", headers=headers).json()["session_id"]
-    client.post(f"/api/interview/{sid}/answer", headers=headers, json={"answer": "typed"})
+    cookies = auth_cookies(client)
+    save_cv(client, cookies)
+    sid = client.post("/api/interview/start", cookies=cookies).json()["session_id"]
+    client.post(f"/api/interview/{sid}/answer", cookies=cookies, json={"answer": "typed"})
 
-    turns = client.get(f"/api/interview/{sid}", headers=headers).json()["turns"]
+    turns = client.get(f"/api/interview/{sid}", cookies=cookies).json()["turns"]
     answer_turn = next(t for t in turns if t["kind"] == "answer")
     assert answer_turn["metrics"] is None and answer_turn["nonverbal"] is None
 
 
 def test_list_sessions_newest_first_and_scoped(client, monkeypatch):
     mock_llm(monkeypatch)
-    owner = auth_header(client, "hist-owner@example.com")
+    owner = auth_cookies(client, "hist-owner@example.com")
     save_cv(client, owner)
-    sid1 = client.post("/api/interview/start", headers=owner).json()["session_id"]
-    sid2 = client.post("/api/interview/start", headers=owner).json()["session_id"]
+    sid1 = client.post("/api/interview/start", cookies=owner).json()["session_id"]
+    sid2 = client.post("/api/interview/start", cookies=owner).json()["session_id"]
 
-    other = auth_header(client, "hist-other@example.com")
+    other = auth_cookies(client, "hist-other@example.com")
     save_cv(client, other)
-    client.post("/api/interview/start", headers=other)
+    client.post("/api/interview/start", cookies=other)
 
-    listing = client.get("/api/interview", headers=owner).json()
+    listing = client.get("/api/interview", cookies=owner).json()
     assert [s["id"] for s in listing] == [sid2, sid1]  # newest first, owner's only
     assert listing[0]["question_count"] == 1
     assert listing[0]["preview"]
@@ -348,24 +349,24 @@ def test_list_sessions_requires_auth(client):
 
 def test_list_backfills_company_for_older_sessions(client, monkeypatch):
     mock_llm(monkeypatch)
-    headers = auth_header(client, "backfill@example.com")
-    save_cv(client, headers)
-    client.put("/api/profile", headers=headers, json={"jd_text": "Ciena engineer role"})
+    cookies = auth_cookies(client, "backfill@example.com")
+    save_cv(client, cookies)
+    client.put("/api/profile", cookies=cookies, json={"jd_text": "Ciena engineer role"})
 
     from app.schemas.profile import CompanyResearch
 
     # the first run could not identify the company, so the session recorded none
     monkeypatch.setattr(research, "extract_company_role", lambda jd: ("", ""))
     monkeypatch.setattr(research, "research_company", lambda c, r: CompanyResearch())
-    client.post("/api/interview/start", headers=headers)
-    assert client.get("/api/interview", headers=headers).json()[0]["title"] == "General Interview"
+    client.post("/api/interview/start", cookies=cookies)
+    assert client.get("/api/interview", cookies=cookies).json()[0]["title"] == "General Interview"
 
     # research later identifies the company for the same job description
     monkeypatch.setattr(research, "extract_company_role", lambda jd: ("Ciena", "Engineer"))
     monkeypatch.setattr(research, "research_company", lambda c, r: CompanyResearch(overview="ctx"))
-    client.post("/api/profile/research", headers=headers)
+    client.post("/api/profile/research", cookies=cookies)
 
-    titles = [s["title"] for s in client.get("/api/interview", headers=headers).json()]
+    titles = [s["title"] for s in client.get("/api/interview", cookies=cookies).json()]
     assert titles == ["Ciena - General Interview for Engineer"]
 
 
@@ -386,19 +387,19 @@ def test_session_title_formats():
 
 def test_list_sessions_titles_number_repeats(client, monkeypatch):
     mock_llm(monkeypatch)
-    headers = auth_header(client, "titles@example.com")
-    save_cv(client, headers)
+    cookies = auth_cookies(client, "titles@example.com")
+    save_cv(client, cookies)
     # research fills company/role on the profile, which the session snapshots
     from app.schemas.profile import CompanyResearch
 
     monkeypatch.setattr(research, "extract_company_role", lambda jd: ("Cognizant", "Analyst"))
     monkeypatch.setattr(research, "research_company", lambda c, r: CompanyResearch(overview="ctx"))
-    client.put("/api/profile", headers=headers, json={"jd_text": "Cognizant analyst role"})
+    client.put("/api/profile", cookies=cookies, json={"jd_text": "Cognizant analyst role"})
 
     for _ in range(2):
-        client.post("/api/interview/start", headers=headers, json={"interview_type": "behavioural"})
+        client.post("/api/interview/start", cookies=cookies, json={"interview_type": "behavioural"})
 
-    titles = [s["title"] for s in client.get("/api/interview", headers=headers).json()]
+    titles = [s["title"] for s in client.get("/api/interview", cookies=cookies).json()]
     # newest first, so the second (numbered) session comes first
     assert titles == [
         "Cognizant - Behavioural Interview for Analyst 2",
@@ -408,35 +409,35 @@ def test_list_sessions_titles_number_repeats(client, monkeypatch):
 
 def test_delete_session(client, monkeypatch):
     mock_llm(monkeypatch)
-    headers = auth_header(client)
-    save_cv(client, headers)
-    sid = client.post("/api/interview/start", headers=headers).json()["session_id"]
+    cookies = auth_cookies(client)
+    save_cv(client, cookies)
+    sid = client.post("/api/interview/start", cookies=cookies).json()["session_id"]
 
-    assert client.delete(f"/api/interview/{sid}", headers=headers).status_code == 200
-    assert client.get(f"/api/interview/{sid}", headers=headers).status_code == 404
-    assert client.get("/api/interview", headers=headers).json() == []
+    assert client.delete(f"/api/interview/{sid}", cookies=cookies).status_code == 200
+    assert client.get(f"/api/interview/{sid}", cookies=cookies).status_code == 404
+    assert client.get("/api/interview", cookies=cookies).json() == []
 
 
 def test_delete_session_ownership(client, monkeypatch):
     mock_llm(monkeypatch)
-    owner = auth_header(client, "del-owner@example.com")
+    owner = auth_cookies(client, "del-owner@example.com")
     save_cv(client, owner)
-    sid = client.post("/api/interview/start", headers=owner).json()["session_id"]
+    sid = client.post("/api/interview/start", cookies=owner).json()["session_id"]
 
-    intruder = auth_header(client, "del-intruder@example.com")
-    assert client.delete(f"/api/interview/{sid}", headers=intruder).status_code == 404
+    intruder = auth_cookies(client, "del-intruder@example.com")
+    assert client.delete(f"/api/interview/{sid}", cookies=intruder).status_code == 404
     # still there for the owner
-    assert client.get(f"/api/interview/{sid}", headers=owner).status_code == 200
+    assert client.get(f"/api/interview/{sid}", cookies=owner).status_code == 200
 
 
 def test_transcript(client, monkeypatch):
     mock_llm(monkeypatch)
-    headers = auth_header(client)
-    save_cv(client, headers)
-    sid = client.post("/api/interview/start", headers=headers).json()["session_id"]
-    client.post(f"/api/interview/{sid}/answer", headers=headers, json={"answer": "answer one"})
+    cookies = auth_cookies(client)
+    save_cv(client, cookies)
+    sid = client.post("/api/interview/start", cookies=cookies).json()["session_id"]
+    client.post(f"/api/interview/{sid}/answer", cookies=cookies, json={"answer": "answer one"})
 
-    transcript = client.get(f"/api/interview/{sid}", headers=headers).json()
+    transcript = client.get(f"/api/interview/{sid}", cookies=cookies).json()
     assert transcript["status"] == "active"
     kinds = [t["kind"] for t in transcript["turns"]]
     assert "question" in kinds and "answer" in kinds

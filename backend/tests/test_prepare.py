@@ -21,11 +21,12 @@ QUESTIONS_JSON = json.dumps(
 )
 
 
-def auth_header(client, email="prep@example.com"):
-    token = client.post(
+def auth_cookies(client, email="prep@example.com"):
+    res = client.post(
         "/api/auth/signup", json={"email": email, "password": "password123"}
-    ).json()["access_token"]
-    return {"Authorization": f"Bearer {token}"}
+    )
+    client.cookies.clear()  # keep the jar empty so per-request cookies are unambiguous
+    return {"access_token": res.cookies["access_token"]}
 
 
 def test_questions_requires_auth(client):
@@ -33,7 +34,7 @@ def test_questions_requires_auth(client):
 
 
 def test_empty_profile_rejected(client):
-    res = client.post("/api/prepare/questions", headers=auth_header(client))
+    res = client.post("/api/prepare/questions", cookies=auth_cookies(client))
     assert res.status_code == 400
 
 
@@ -41,9 +42,9 @@ def test_questions_generated(client, monkeypatch):
     monkeypatch.setattr(prepare.llm, "chat", lambda *a, **k: QUESTIONS_JSON)
     monkeypatch.setattr(prepare.moderation, "moderate_output", lambda text: Verdict(allowed=True))
 
-    headers = auth_header(client)
-    client.put("/api/profile", headers=headers, json={"cv_text": "my cv", "jd_text": "my jd"})
-    res = client.post("/api/prepare/questions", headers=headers)
+    cookies = auth_cookies(client)
+    client.put("/api/profile", cookies=cookies, json={"cv_text": "my cv", "jd_text": "my jd"})
+    res = client.post("/api/prepare/questions", cookies=cookies)
 
     assert res.status_code == 200
     groups = res.json()["groups"]
@@ -51,10 +52,10 @@ def test_questions_generated(client, monkeypatch):
     assert groups[0]["questions"][0]["question"] == "Tell me about yourself."
 
     # generated questions are persisted and can be read back (survive a reload)
-    got = client.get("/api/prepare/questions", headers=headers)
+    got = client.get("/api/prepare/questions", cookies=cookies)
     assert got.json()["groups"][0]["questions"][0]["question"] == "Tell me about yourself."
 
 
 def test_stored_questions_empty_by_default(client):
-    got = client.get("/api/prepare/questions", headers=auth_header(client, "empty-q@example.com"))
+    got = client.get("/api/prepare/questions", cookies=auth_cookies(client, "empty-q@example.com"))
     assert got.json() == {"groups": []}

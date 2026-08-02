@@ -31,16 +31,17 @@ REPORT_JSON = json.dumps(
 )
 
 
-def auth_header(client, email="plan@example.com"):
-    token = client.post(
+def auth_cookies(client, email="plan@example.com"):
+    res = client.post(
         "/api/auth/signup", json={"email": email, "password": "password123"}
-    ).json()["access_token"]
-    return {"Authorization": f"Bearer {token}"}
+    )
+    client.cookies.clear()  # keep the jar empty so per-request cookies are unambiguous
+    return {"access_token": res.cookies["access_token"]}
 
 
-def setup_profile(client, headers):
-    client.post("/api/cv", headers=headers, json={"label": "CV", "text": "Built a Python API."})
-    client.put("/api/profile", headers=headers, json={"jd_text": "Graduate engineer, Python."})
+def setup_profile(client, cookies):
+    client.post("/api/cv", cookies=cookies, json={"label": "CV", "text": "Built a Python API."})
+    client.put("/api/profile", cookies=cookies, json={"jd_text": "Graduate engineer, Python."})
 
 
 def mock_llm(monkeypatch):
@@ -57,30 +58,30 @@ def test_plan_requires_auth(client):
 
 def test_plan_requires_cv_and_jd(client, monkeypatch):
     mock_llm(monkeypatch)
-    headers = auth_header(client, "plan-empty@example.com")
-    assert client.post("/api/prepare/plan", headers=headers).status_code == 400  # no CV
-    client.post("/api/cv", headers=headers, json={"label": "CV", "text": "cv"})
-    assert client.post("/api/prepare/plan", headers=headers).status_code == 400  # no JD
+    cookies = auth_cookies(client, "plan-empty@example.com")
+    assert client.post("/api/prepare/plan", cookies=cookies).status_code == 400  # no CV
+    client.post("/api/cv", cookies=cookies, json={"label": "CV", "text": "cv"})
+    assert client.post("/api/prepare/plan", cookies=cookies).status_code == 400  # no JD
 
 
 def test_plan_is_structured_and_persisted(client, monkeypatch):
     mock_llm(monkeypatch)
-    headers = auth_header(client)
-    setup_profile(client, headers)
+    cookies = auth_cookies(client)
+    setup_profile(client, cookies)
 
-    report = client.post("/api/prepare/plan", headers=headers).json()
+    report = client.post("/api/prepare/plan", cookies=cookies).json()
     assert "gap on leadership" in report["summary"]
     statuses = {c["name"]: c["status"] for c in report["competencies"]}
     assert statuses == {"Python": "strong", "Leadership": "gap"}
     assert report["plan"][0]["priority"] == "high"
 
     # persisted: reading it back returns the same report (survives a reload)
-    got = client.get("/api/prepare/plan", headers=headers).json()
+    got = client.get("/api/prepare/plan", cookies=cookies).json()
     assert got["competencies"][1]["name"] == "Leadership"
 
 
 def test_stored_plan_empty_by_default(client):
-    got = client.get("/api/prepare/plan", headers=auth_header(client, "noplan@example.com"))
+    got = client.get("/api/prepare/plan", cookies=auth_cookies(client, "noplan@example.com"))
     assert got.json() == {"summary": "", "competencies": [], "plan": []}
 
 

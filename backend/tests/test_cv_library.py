@@ -1,72 +1,73 @@
-def auth_header(client, email="cvlib@example.com"):
-    token = client.post(
+def auth_cookies(client, email="cvlib@example.com"):
+    res = client.post(
         "/api/auth/signup", json={"email": email, "password": "password123"}
-    ).json()["access_token"]
-    return {"Authorization": f"Bearer {token}"}
+    )
+    client.cookies.clear()  # keep the jar empty so per-request cookies are unambiguous
+    return {"access_token": res.cookies["access_token"]}
 
 
 def test_create_and_list_selects_new_cv(client):
-    headers = auth_header(client)
+    cookies = auth_cookies(client)
     created = client.post(
-        "/api/cv", headers=headers, json={"label": "Tech CV", "text": "python and react"}
+        "/api/cv", cookies=cookies, json={"label": "Tech CV", "text": "python and react"}
     ).json()
     assert created["label"] == "Tech CV" and created["selected"] is True
 
-    listing = client.get("/api/cv", headers=headers).json()
+    listing = client.get("/api/cv", cookies=cookies).json()
     assert len(listing) == 1 and listing[0]["selected"] is True
 
 
 def test_selecting_switches_active_and_mirrors_profile(client):
-    headers = auth_header(client, "cvswitch@example.com")
+    cookies = auth_cookies(client, "cvswitch@example.com")
     finance = client.post(
-        "/api/cv", headers=headers, json={"label": "Finance CV", "text": "excel and modelling"}
+        "/api/cv", cookies=cookies, json={"label": "Finance CV", "text": "excel and modelling"}
     ).json()
     tech = client.post(
-        "/api/cv", headers=headers, json={"label": "Tech CV", "text": "python and react"}
+        "/api/cv", cookies=cookies, json={"label": "Tech CV", "text": "python and react"}
     ).json()
 
     # newest (tech) is active; the profile mirror follows it
-    assert client.get("/api/profile", headers=headers).json()["cv_text"] == "python and react"
+    assert client.get("/api/profile", cookies=cookies).json()["cv_text"] == "python and react"
 
-    client.post(f"/api/cv/{finance['id']}/select", headers=headers)
-    assert client.get("/api/profile", headers=headers).json()["cv_text"] == "excel and modelling"
+    client.post(f"/api/cv/{finance['id']}/select", cookies=cookies)
+    assert client.get("/api/profile", cookies=cookies).json()["cv_text"] == "excel and modelling"
 
-    selected = [c for c in client.get("/api/cv", headers=headers).json() if c["selected"]]
+    selected = [c for c in client.get("/api/cv", cookies=cookies).json() if c["selected"]]
     assert len(selected) == 1 and selected[0]["id"] == finance["id"]
 
 
 def test_rename_and_delete(client):
-    headers = auth_header(client, "cvedit@example.com")
-    a = client.post("/api/cv", headers=headers, json={"label": "A", "text": "one"}).json()
-    b = client.post("/api/cv", headers=headers, json={"label": "B", "text": "two"}).json()
+    cookies = auth_cookies(client, "cvedit@example.com")
+    a = client.post("/api/cv", cookies=cookies, json={"label": "A", "text": "one"}).json()
+    b = client.post("/api/cv", cookies=cookies, json={"label": "B", "text": "two"}).json()
 
-    renamed = client.patch(f"/api/cv/{a['id']}", headers=headers, json={"label": "Renamed"}).json()
+    renamed = client.patch(f"/api/cv/{a['id']}", cookies=cookies, json={"label": "Renamed"}).json()
     assert renamed["label"] == "Renamed"
 
     # delete the active CV (b, newest); active falls back to the remaining one
-    client.delete(f"/api/cv/{b['id']}", headers=headers)
-    listing = client.get("/api/cv", headers=headers).json()
+    client.delete(f"/api/cv/{b['id']}", cookies=cookies)
+    listing = client.get("/api/cv", cookies=cookies).json()
     assert [c["id"] for c in listing] == [a["id"]]
     assert listing[0]["selected"] is True
-    assert client.get("/api/profile", headers=headers).json()["cv_text"] == "one"
+    assert client.get("/api/profile", cookies=cookies).json()["cv_text"] == "one"
 
 
 def test_ownership_is_enforced(client):
-    owner = auth_header(client, "cvowner@example.com")
-    cv = client.post("/api/cv", headers=owner, json={"label": "Mine", "text": "secret"}).json()
+    owner = auth_cookies(client, "cvowner@example.com")
+    cv = client.post("/api/cv", cookies=owner, json={"label": "Mine", "text": "secret"}).json()
 
-    intruder = auth_header(client, "cvintruder@example.com")
-    assert client.get(f"/api/cv/{cv['id']}", headers=intruder).status_code == 404
-    assert client.post(f"/api/cv/{cv['id']}/select", headers=intruder).status_code == 404
-    assert client.delete(f"/api/cv/{cv['id']}", headers=intruder).status_code == 404
+    intruder = auth_cookies(client, "cvintruder@example.com")
+    assert client.get(f"/api/cv/{cv['id']}", cookies=intruder).status_code == 404
+    assert client.post(f"/api/cv/{cv['id']}/select", cookies=intruder).status_code == 404
+    assert client.delete(f"/api/cv/{cv['id']}", cookies=intruder).status_code == 404
 
 
 def test_legacy_profile_cv_is_backfilled(client):
-    headers = auth_header(client, "cvlegacy@example.com")
+    cookies = auth_cookies(client, "cvlegacy@example.com")
     # old flow: CV saved straight onto the profile
-    client.put("/api/profile", headers=headers, json={"cv_text": "legacy cv", "jd_text": ""})
+    client.put("/api/profile", cookies=cookies, json={"cv_text": "legacy cv", "jd_text": ""})
 
-    listing = client.get("/api/cv", headers=headers).json()
+    listing = client.get("/api/cv", cookies=cookies).json()
     assert len(listing) == 1
     assert listing[0]["selected"] is True and listing[0]["label"] == "My CV"
 
@@ -76,5 +77,5 @@ def test_requires_auth(client):
 
 
 def test_create_rejects_empty(client):
-    headers = auth_header(client, "cvempty@example.com")
-    assert client.post("/api/cv", headers=headers, json={"label": "x", "text": "  "}).status_code == 400
+    cookies = auth_cookies(client, "cvempty@example.com")
+    assert client.post("/api/cv", cookies=cookies, json={"label": "x", "text": "  "}).status_code == 400

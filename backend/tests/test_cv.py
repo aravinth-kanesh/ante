@@ -30,11 +30,12 @@ def test_unsupported_type_raises():
         extract_text("cv.png", b"binary")
 
 
-def auth_header(client, email="cv@example.com"):
-    token = client.post(
+def auth_cookies(client, email="cv@example.com"):
+    res = client.post(
         "/api/auth/signup", json={"email": email, "password": "password123"}
-    ).json()["access_token"]
-    return {"Authorization": f"Bearer {token}"}
+    )
+    client.cookies.clear()  # keep the jar empty so per-request cookies are unambiguous
+    return {"access_token": res.cookies["access_token"]}
 
 
 def test_upload_requires_auth(client):
@@ -43,10 +44,10 @@ def test_upload_requires_auth(client):
 
 
 def test_upload_saves_text_and_filename(client):
-    headers = auth_header(client)
+    cookies = auth_cookies(client)
     res = client.post(
         "/api/profile/cv",
-        headers=headers,
+        cookies=cookies,
         files={"file": ("my cv.txt", b"experience and skills", "text/plain")},
     )
     assert res.status_code == 200
@@ -55,14 +56,14 @@ def test_upload_saves_text_and_filename(client):
     assert body["cv_filename"] == "my cv.txt"
 
     # persists on the account
-    again = client.get("/api/profile", headers=headers).json()
+    again = client.get("/api/profile", cookies=cookies).json()
     assert again["cv_text"] == "experience and skills"
 
 
 def test_upload_rejects_unsupported_extension(client):
     res = client.post(
         "/api/profile/cv",
-        headers=auth_header(client, "cv2@example.com"),
+        cookies=auth_cookies(client, "cv2@example.com"),
         files={"file": ("cv.png", b"binary", "image/png")},
     )
     assert res.status_code == 400

@@ -3,11 +3,12 @@ from app.schemas.interview import NonverbalSample
 from app.services.vision import nonverbal_metrics
 
 
-def auth_header(client, email="vision@example.com"):
-    token = client.post(
+def auth_cookies(client, email="vision@example.com"):
+    res = client.post(
         "/api/auth/signup", json={"email": email, "password": "password123"}
-    ).json()["access_token"]
-    return {"Authorization": f"Bearer {token}"}
+    )
+    client.cookies.clear()  # keep the jar empty so per-request cookies are unambiguous
+    return {"access_token": res.cookies["access_token"]}
 
 
 def facing(**kw):
@@ -85,7 +86,7 @@ def test_analyse_endpoint_returns_metrics(client):
         {"face_detected": True, "yaw": 2, "pitch": 1, "eyes_open": True, "smile": 0.4},
     ]
     res = client.post(
-        "/api/vision/analyse", headers=auth_header(client), json={"samples": samples}
+        "/api/vision/analyse", cookies=auth_cookies(client), json={"samples": samples}
     )
     assert res.status_code == 200
     assert res.json()["eye_contact_pct"] == 100
@@ -97,7 +98,7 @@ def test_analyse_requires_auth(client):
 
 def test_analyse_guard_when_disabled(client, monkeypatch):
     monkeypatch.setattr(settings, "nonverbal_enabled", False)
-    res = client.post("/api/vision/analyse", headers=auth_header(client), json={"samples": []})
+    res = client.post("/api/vision/analyse", cookies=auth_cookies(client), json={"samples": []})
     assert res.status_code == 503
 
 
@@ -105,7 +106,7 @@ def test_analyse_caps_sample_count(client, monkeypatch):
     monkeypatch.setattr(settings, "nonverbal_max_samples", 2)
     samples = [{"face_detected": True, "yaw": 0, "pitch": 0, "eyes_open": True}] * 5
     res = client.post(
-        "/api/vision/analyse", headers=auth_header(client), json={"samples": samples}
+        "/api/vision/analyse", cookies=auth_cookies(client), json={"samples": samples}
     )
     assert res.status_code == 200
     assert res.json()["frames_analysed"] == 2

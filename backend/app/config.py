@@ -18,7 +18,15 @@ class Settings(BaseSettings):
     database_url: str = "sqlite:///./app.db"
     jwt_secret: str = DEFAULT_JWT_SECRET
     jwt_algorithm: str = "HS256"
-    access_token_expire_minutes: int = 60
+    access_token_expire_minutes: int = 15  # short-lived; the refresh token keeps sessions alive
+    refresh_token_expire_days: int = 30
+
+    # Auth cookies. Tokens live in httpOnly cookies (not JS-readable) with a
+    # double-submit CSRF token. Secure defaults to on in production; SameSite=Lax
+    # suits a same-origin deployment (set "none" only for a cross-site frontend).
+    cookie_secure: bool | None = None  # None means "on in production"
+    cookie_samesite: str = "lax"
+    csrf_enabled: bool = True
 
     # Auth rate limits (requests per window, per client IP), for brute-force defence.
     auth_rate_limit: str = "10/minute"
@@ -26,6 +34,10 @@ class Settings(BaseSettings):
     @property
     def is_production(self) -> bool:
         return self.environment.lower() == "production"
+
+    @property
+    def secure_cookies(self) -> bool:
+        return self.is_production if self.cookie_secure is None else self.cookie_secure
 
     # Moderation. Each check is a separate model call, so a chat message can cost
     # up to three calls; turn input checking off if the provider rate-limits.

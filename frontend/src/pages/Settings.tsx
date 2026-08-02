@@ -37,7 +37,7 @@ export default function Settings() {
     setDeleteError("");
     try {
       await deleteAccount();
-      logout(); // clears the token and returns to the login screen
+      await logout(); // clears the session and returns to the login screen
     } catch (err) {
       setDeleteError(err instanceof Error ? err.message : String(err));
       setDeleting(false);

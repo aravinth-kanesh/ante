@@ -1,13 +1,12 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
-import { authLogin, authMe, authSignup, type User } from "../api";
-import { clearToken, getToken, setToken } from "./token";
+import { authLogin, authLogout, authMe, authSignup, hasSessionHint, type User } from "../api";
 
 interface AuthState {
   user: User | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
   signup: (email: string, password: string) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthState | undefined>(undefined);
@@ -17,29 +16,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!getToken()) {
+    // The tokens are httpOnly, so we cannot read them; the JS-readable CSRF cookie
+    // tells us whether to bother asking the server who we are.
+    if (!hasSessionHint()) {
       setLoading(false);
       return;
     }
     authMe()
       .then(setUser)
-      .catch(() => clearToken())
+      .catch(() => setUser(null))
       .finally(() => setLoading(false));
   }, []);
 
   async function login(email: string, password: string) {
-    setToken(await authLogin(email, password));
-    setUser(await authMe());
+    setUser(await authLogin(email, password));
   }
 
   async function signup(email: string, password: string) {
-    setToken(await authSignup(email, password));
-    setUser(await authMe());
+    setUser(await authSignup(email, password));
   }
 
-  function logout() {
-    clearToken();
-    setUser(null);
+  async function logout() {
+    try {
+      await authLogout();
+    } finally {
+      setUser(null);
+    }
   }
 
   return (

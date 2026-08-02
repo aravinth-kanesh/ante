@@ -1,5 +1,3 @@
-import { getToken } from "./auth/token";
-
 export interface Message {
   role: "system" | "user" | "assistant";
   content: string;
@@ -16,22 +14,51 @@ export interface Profile {
   jd_text: string;
 }
 
-function authHeaders(): Record<string, string> {
-  const token = getToken();
-  return token ? { Authorization: `Bearer ${token}` } : {};
+const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
+// A 401 on these must not trigger a refresh: refresh would recurse, and a failed
+// login or signup is a genuine credential error, not an expired session.
+const NO_REFRESH = ["/api/auth/refresh", "/api/auth/login", "/api/auth/signup", "/api/auth/logout"];
+
+/** Read a readable (non-httpOnly) cookie, used for the CSRF token. */
+export function readCookie(name: string): string | null {
+  const match = document.cookie.match(new RegExp("(?:^|; )" + name + "=([^;]*)"));
+  return match ? decodeURIComponent(match[1]) : null;
 }
 
-async function request(path: string, options: RequestInit = {}) {
-  // FormData bodies set their own multipart content-type.
-  const isForm = options.body instanceof FormData;
+/** True if a login session cookie is present (the CSRF cookie is JS-readable). */
+export function hasSessionHint(): boolean {
+  return readCookie("csrf_token") !== null;
+}
+
+function buildHeaders(options: RequestInit): Record<string, string> {
+  const method = (options.method || "GET").toUpperCase();
+  const isForm = options.body instanceof FormData; // sets its own multipart content-type
+  const headers: Record<string, string> = {
+    ...(isForm ? {} : { "Content-Type": "application/json" }),
+    ...((options.headers as Record<string, string>) || {}),
+  };
+  if (!SAFE_METHODS.has(method)) {
+    const csrf = readCookie("csrf_token");
+    if (csrf) headers["X-CSRF-Token"] = csrf; // double-submit CSRF token
+  }
+  return headers;
+}
+
+async function request(path: string, options: RequestInit = {}, allowRefresh = true): Promise<any> {
   const res = await fetch(path, {
     ...options,
-    headers: {
-      ...(isForm ? {} : { "Content-Type": "application/json" }),
-      ...authHeaders(),
-      ...options.headers,
-    },
+    headers: buildHeaders(options),
+    credentials: "include", // send and receive the httpOnly auth cookies
   });
+  // The access token is short-lived; on expiry, refresh once and replay the request.
+  if (res.status === 401 && allowRefresh && !NO_REFRESH.includes(path)) {
+    const refreshed = await fetch("/api/auth/refresh", {
+      method: "POST",
+      credentials: "include",
+      headers: buildHeaders({ method: "POST" }),
+    });
+    if (refreshed.ok) return request(path, options, false);
+  }
   if (!res.ok) {
     let detail = res.statusText;
     try {
@@ -50,20 +77,22 @@ export async function getHealth(): Promise<{ status: string; model: string }> {
   return request("/api/health");
 }
 
-export async function authSignup(email: string, password: string): Promise<string> {
-  const data = await request("/api/auth/signup", {
+export async function authSignup(email: string, password: string): Promise<User> {
+  return request("/api/auth/signup", {
     method: "POST",
     body: JSON.stringify({ email, password }),
   });
-  return data.access_token;
 }
 
-export async function authLogin(email: string, password: string): Promise<string> {
-  const data = await request("/api/auth/login", {
+export async function authLogin(email: string, password: string): Promise<User> {
+  return request("/api/auth/login", {
     method: "POST",
     body: JSON.stringify({ email, password }),
   });
-  return data.access_token;
+}
+
+export async function authLogout(): Promise<void> {
+  await request("/api/auth/logout", { method: "POST" });
 }
 
 export async function authMe(): Promise<User> {
@@ -260,9 +289,14 @@ export async function listServerVoices(): Promise<{ available: boolean; voices: 
 
 /** Synthesise the interviewer's voice on the server. Returns WAV audio. */
 export async function synthesizeSpeech(text: string, voice: string): Promise<Blob> {
+  const csrf = readCookie("csrf_token");
   const res = await fetch("/api/speech/say", {
     method: "POST",
-    headers: { "Content-Type": "application/json", ...authHeaders() },
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+      ...(csrf ? { "X-CSRF-Token": csrf } : {}),
+    },
     body: JSON.stringify({ text, voice }),
   });
   if (!res.ok) throw new Error("Could not synthesise speech");
