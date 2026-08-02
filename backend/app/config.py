@@ -31,6 +31,25 @@ class Settings(BaseSettings):
     # Auth rate limits (requests per window, per client IP), for brute-force defence.
     auth_rate_limit: str = "10/minute"
 
+    # Account security. Lockout throttles password guessing; the breach check rejects
+    # passwords found in known breaches; verification is enforced in production.
+    max_failed_logins: int = 5
+    lockout_minutes: int = 15
+    check_breached_passwords: bool = True
+    require_email_verification: bool | None = None  # None means "on in production"
+    verification_token_expire_hours: int = 24
+    reset_token_expire_hours: int = 1
+
+    # Outgoing email (SMTP). With no smtp_host set, links are logged instead of sent,
+    # which keeps local development and the controlled study working without a server.
+    smtp_host: str = ""
+    smtp_port: int = 587
+    smtp_user: str = ""
+    smtp_password: str = ""
+    smtp_from: str = "Ante <no-reply@ante.local>"
+    smtp_tls: bool = True
+    app_base_url: str = "http://localhost:5173"  # used to build links in emails
+
     @property
     def is_production(self) -> bool:
         return self.environment.lower() == "production"
@@ -38,6 +57,12 @@ class Settings(BaseSettings):
     @property
     def secure_cookies(self) -> bool:
         return self.is_production if self.cookie_secure is None else self.cookie_secure
+
+    @property
+    def email_verification_required(self) -> bool:
+        if self.require_email_verification is None:
+            return self.is_production
+        return self.require_email_verification
 
     # Moderation. Each check is a separate model call, so a chat message can cost
     # up to three calls; turn input checking off if the provider rate-limits.

@@ -21,6 +21,9 @@ limiter.enabled = False
 # CSRF is exercised on its own in test_auth; disable it elsewhere so the suite does
 # not have to thread a CSRF header through every mutating request.
 settings.csrf_enabled = False
+# The breached-password check makes a network call and would reject the shared test
+# password; it is exercised with a mock in test_auth. Off everywhere else.
+settings.check_breached_passwords = False
 
 
 @pytest.fixture

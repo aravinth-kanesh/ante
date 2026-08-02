@@ -106,6 +106,16 @@ def get_current_user(request: Request, db: Session = Depends(get_db)) -> User:
         raise credentials_error
 
     user = db.get(User, user_id)
-    if user is None:
+    if user is None or not user.is_active:
         raise credentials_error
+    return user
+
+
+def require_verified_user(user: User = Depends(get_current_user)) -> User:
+    """Gate the main app on a verified email when verification is required."""
+    if settings.email_verification_required and not user.is_verified:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Please verify your email address to continue",
+        )
     return user

@@ -1,8 +1,22 @@
+import re
+
+import pytest
+from fastapi import HTTPException
+
 from app.config import settings
+from app.models.user import User
+from app.security import require_verified_user
+from app.services import email as email_service, passwords
 
 
 def signup(client, email="alice@example.com", password="password123"):
     return client.post("/api/auth/signup", json={"email": email, "password": password})
+
+
+def _token_from(link: str) -> str:
+    match = re.search(r"token=([^&\s]+)", link)
+    assert match, f"no token in {link!r}"
+    return match.group(1)
 
 
 def test_signup_sets_auth_cookies(client):
@@ -135,3 +149,111 @@ def test_delete_account_removes_user_and_data(client):
 def test_delete_account_requires_auth(client):
     client.cookies.clear()
     assert client.delete("/api/auth/me").status_code == 401
+
+
+def test_signup_rejects_breached_password(client, monkeypatch):
+    monkeypatch.setattr(passwords, "is_breached", lambda password: True)
+    assert signup(client).status_code == 400
+
+
+def test_login_lockout_after_repeated_failures(client):
+    signup(client, email="lock@example.com")
+    client.cookies.clear()
+    for _ in range(settings.max_failed_logins):
+        client.post("/api/auth/login", json={"email": "lock@example.com", "password": "wrong"})
+    # even the correct password is refused while the account is locked
+    res = client.post("/api/auth/login", json={"email": "lock@example.com", "password": "password123"})
+    assert res.status_code == 403
+
+
+def test_email_verification_flow(client, monkeypatch):
+    links: list[str] = []
+    monkeypatch.setattr(email_service, "send_verification", lambda to, link: links.append(link))
+    settings.require_email_verification = True
+    try:
+        res = signup(client, email="verify@example.com")
+        assert res.status_code == 201
+        assert res.json()["is_verified"] is False
+        assert not res.cookies.get("access_token")  # no session until verified
+
+        blocked = client.post(
+            "/api/auth/login", json={"email": "verify@example.com", "password": "password123"}
+        )
+        assert blocked.status_code == 403  # cannot sign in before verifying
+
+        token = _token_from(links[-1])
+        verified = client.post("/api/auth/verify", json={"token": token})
+        assert verified.status_code == 200
+        assert verified.json()["is_verified"] is True
+        assert verified.cookies.get("access_token")  # verifying logs them in
+
+        # the token is single use
+        assert client.post("/api/auth/verify", json={"token": token}).status_code == 400
+    finally:
+        settings.require_email_verification = None
+
+
+def test_password_reset_flow(client, monkeypatch):
+    links: list[str] = []
+    monkeypatch.setattr(email_service, "send_password_reset", lambda to, link: links.append(link))
+    signup(client, email="reset@example.com")
+    client.cookies.clear()
+
+    # an unknown address gets the same 204 and no email, so it cannot be probed
+    assert client.post("/api/auth/forgot-password", json={"email": "nobody@example.com"}).status_code == 204
+    assert links == []
+    assert client.post("/api/auth/forgot-password", json={"email": "reset@example.com"}).status_code == 204
+
+    token = _token_from(links[-1])
+    reset = client.post(
+        "/api/auth/reset-password", json={"token": token, "password": "brandnewpass1"}
+    )
+    assert reset.status_code == 204
+
+    old = client.post("/api/auth/login", json={"email": "reset@example.com", "password": "password123"})
+    assert old.status_code == 401
+    new = client.post("/api/auth/login", json={"email": "reset@example.com", "password": "brandnewpass1"})
+    assert new.status_code == 200
+
+
+def test_change_password(client):
+    signup(client, email="change@example.com")  # the client holds the session
+    ok = client.post(
+        "/api/auth/change-password",
+        json={"current_password": "password123", "new_password": "brandnewpass1"},
+    )
+    assert ok.status_code == 204
+    bad = client.post(
+        "/api/auth/change-password",
+        json={"current_password": "wrongcurrent", "new_password": "anotherpass1"},
+    )
+    assert bad.status_code == 400
+
+
+def test_data_export_returns_account_data(client):
+    signup(client, email="export@example.com")
+    client.post("/api/cv", json={"label": "CV", "text": "my cv"})
+    res = client.get("/api/auth/export")
+    assert res.status_code == 200
+    body = res.json()
+    assert body["account"]["email"] == "export@example.com"
+    assert body["cvs"][0]["text"] == "my cv"
+
+
+def test_auth_config_reports_verification(client):
+    res = client.get("/api/auth/config")
+    assert res.status_code == 200
+    assert res.json() == {"verification_required": False}
+
+
+def test_require_verified_user_gate():
+    settings.require_email_verification = True
+    try:
+        unverified = User(email="x@example.com", hashed_password="x", is_verified=False)
+        with pytest.raises(HTTPException) as err:
+            require_verified_user(unverified)
+        assert err.value.status_code == 403
+        unverified.is_verified = True
+        assert require_verified_user(unverified) is unverified
+    finally:
+        settings.require_email_verification = None
