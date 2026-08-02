@@ -186,6 +186,6 @@ All configuration lives in `backend/.env` (gitignored). See
 ## Docker (backend)
 
 ```bash
-docker build -t kurf-backend backend/
-docker run --env-file backend/.env -p 8000:8000 kurf-backend
+docker build -t ante-backend backend/
+docker run --env-file backend/.env -p 8000:8000 ante-backend
 ```
