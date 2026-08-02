@@ -34,6 +34,7 @@ export default function Layout({ children }: { children: ReactNode }) {
           <nav className="hidden items-center gap-1 sm:flex">
             <NavItem to="/">Dashboard</NavItem>
             <NavItem to="/cvs">CVs</NavItem>
+            <NavItem to="/prepare">Prepare</NavItem>
             <NavItem to="/interview">Interview</NavItem>
             <NavItem to="/history">History</NavItem>
             <NavItem to="/settings">Settings</NavItem>

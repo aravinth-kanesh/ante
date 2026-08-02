@@ -8,6 +8,7 @@ import Dashboard from "./pages/Dashboard";
 import History from "./pages/History";
 import Interview from "./pages/Interview";
 import Login from "./pages/Login";
+import Prepare from "./pages/Prepare";
 import Results from "./pages/Results";
 import Settings from "./pages/Settings";
 import Signup from "./pages/Signup";
@@ -30,6 +31,7 @@ export default function App() {
           <Route path="/signup" element={<Signup />} />
           <Route path="/" element={<Page><Dashboard /></Page>} />
           <Route path="/cvs" element={<Page><Cvs /></Page>} />
+          <Route path="/prepare" element={<Page><Prepare /></Page>} />
           <Route path="/interview" element={<Page><Interview /></Page>} />
           <Route path="/results/:id" element={<Page><Results /></Page>} />
           <Route path="/history" element={<Page><History /></Page>} />

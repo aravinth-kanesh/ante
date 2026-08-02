@@ -190,6 +190,33 @@ export async function getPrepQuestions(): Promise<PrepGroup[]> {
   return data.groups;
 }
 
+export interface Competency {
+  name: string;
+  area: "technical" | "behavioural";
+  status: "strong" | "partial" | "gap";
+  evidence: string;
+}
+
+export interface PlanItem {
+  focus: string;
+  action: string;
+  priority: "high" | "medium" | "low";
+}
+
+export interface PreparationReport {
+  summary: string;
+  competencies: Competency[];
+  plan: PlanItem[];
+}
+
+export async function getPreparation(): Promise<PreparationReport> {
+  return request("/api/prepare/plan");
+}
+
+export async function generatePreparation(): Promise<PreparationReport> {
+  return request("/api/prepare/plan", { method: "POST" });
+}
+
 export type InterviewMode = "text" | "voice";
 export type InterviewType = "general" | "behavioural" | "competency" | "technical" | "strengths";
 
