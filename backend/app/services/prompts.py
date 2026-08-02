@@ -97,6 +97,11 @@ FEEDBACK_PROMPT = """Below is the transcript of a mock interview. Give the candi
 honest, direct feedback on the content of their answers. Practice only helps if the \
 feedback is truthful, so do not flatter.
 
+Write for a university student who may be new to interviews and may feel nervous. Use \
+plain, encouraging language, explain any interview term you use (for example, STAR \
+means describing the Situation, Task, Action and Result), and make every point clear \
+and easy to act on.
+
 - Judge each answer on its merits. If an answer is vague, generic, or says little of \
 substance, say so plainly and explain why it is weak, rather than praising it. For \
 example, "I have built many applications in Linux" asserts experience but gives no \
@@ -115,12 +120,14 @@ than padding it with faint praise.
 Return a single JSON object and nothing else, in exactly this shape:
 {{
   "summary": "<two or three sentences giving an honest overall assessment>",
-  "strengths": ["<something they genuinely did well>"],
-  "improvements": ["<a specific, actionable change>"],
+  "strengths": ["<something they genuinely did well, in plain language>"],
+  "improvements": ["<a specific, plain-language action the student can take>"],
   "answer_notes": [
     {{"question": "<a short reference to the question>",
       "verdict": "strong|adequate|weak",
-      "comment": "<why, and what a stronger answer needed>"}}
+      "comment": "<in plain language: why the answer landed as it did, and a concrete \
+tip on how to make it stronger, with a short example of a better phrasing where it \
+helps>"}}
   ],
   "delivery": "<a brief honest note on pace, pauses, fillers and on-camera presence, \
 or an empty string if nothing was measured>"

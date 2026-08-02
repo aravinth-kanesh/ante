@@ -22,6 +22,11 @@ def test_strip_markdown_normalises_em_dashes_and_ellipsis():
     assert out.endswith("...")
 
 
+def test_strip_markdown_normalises_curly_quotes():
+    out = strip_markdown("The team’s “best” work")
+    assert out == "The team's \"best\" work"
+
+
 def test_strip_markdown_leaves_plain_text_untouched():
     plain = "The candidate gave a clear, specific example and structured it well."
     assert strip_markdown(plain) == plain

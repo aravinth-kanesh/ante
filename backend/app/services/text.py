@@ -15,4 +15,5 @@ def strip_markdown(text: str) -> str:
     text = re.sub(r"^\s{0,3}#{1,6}\s+", "", text, flags=re.MULTILINE)  # headings
     text = re.sub(r"\s*[—–]\s*", " - ", text)  # em/en dash -> spaced hyphen
     text = text.replace("…", "...")  # ellipsis
+    text = text.translate(str.maketrans({"‘": "'", "’": "'", "“": '"', "”": '"'}))
     return text.strip()

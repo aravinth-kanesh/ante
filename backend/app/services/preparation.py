@@ -26,6 +26,10 @@ The plan must be concrete and actionable (what to revise, which specific example
 STAR stories to prepare, what to practise), prioritised, and focused on the gaps and \
 partials first. Do not pad it.
 
+Write for a university student who may be new to interviews. Use plain, encouraging \
+language and explain any interview term you use (for example, STAR means describing \
+the Situation, Task, Action and Result), so every point is clear and easy to act on.
+
 Return a single JSON object and nothing else, in exactly this shape:
 {{
   "summary": "<two or three honest sentences on how well the candidate fits this role \
