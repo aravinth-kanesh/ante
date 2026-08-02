@@ -99,6 +99,10 @@ Endpoints:
 - `POST /api/chat` now requires a bearer token.
 - `POST /api/prepare/questions` generates likely interview questions grounded in
   the CV, the job description, and the company research.
+- `POST /api/prepare/plan` produces a competency gap analysis (each competency rated
+  strong, partial or gap against the role, citing the CV) and a prioritised
+  preparation plan. `GET` on both `/questions` and `/plan` returns the last saved
+  result so it survives navigation.
 - `POST /api/interview/start` runs a mock interview (requires a saved CV):
   `/start` returns the first question, `/{id}/answer` takes an answer and returns
   the next question (or `done`), `/{id}/finish` returns feedback, `GET /{id}`
@@ -153,11 +157,13 @@ npm run dev
 ```
 
 The frontend is a React + Vite + TypeScript app styled with Tailwind CSS. Open
-`http://localhost:5173` and sign up. The dashboard shows the active CV, a job
-description form, company research and likely questions, and a link to start a
-mock interview. The **CVs** page manages a library of labelled CVs (upload or
-paste, rename, select, delete). **Settings** lets you choose the interviewer's
-voice. After an interview you land on a results page showing every question, your
+`http://localhost:5173` and sign up. The dashboard is a home showing the active CV
+and a job description form, with links to Prepare and to start a mock interview.
+The **Prepare** page is the AI-assisted preparation tool: company research, a
+competency gap analysis and preparation plan, and likely questions, all tailored to
+the CV and role. The **CVs** page manages a library of labelled CVs (upload or
+paste, rename, select, delete). **Settings** lets you choose the interviewer's voice
+and delete your account. After an interview you land on a results page showing every question, your
 answers with their delivery and nonverbal readouts, and the feedback; the history
 page lists past sessions and reopens any of them. The dev server proxies `/api` to
 the backend on port 8000, so run the backend first.
