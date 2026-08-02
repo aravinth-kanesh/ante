@@ -1,3 +1,9 @@
+import os
+
+# Must be set before importing the app so settings pick it up: the suite builds its
+# own in-memory schema and skips the startup migrations.
+os.environ.setdefault("TESTING", "true")
+
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine

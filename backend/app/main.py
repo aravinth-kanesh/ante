@@ -1,4 +1,5 @@
 import logging
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -6,11 +7,8 @@ from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 
 from app.config import DEFAULT_JWT_SECRET, settings
-from app.db import Base, engine, ensure_columns
-from app.models import cv as _cv  # noqa: F401  (register tables)
-from app.models import profile as _profile  # noqa: F401
-from app.models import session as _session  # noqa: F401
-from app.models import user as _user  # noqa: F401
+from app.db import run_migrations
+import app.models  # noqa: F401  (register every table on Base.metadata)
 from app.ratelimit import limiter
 from app.routers import auth, chat, cv, health, interview, prepare, profile, speech, vision
 
@@ -23,10 +21,16 @@ if settings.jwt_secret == DEFAULT_JWT_SECRET:
         raise RuntimeError(message + " Refusing to start in production.")
     logger.warning(message)
 
-Base.metadata.create_all(bind=engine)
-ensure_columns()
 
-app = FastAPI(title="Ante API")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # The test suite manages its own in-memory schema, so skip migrations there.
+    if not settings.testing:
+        run_migrations()
+    yield
+
+
+app = FastAPI(title="Ante API", lifespan=lifespan)
 
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)

@@ -1,6 +1,7 @@
 from collections.abc import Generator
+from pathlib import Path
 
-from sqlalchemy import create_engine, inspect, text
+from sqlalchemy import create_engine
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
 from app.config import settings
@@ -10,44 +11,27 @@ connect_args = {"check_same_thread": False} if settings.database_url.startswith(
 engine = create_engine(settings.database_url, connect_args=connect_args)
 SessionLocal = sessionmaker(bind=engine, autoflush=False)
 
+_BACKEND_ROOT = Path(__file__).resolve().parent.parent
+
 
 class Base(DeclarativeBase):
     pass
 
 
-# Columns added after a table was first created, keyed by table. create_all does
-# not ALTER existing tables, so for the long-lived SQLite dev database we add any
-# missing columns here at startup. This stays lightweight in place of Alembic.
-_ADDED_COLUMNS: dict[str, dict[str, str]] = {
-    "interview_sessions": {
-        "mode": "VARCHAR NOT NULL DEFAULT 'text'",
-        "interview_type": "VARCHAR NOT NULL DEFAULT 'general'",
-        "company": "VARCHAR NOT NULL DEFAULT ''",
-        "role": "VARCHAR NOT NULL DEFAULT ''",
-    },
-    "turns": {"metrics": "TEXT", "nonverbal": "TEXT"},
-    "profiles": {
-        "selected_cv_id": "INTEGER",
-        "company_research": "TEXT NOT NULL DEFAULT ''",
-        "prep_questions": "TEXT NOT NULL DEFAULT ''",
-        "preparation": "TEXT NOT NULL DEFAULT ''",
-    },
-}
+def run_migrations() -> None:
+    """Bring the database up to the latest schema by applying Alembic migrations.
 
+    Called once at startup so a fresh deployment (SQLite or PostgreSQL) is created
+    and an existing one is upgraded. The Config carries no ini file, so the Alembic
+    environment leaves the application's own logging untouched.
+    """
+    from alembic import command
+    from alembic.config import Config
 
-def ensure_columns() -> None:
-    """Add missing columns to existing SQLite tables. Idempotent; SQLite only."""
-    if not settings.database_url.startswith("sqlite"):
-        return
-    inspector = inspect(engine)
-    for table, columns in _ADDED_COLUMNS.items():
-        if not inspector.has_table(table):
-            continue
-        existing = {col["name"] for col in inspector.get_columns(table)}
-        for name, definition in columns.items():
-            if name not in existing:
-                with engine.begin() as conn:
-                    conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {name} {definition}"))
+    cfg = Config()
+    cfg.set_main_option("script_location", str(_BACKEND_ROOT / "migrations"))
+    cfg.set_main_option("sqlalchemy.url", settings.database_url)
+    command.upgrade(cfg, "head")
 
 
 def get_db() -> Generator[Session, None, None]:

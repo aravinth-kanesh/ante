@@ -14,6 +14,7 @@ class Settings(BaseSettings):
     backend_cors_origins: str = "http://localhost:5173"
 
     environment: str = "development"  # set to "production" to enforce a real secret
+    testing: bool = False  # set by the test suite to skip startup migrations
     database_url: str = "sqlite:///./app.db"
     jwt_secret: str = DEFAULT_JWT_SECRET
     jwt_algorithm: str = "HS256"
