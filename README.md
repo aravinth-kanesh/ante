@@ -44,19 +44,26 @@ API key or cost and the question text never leaves the machine. Skip it if you
 like: the app falls back to the browser's own voices, which sound noticeably more
 robotic.
 
+The database schema is managed with Alembic. The app runs `alembic upgrade head`
+automatically at startup, so a fresh database is created and an existing one is
+migrated. You can also run it by hand for a deploy: `alembic upgrade head`.
+
 Check it (health is public; chat requires a logged-in user):
 
 ```bash
 curl localhost:8000/api/health
 # {"status":"ok","model":"arc:lite"}
 
-# create an account and capture the token
-TOKEN=$(curl -s -X POST localhost:8000/api/auth/signup \
+# sign up. The access and refresh tokens are set as httpOnly cookies in the jar;
+# a readable csrf cookie must be echoed back in a header on state-changing requests.
+# The password must not appear in a known breach.
+curl -s -c jar.txt -X POST localhost:8000/api/auth/signup \
   -H 'content-type: application/json' \
-  -d '{"email":"you@example.com","password":"password123"}' | python3 -c 'import sys,json;print(json.load(sys.stdin)["access_token"])')
+  -d '{"email":"you@example.com","password":"a-strong-unique-password"}'
 
-curl -X POST localhost:8000/api/chat \
-  -H "Authorization: Bearer $TOKEN" -H 'content-type: application/json' \
+CSRF=$(awk '/csrf_token/{print $7}' jar.txt)
+curl -s -b jar.txt -X POST localhost:8000/api/chat \
+  -H "x-csrf-token: $CSRF" -H 'content-type: application/json' \
   -d '{"messages":[{"role":"user","content":"Say hello in five words"}]}'
 # {"reply":"..."}
 ```
@@ -66,27 +73,53 @@ Interactive API docs are served at `http://localhost:8000/docs`.
 ### Accounts, auth and security
 
 Accounts are stored in the database (SQLite in development, PostgreSQL in
-production), with passwords hashed using bcrypt (per-password salt). Auth is via
-JWT bearer tokens with an expiry. Data access is ownership-checked, so a user can
-only read their own CVs and interviews, and all queries go through the SQLAlchemy
-ORM (no string-built SQL).
+production), with passwords hashed using bcrypt (per-password salt). Data access is
+ownership-checked, so a user can only read their own CVs and interviews, and all
+queries go through the SQLAlchemy ORM (no string-built SQL).
+
+Sessions use httpOnly cookies rather than a token in the browser, so the token is
+not exposed to JavaScript (XSS). A short-lived access token is paired with a
+longer-lived, server-side **refresh session** that rotates on use and can be
+revoked; reusing a rotated token revokes the whole family. State-changing requests
+carry a **double-submit CSRF token** (a readable cookie echoed in the
+`X-CSRF-Token` header). Passwords are checked against the Have I Been Pwned range
+API (k-anonymous, fail-open), repeated failed logins lock the account for a while,
+and email verification and password reset are supported.
+
+Other hardening: a Content-Security-Policy (report-only until enabled with
+`CSP_REPORT_ONLY=false`) plus `Permissions-Policy`, `X-Frame-Options`,
+nosniff and, in production, HSTS; per-IP rate limits on the expensive model and
+media endpoints; a request body-size limit; and structured, PII-redacting logging
+with a per-request id (`LOG_FORMAT=json` for structured output).
 
 For a real deployment:
 
 - Set `ENVIRONMENT=production` and a strong `JWT_SECRET`
   (`python -c "import secrets;print(secrets.token_urlsafe(48))"`). In production the
-  app refuses to start on the default secret and sends an HSTS header.
-- Terminate TLS in front of the app (reverse proxy or platform) so tokens and
+  app refuses to start on the default secret, marks cookies `Secure`, and sends an
+  HSTS header. Rotate any secrets that were used in development before going live.
+- Terminate TLS in front of the app (reverse proxy or platform) so cookies and
   passwords are never sent in the clear.
 - Point `DATABASE_URL` at PostgreSQL, e.g.
   `postgresql://user:password@host:5432/ante` (the `psycopg2-binary` driver is in
-  `requirements.txt`).
-- Login and signup are rate limited per IP (`AUTH_RATE_LIMIT`, default
-  `10/minute`) to slow brute-force attempts.
+  `requirements.txt`), and run `alembic upgrade head`.
+- Configure SMTP (`SMTP_HOST` and friends) and `APP_BASE_URL` so verification and
+  reset emails are sent; with no SMTP set, the link is written to the log instead.
+- Set `REQUIRE_EMAIL_VERIFICATION` (on by default in production) and, for a
+  multi-worker deployment, point `RATE_LIMIT_STORAGE_URI` at Redis so limits are
+  shared across processes.
+- Browser-test the CSP, then set `CSP_REPORT_ONLY=false` to enforce it.
 
 Endpoints:
 
-- `POST /api/auth/signup` and `POST /api/auth/login` return an access token.
+- `POST /api/auth/signup` and `POST /api/auth/login` set the session cookies.
+  `POST /api/auth/refresh` rotates them, `POST /api/auth/logout` revokes the
+  session, and `GET /api/auth/config` reports whether verification is required.
+- `POST /api/auth/verify`, `POST /api/auth/resend-verification`,
+  `POST /api/auth/forgot-password`, `POST /api/auth/reset-password` and
+  `POST /api/auth/change-password` cover the account lifecycle.
+- `GET /api/auth/export` downloads all of the account's data as JSON (portability),
+  and `DELETE /api/auth/me` permanently erases the account and its data.
 - `GET /api/auth/me` returns the current user.
 - `GET`/`PUT /api/profile` store the user's job description text (and mirror the
   active CV's text used by the interview).
@@ -96,7 +129,7 @@ Endpoints:
   or pasted, and choose the active one used for interviews and question generation.
 - `POST /api/profile/research` reads the saved job description to identify the
   company and role and writes a short briefing on how they interview.
-- `POST /api/chat` now requires a bearer token.
+- `POST /api/chat` requires a logged-in session (cookie).
 - `POST /api/prepare/questions` generates likely interview questions grounded in
   the CV, the job description, and the company research.
 - `POST /api/prepare/plan` produces a competency gap analysis (each competency rated
@@ -178,10 +211,17 @@ microphone/camera permission (served over `https` or `localhost`).
 
 ## Configuration
 
-All configuration lives in `backend/.env` (gitignored). See
-`backend/.env.example` for the keys: `LLM_BASE_URL`, `LLM_API_KEY`, `LLM_MODEL`,
-`BACKEND_CORS_ORIGINS`, `DATABASE_URL`, `JWT_SECRET`, `JWT_ALGORITHM`, and
-`ACCESS_TOKEN_EXPIRE_MINUTES`.
+All configuration lives in `backend/.env` (gitignored); `backend/.env.example` is
+the annotated, complete list of keys. The main groups are the language model
+(`LLM_BASE_URL`, `LLM_API_KEY`, `LLM_MODEL`), the environment and database
+(`ENVIRONMENT`, `DATABASE_URL`, `BACKEND_CORS_ORIGINS`), auth and cookies
+(`JWT_SECRET`, `ACCESS_TOKEN_EXPIRE_MINUTES`, `REFRESH_TOKEN_EXPIRE_DAYS`,
+`COOKIE_SAMESITE`, `CSRF_ENABLED`), account security
+(`REQUIRE_EMAIL_VERIFICATION`, `MAX_FAILED_LOGINS`, `CHECK_BREACHED_PASSWORDS`),
+email (`SMTP_*`, `APP_BASE_URL`), rate limiting (`*_RATE_LIMIT`,
+`RATE_LIMIT_STORAGE_URI`), and hardening (`CSP_REPORT_ONLY`, `MAX_REQUEST_BYTES`,
+`LOG_FORMAT`). Sensible defaults keep local development working with none of these
+set beyond the model key.
 
 ## Docker (backend)
 

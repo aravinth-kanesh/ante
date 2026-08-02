@@ -46,6 +46,10 @@ class Settings(BaseSettings):
     # browser before it is enforced; set CSP_REPORT_ONLY=false to enforce.
     csp_report_only: bool = True
 
+    # Logging. "text" for readable local logs, "json" for structured production logs.
+    log_level: str = "INFO"
+    log_format: str = "text"
+
     # Account security. Lockout throttles password guessing; the breach check rejects
     # passwords found in known breaches; verification is enforced in production.
     max_failed_logins: int = 5

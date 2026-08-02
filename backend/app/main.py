@@ -1,5 +1,6 @@
 import logging
 import secrets
+import uuid
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
@@ -10,6 +11,7 @@ from slowapi.errors import RateLimitExceeded
 
 from app.config import DEFAULT_JWT_SECRET, settings
 from app.db import run_migrations
+from app.logging import configure_logging, request_id_ctx
 import app.models  # noqa: F401  (register every table on Base.metadata)
 from app.ratelimit import limiter
 from fastapi import Depends
@@ -38,6 +40,7 @@ CSP_POLICY = (
 )
 PERMISSIONS_POLICY = "camera=(self), microphone=(self), geolocation=(), payment=()"
 
+configure_logging()
 logger = logging.getLogger("app")
 
 # Refuse to run with the default signing secret in production; warn in development.
@@ -68,6 +71,18 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.middleware("http")
+async def request_id(request: Request, call_next):
+    rid = uuid.uuid4().hex[:12]
+    token = request_id_ctx.set(rid)
+    try:
+        response = await call_next(request)
+        response.headers["X-Request-ID"] = rid
+        return response
+    finally:
+        request_id_ctx.reset(token)
 
 
 @app.middleware("http")
