@@ -1,9 +1,9 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { getHealth, getProfile, listCvs, saveJobDescription, type Cv } from "../api";
+import { getHealth, getProfile, listCvs, type Cv } from "../api";
 import { useAuth } from "../auth/AuthContext";
 import Logo from "../components/Logo";
-import { Badge, Button, Card, CardBody, CardTitle, Label, TextArea } from "../components/ui";
+import { Badge, Card, CardBody, CardTitle } from "../components/ui";
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -12,9 +12,9 @@ export default function Dashboard() {
 
   const [activeCv, setActiveCv] = useState<Cv | null>(null);
   const [jd, setJd] = useState("");
-  const [savedJd, setSavedJd] = useState(""); // what is persisted, to show saved state
-  const [saving, setSaving] = useState(false);
-  const [saveError, setSaveError] = useState("");
+
+  const trimmedJd = jd.trim();
+  const jdSnippet = trimmedJd.length > 240 ? trimmedJd.slice(0, 240).trimEnd() + "..." : trimmedJd;
 
   useEffect(() => {
     getHealth()
@@ -24,31 +24,12 @@ export default function Dashboard() {
       })
       .catch(() => setHealth("down"));
     getProfile()
-      .then((p) => {
-        setJd(p.jd_text);
-        setSavedJd(p.jd_text);
-      })
+      .then((p) => setJd(p.jd_text))
       .catch(() => {});
     listCvs()
       .then((cvs) => setActiveCv(cvs.find((c) => c.selected) ?? null))
       .catch(() => {});
   }, []);
-
-  async function saveContext(e: FormEvent) {
-    e.preventDefault();
-    setSaving(true);
-    setSaveError("");
-    try {
-      await saveJobDescription(jd);
-      setSavedJd(jd);
-    } catch (err) {
-      setSaveError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  const jdChanged = jd !== savedJd;
 
   return (
     <div className="space-y-6">
@@ -70,8 +51,8 @@ export default function Dashboard() {
               <div>
                 <h2 className="text-xl font-semibold">Prepare</h2>
                 <p className="mt-1 text-sm text-slate-300">
-                  Research the company, see where you fit the role, and get a plan and likely
-                  questions.
+                  Set your target role, research the company, see where you fit, and get a plan and
+                  likely questions.
                 </p>
               </div>
               <span className="text-sm font-semibold text-white">Start preparing</span>
@@ -95,6 +76,7 @@ export default function Dashboard() {
         </Card>
       </div>
 
+      {/* At-a-glance status of the two inputs everything is tailored to */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         {/* Active CV */}
         <Card>
@@ -131,35 +113,29 @@ export default function Dashboard() {
           </CardBody>
         </Card>
 
-        {/* Job description */}
+        {/* Job description (edited in Prepare; shown here as status) */}
         <Card>
           <CardBody>
-            <CardTitle>Job description</CardTitle>
-            <p className="mt-1 text-sm text-slate-500">
-              Paste the job description you are preparing for. It is used across Prepare and the
-              interview.
+            <div className="flex items-center justify-between gap-3">
+              <CardTitle>Job description</CardTitle>
+              <Link to="/prepare" className="text-sm font-medium text-brand-700 hover:underline">
+                {trimmedJd ? "Edit in Prepare" : "Add in Prepare"}
+              </Link>
+            </div>
+            {trimmedJd ? (
+              <p className="mt-4 whitespace-pre-line text-sm text-slate-600">{jdSnippet}</p>
+            ) : (
+              <p className="mt-4 text-sm text-slate-500">
+                No job description set yet. Add the role you are preparing for in{" "}
+                <Link to="/prepare" className="font-medium text-brand-700 hover:underline">
+                  Prepare
+                </Link>
+                .
+              </p>
+            )}
+            <p className="mt-4 text-sm text-slate-500">
+              The job description is used across Prepare and the interview.
             </p>
-            <form onSubmit={saveContext} className="mt-4">
-              <Label>Job description</Label>
-              <TextArea
-                value={jd}
-                onChange={(e) => setJd(e.target.value)}
-                rows={7}
-                placeholder="Paste the job description..."
-              />
-              <div className="mt-3 flex items-center gap-3">
-                <Button type="submit" loading={saving} disabled={!jdChanged}>
-                  Save
-                </Button>
-                {saveError && <span className="text-sm text-red-600">{saveError}</span>}
-                {!saveError && jdChanged && (
-                  <span className="text-sm text-amber-600">Unsaved changes</span>
-                )}
-                {!saveError && !jdChanged && jd.trim() && (
-                  <span className="text-sm text-green-600">Saved</span>
-                )}
-              </div>
-            </form>
           </CardBody>
         </Card>
       </div>

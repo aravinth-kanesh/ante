@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import {
   generatePreparation,
@@ -9,6 +9,7 @@ import {
   getResearch,
   listCvs,
   researchCompany,
+  saveJobDescription,
   type Cv,
   type PrepGroup,
   type PreparationReport,
@@ -16,7 +17,7 @@ import {
 } from "../api";
 import CompanyResearchView from "../components/CompanyResearchView";
 import PreparationView from "../components/PreparationView";
-import { Button, Card, CardBody, CardTitle } from "../components/ui";
+import { Button, Card, CardBody, CardTitle, Label, TextArea } from "../components/ui";
 
 function message(err: unknown) {
   return err instanceof Error ? err.message : String(err);
@@ -24,7 +25,11 @@ function message(err: unknown) {
 
 export default function Prepare() {
   const [activeCv, setActiveCv] = useState<Cv | null>(null);
-  const [hasJd, setHasJd] = useState(false);
+
+  const [jd, setJd] = useState("");
+  const [savedJd, setSavedJd] = useState("");
+  const [savingJd, setSavingJd] = useState(false);
+  const [jdError, setJdError] = useState("");
 
   const [research, setResearch] = useState<Research | null>(null);
   const [researching, setResearching] = useState(false);
@@ -43,7 +48,10 @@ export default function Prepare() {
       .then((cvs) => setActiveCv(cvs.find((c) => c.selected) ?? null))
       .catch(() => {});
     getProfile()
-      .then((p) => setHasJd(Boolean(p.jd_text.trim())))
+      .then((p) => {
+        setJd(p.jd_text);
+        setSavedJd(p.jd_text);
+      })
       .catch(() => {});
     getResearch()
       .then((r) => r.research && setResearch(r))
@@ -55,6 +63,20 @@ export default function Prepare() {
       .then(setQuestions)
       .catch(() => {});
   }, []);
+
+  async function saveJd(e: FormEvent) {
+    e.preventDefault();
+    setSavingJd(true);
+    setJdError("");
+    try {
+      await saveJobDescription(jd);
+      setSavedJd(jd);
+    } catch (err) {
+      setJdError(message(err));
+    } finally {
+      setSavingJd(false);
+    }
+  }
 
   async function runResearch() {
     setResearching(true);
@@ -92,6 +114,8 @@ export default function Prepare() {
     }
   }
 
+  const hasJd = Boolean(savedJd.trim());
+  const jdChanged = jd !== savedJd;
   const ready = activeCv && hasJd;
 
   return (
@@ -104,25 +128,45 @@ export default function Prepare() {
         </p>
       </div>
 
-      {/* Context reminder */}
+      {/* Setup: the CV and job description everything below is tailored to */}
       <Card className={ready ? "" : "border-amber-200 bg-amber-50/40"}>
-        <CardBody className="flex flex-wrap items-center justify-between gap-3 py-4 text-sm">
-          <span className="text-slate-700">
-            Using{" "}
-            <span className="font-medium text-slate-900">{activeCv?.label ?? "no CV"}</span> for{" "}
-            <span className="font-medium text-slate-900">
-              {hasJd ? "your saved job description" : "no job description"}
-            </span>
-            .
-          </span>
-          <span className="flex gap-4">
-            <Link to="/cvs" className="font-medium text-brand-700 hover:underline">
-              Manage CVs
+        <CardBody>
+          <div className="flex items-center justify-between gap-3">
+            <CardTitle>Your target role</CardTitle>
+            <Link to="/cvs" className="text-sm font-medium text-brand-700 hover:underline">
+              {activeCv ? `CV: ${activeCv.label}` : "Add a CV"}
             </Link>
-            <Link to="/" className="font-medium text-brand-700 hover:underline">
-              Edit job description
-            </Link>
-          </span>
+          </div>
+          <p className="mt-1 text-sm text-slate-500">
+            Paste the job description you are preparing for. Everything below, and the mock
+            interview, is tailored to this and your active CV.
+          </p>
+          <form onSubmit={saveJd} className="mt-4">
+            <Label>Job description</Label>
+            <TextArea
+              value={jd}
+              onChange={(e) => setJd(e.target.value)}
+              rows={7}
+              placeholder="Paste the job description..."
+            />
+            <div className="mt-3 flex items-center gap-3">
+              <Button type="submit" loading={savingJd} disabled={!jdChanged}>
+                Save
+              </Button>
+              {jdError && <span className="text-sm text-red-600">{jdError}</span>}
+              {!jdError && jdChanged && <span className="text-sm text-amber-600">Unsaved changes</span>}
+              {!jdError && !jdChanged && hasJd && <span className="text-sm text-green-600">Saved</span>}
+            </div>
+          </form>
+          {!activeCv && (
+            <p className="mt-3 text-sm text-amber-700">
+              Add a CV in{" "}
+              <Link to="/cvs" className="font-medium underline">
+                Manage CVs
+              </Link>{" "}
+              so the plan and questions can be tailored to you.
+            </p>
+          )}
         </CardBody>
       </Card>
 
