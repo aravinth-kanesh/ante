@@ -6,6 +6,7 @@ export interface Message {
 export interface User {
   id: number;
   email: string;
+  is_verified: boolean;
 }
 
 export interface Profile {
@@ -99,8 +100,54 @@ export async function authMe(): Promise<User> {
   return request("/api/auth/me");
 }
 
+export async function getAuthConfig(): Promise<{ verification_required: boolean }> {
+  return request("/api/auth/config");
+}
+
+export async function verifyEmail(token: string): Promise<User> {
+  return request("/api/auth/verify", { method: "POST", body: JSON.stringify({ token }) });
+}
+
+export async function resendVerification(email: string): Promise<void> {
+  await request("/api/auth/resend-verification", {
+    method: "POST",
+    body: JSON.stringify({ email }),
+  });
+}
+
+export async function forgotPassword(email: string): Promise<void> {
+  await request("/api/auth/forgot-password", { method: "POST", body: JSON.stringify({ email }) });
+}
+
+export async function resetPassword(token: string, password: string): Promise<void> {
+  await request("/api/auth/reset-password", {
+    method: "POST",
+    body: JSON.stringify({ token, password }),
+  });
+}
+
+export async function changePassword(currentPassword: string, newPassword: string): Promise<void> {
+  await request("/api/auth/change-password", {
+    method: "POST",
+    body: JSON.stringify({ current_password: currentPassword, new_password: newPassword }),
+  });
+}
+
 export async function deleteAccount(): Promise<void> {
   await request("/api/auth/me", { method: "DELETE" });
+}
+
+/** Download all of the account's stored data as a JSON file (data portability). */
+export async function exportMyData(): Promise<void> {
+  const res = await fetch("/api/auth/export", { credentials: "include" });
+  if (!res.ok) throw new Error("Could not export your data");
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "ante-data.json";
+  link.click();
+  URL.revokeObjectURL(url);
 }
 
 export async function getProfile(): Promise<Profile> {

@@ -1,9 +1,10 @@
 import { useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { resendVerification } from "../api";
 import { useAuth } from "../auth/AuthContext";
-import Logo from "../components/Logo";
+import AuthShell from "../components/AuthShell";
 import PasswordField from "../components/PasswordField";
-import { Button, Card, CardBody, Input, Label } from "../components/ui";
+import { Button, Input, Label } from "../components/ui";
 
 export default function Signup() {
   const { signup } = useAuth();
@@ -11,8 +12,10 @@ export default function Signup() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
+  const [consent, setConsent] = useState(false);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [pending, setPending] = useState(false); // shown when verification is required
 
   async function submit(e: FormEvent) {
     e.preventDefault();
@@ -23,8 +26,9 @@ export default function Signup() {
     }
     setBusy(true);
     try {
-      await signup(email, password);
-      navigate("/");
+      const user = await signup(email, password);
+      if (user.is_verified) navigate("/");
+      else setPending(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
@@ -32,58 +36,87 @@ export default function Signup() {
     }
   }
 
+  if (pending) {
+    return (
+      <AuthShell
+        title="Check your email"
+        subtitle="We sent a link to confirm your address."
+        footer={
+          <Link to="/login" className="font-medium text-brand-700 hover:underline">
+            Back to log in
+          </Link>
+        }
+      >
+        <p className="mb-4 text-sm text-slate-600">
+          Open the email we just sent to {email} and follow the link to finish setting up your
+          account. It may take a minute to arrive.
+        </p>
+        <Button variant="secondary" className="w-full" onClick={() => resendVerification(email)}>
+          Resend the email
+        </Button>
+      </AuthShell>
+    );
+  }
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-50 via-white to-brand-50 px-4">
-      <div className="w-full max-w-sm">
-        <div className="mb-6 flex flex-col items-center gap-3 text-center">
-          <Logo size={44} />
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Create your account</h1>
-            <p className="mt-1 text-sm text-slate-500">Start practising for your interviews.</p>
-          </div>
-        </div>
-        <Card>
-          <CardBody>
-            <form onSubmit={submit}>
-              <div className="mb-4">
-                <Label>Email</Label>
-                <Input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  autoComplete="email"
-                />
-              </div>
-              <PasswordField
-                label="Password"
-                value={password}
-                onChange={setPassword}
-                minLength={8}
-                autoComplete="new-password"
-              />
-              <p className="-mt-2 mb-4 text-xs text-slate-500">At least 8 characters.</p>
-              <PasswordField
-                label="Confirm password"
-                value={confirm}
-                onChange={setConfirm}
-                minLength={8}
-                autoComplete="new-password"
-              />
-              {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
-              <Button type="submit" loading={busy} className="w-full">
-                Sign up
-              </Button>
-            </form>
-          </CardBody>
-        </Card>
-        <p className="mt-5 text-center text-sm text-slate-500">
+    <AuthShell
+      title="Create your account"
+      subtitle="Start practising for your interviews."
+      footer={
+        <>
           Already have an account?{" "}
           <Link to="/login" className="font-medium text-brand-700 hover:underline">
             Log in
           </Link>
-        </p>
-      </div>
-    </div>
+        </>
+      }
+    >
+      <form onSubmit={submit}>
+        <div className="mb-4">
+          <Label>Email</Label>
+          <Input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            autoComplete="email"
+          />
+        </div>
+        <PasswordField
+          label="Password"
+          value={password}
+          onChange={setPassword}
+          minLength={8}
+          autoComplete="new-password"
+        />
+        <p className="-mt-2 mb-4 text-xs text-slate-500">At least 8 characters.</p>
+        <PasswordField
+          label="Confirm password"
+          value={confirm}
+          onChange={setConfirm}
+          minLength={8}
+          autoComplete="new-password"
+        />
+        <label className="mb-4 flex items-start gap-2 text-xs text-slate-600">
+          <input
+            type="checkbox"
+            checked={consent}
+            onChange={(e) => setConsent(e.target.checked)}
+            className="mt-0.5"
+          />
+          <span>
+            I have read and agree to the{" "}
+            <Link to="/privacy" className="font-medium text-brand-700 hover:underline">
+              privacy notice
+            </Link>
+            .
+          </span>
+        </label>
+        {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
+        <Button type="submit" loading={busy} disabled={!consent} className="w-full">
+          Sign up
+        </Button>
+      </form>
+    </AuthShell>
   );
 }

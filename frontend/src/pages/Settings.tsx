@@ -1,6 +1,13 @@
-import { useEffect, useState } from "react";
-import { deleteAccount, listServerVoices, type ServerVoice } from "../api";
+import { useEffect, useState, type FormEvent } from "react";
+import {
+  changePassword,
+  deleteAccount,
+  exportMyData,
+  listServerVoices,
+  type ServerVoice,
+} from "../api";
 import { useAuth } from "../auth/AuthContext";
+import PasswordField from "../components/PasswordField";
 import { WhyAnteFull } from "../components/WhyAnte";
 import {
   Badge,
@@ -31,6 +38,45 @@ export default function Settings() {
   const [confirmEmail, setConfirmEmail] = useState("");
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState("");
+
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [changingPassword, setChangingPassword] = useState(false);
+  const [passwordError, setPasswordError] = useState("");
+  const [passwordDone, setPasswordDone] = useState(false);
+  const [exportError, setExportError] = useState("");
+
+  async function submitPassword(e: FormEvent) {
+    e.preventDefault();
+    setPasswordError("");
+    setPasswordDone(false);
+    if (newPassword !== confirmPassword) {
+      setPasswordError("New passwords do not match.");
+      return;
+    }
+    setChangingPassword(true);
+    try {
+      await changePassword(currentPassword, newPassword);
+      setPasswordDone(true);
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+    } catch (err) {
+      setPasswordError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setChangingPassword(false);
+    }
+  }
+
+  async function downloadData() {
+    setExportError("");
+    try {
+      await exportMyData();
+    } catch (err) {
+      setExportError(err instanceof Error ? err.message : String(err));
+    }
+  }
 
   async function removeAccount() {
     setDeleting(true);
@@ -161,6 +207,57 @@ export default function Settings() {
               </p>
             </>
           )}
+        </CardBody>
+      </Card>
+
+      <Card>
+        <CardBody className="space-y-4">
+          <CardTitle>Password</CardTitle>
+          <form onSubmit={submitPassword} className="space-y-4">
+            <PasswordField
+              label="Current password"
+              value={currentPassword}
+              onChange={setCurrentPassword}
+              autoComplete="current-password"
+            />
+            <PasswordField
+              label="New password"
+              value={newPassword}
+              onChange={setNewPassword}
+              minLength={8}
+              autoComplete="new-password"
+            />
+            <PasswordField
+              label="Confirm new password"
+              value={confirmPassword}
+              onChange={setConfirmPassword}
+              minLength={8}
+              autoComplete="new-password"
+            />
+            {passwordError && <p className="text-sm text-red-600">{passwordError}</p>}
+            {passwordDone && (
+              <p className="text-sm text-green-700">
+                Your password has been changed and other devices were signed out.
+              </p>
+            )}
+            <Button type="submit" loading={changingPassword} className="w-fit">
+              Change password
+            </Button>
+          </form>
+        </CardBody>
+      </Card>
+
+      <Card>
+        <CardBody className="space-y-4">
+          <CardTitle>Your data</CardTitle>
+          <p className="text-sm text-slate-600">
+            Download a copy of everything held about your account, including your CVs, saved job
+            description and every interview and its feedback.
+          </p>
+          {exportError && <p className="text-sm text-red-600">{exportError}</p>}
+          <Button variant="secondary" className="w-fit" onClick={downloadData}>
+            Download my data
+          </Button>
         </CardBody>
       </Card>
 

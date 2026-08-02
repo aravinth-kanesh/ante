@@ -7,11 +7,15 @@ import Cvs from "./pages/Cvs";
 import Dashboard from "./pages/Dashboard";
 import History from "./pages/History";
 import Interview from "./pages/Interview";
+import ForgotPassword from "./pages/ForgotPassword";
 import Login from "./pages/Login";
 import Prepare from "./pages/Prepare";
+import Privacy from "./pages/Privacy";
+import ResetPassword from "./pages/ResetPassword";
 import Results from "./pages/Results";
 import Settings from "./pages/Settings";
 import Signup from "./pages/Signup";
+import Verify from "./pages/Verify";
 
 // A protected page wrapped in the app shell (nav + container).
 function Page({ children }: { children: ReactNode }) {
@@ -29,6 +33,10 @@ export default function App() {
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
+          <Route path="/verify" element={<Verify />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/privacy" element={<Privacy />} />
           <Route path="/" element={<Page><Dashboard /></Page>} />
           <Route path="/cvs" element={<Page><Cvs /></Page>} />
           <Route path="/prepare" element={<Page><Prepare /></Page>} />
