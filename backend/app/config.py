@@ -6,10 +6,10 @@ DEFAULT_JWT_SECRET = "change-me-in-env"
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
-    # Defaults point at the KCL endpoint; override in .env.
-    llm_base_url: str = "https://api.ai.create.kcl.ac.uk/v1"
+    # Any OpenAI-compatible chat API; override in .env.
+    llm_base_url: str = "https://api.openai.com/v1"
     llm_api_key: str = ""
-    llm_model: str = "arc:lite"
+    llm_model: str = "gpt-4o-mini"
 
     backend_cors_origins: str = "http://localhost:5173"
 

@@ -4,7 +4,7 @@ from openai import OpenAI
 
 from app.config import settings
 
-# The KCL endpoint is OpenAI-compatible, so the openai client works as-is.
+# The endpoint is OpenAI-compatible, so the openai client works as-is.
 
 
 @lru_cache
