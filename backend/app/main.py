@@ -16,7 +16,7 @@ import app.models  # noqa: F401  (register every table on Base.metadata)
 from app.ratelimit import limiter
 from fastapi import Depends
 
-from app.routers import auth, chat, cv, health, interview, prepare, profile, speech, vision
+from app.routers import auth, chat, cv, health, interview, prepare, profile, progress, speech, vision
 from app.security import ACCESS_COOKIE, CSRF_COOKIE, REFRESH_COOKIE, require_verified_user
 
 SAFE_METHODS = {"GET", "HEAD", "OPTIONS", "TRACE"}
@@ -137,6 +137,7 @@ app.include_router(profile.router, prefix="/api", dependencies=verified)
 app.include_router(cv.router, prefix="/api", dependencies=verified)
 app.include_router(prepare.router, prefix="/api", dependencies=verified)
 app.include_router(interview.router, prefix="/api", dependencies=verified)
+app.include_router(progress.router, prefix="/api", dependencies=verified)
 app.include_router(speech.router, prefix="/api", dependencies=verified)
 app.include_router(vision.router, prefix="/api", dependencies=verified)
 app.include_router(chat.router, prefix="/api", dependencies=verified)
