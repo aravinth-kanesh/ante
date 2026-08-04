@@ -1,0 +1,158 @@
+import { type Verdicts } from "../api";
+
+export interface TrendPoint {
+  label: string; // x-axis label (a date)
+  value: number;
+}
+
+/**
+ * A small, self-contained line chart for one metric across interviews. It shades the
+ * "good" range for context, marks each interview, and directly labels only the first
+ * and latest points. No charting library: it is plain SVG so the build stays light.
+ */
+export default function TrendChart({
+  points,
+  format,
+  goodLow,
+  goodHigh,
+}: {
+  points: TrendPoint[];
+  format: (v: number) => string;
+  goodLow?: number | null;
+  goodHigh?: number | null;
+}) {
+  const W = 320;
+  const H = 128;
+  const padX = 30;
+  const padTop = 16;
+  const padBottom = 24;
+
+  const values = points.map((p) => p.value);
+  const bounds = [...values, ...(goodLow != null ? [goodLow] : []), ...(goodHigh != null ? [goodHigh] : [])];
+  let lo = Math.min(...bounds);
+  let hi = Math.max(...bounds);
+  if (lo === hi) {
+    lo -= 1;
+    hi += 1;
+  }
+  const span = hi - lo;
+  lo -= span * 0.15;
+  hi += span * 0.15;
+
+  const x = (i: number) =>
+    points.length === 1 ? W / 2 : padX + (i * (W - 2 * padX)) / (points.length - 1);
+  const y = (v: number) => padTop + (H - padTop - padBottom) * (1 - (v - lo) / (hi - lo));
+
+  const line = points.map((p, i) => `${x(i)},${y(p.value)}`).join(" ");
+  const bandTop = goodHigh != null ? y(goodHigh) : null;
+  const bandBottom = goodLow != null ? y(goodLow) : null;
+
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} className="h-auto w-full" role="img">
+      {bandTop != null && bandBottom != null && (
+        <rect
+          x={0}
+          y={Math.min(bandTop, bandBottom)}
+          width={W}
+          height={Math.abs(bandBottom - bandTop)}
+          className="fill-green-100"
+          opacity={0.5}
+        />
+      )}
+      {/* baseline */}
+      <line x1={0} y1={H - padBottom} x2={W} y2={H - padBottom} className="stroke-slate-200" strokeWidth={1} />
+
+      {points.length > 1 && (
+        <polyline
+          points={line}
+          fill="none"
+          className="stroke-brand-600"
+          strokeWidth={2}
+          strokeLinejoin="round"
+          strokeLinecap="round"
+        />
+      )}
+
+      {points.map((p, i) => (
+        <circle key={i} cx={x(i)} cy={y(p.value)} r={4} className="fill-brand-600">
+          <title>{`${p.label}: ${format(p.value)}`}</title>
+        </circle>
+      ))}
+
+      {/* Direct-label the first and latest points only, plus their dates. */}
+      {points.map((p, i) => {
+        const isEnd = i === 0 || i === points.length - 1;
+        if (!isEnd && points.length > 1) return null;
+        const anchor = i === 0 && points.length > 1 ? "start" : i === points.length - 1 && points.length > 1 ? "end" : "middle";
+        return (
+          <g key={`lbl-${i}`}>
+            <text
+              x={x(i)}
+              y={y(p.value) - 9}
+              textAnchor={anchor}
+              className="fill-slate-700 text-[11px] font-medium"
+            >
+              {format(p.value)}
+            </text>
+            <text x={x(i)} y={H - 7} textAnchor={anchor} className="fill-slate-400 text-[10px]">
+              {p.label}
+            </text>
+          </g>
+        );
+      })}
+    </svg>
+  );
+}
+
+const VERDICT_STYLE: { key: keyof Verdicts; label: string; fill: string }[] = [
+  { key: "strong", label: "Strong", fill: "bg-green-500" },
+  { key: "adequate", label: "Adequate", fill: "bg-amber-400" },
+  { key: "weak", label: "Weak", fill: "bg-red-500" },
+];
+
+/**
+ * One stacked bar per interview showing how many answers were strong / adequate /
+ * weak. Colour is backed by a labelled legend and per-segment titles, so the meaning
+ * never rests on colour alone.
+ */
+export function VerdictBars({ rows }: { rows: { label: string; verdicts: Verdicts }[] }) {
+  const shown = rows.filter((r) => r.verdicts.strong + r.verdicts.adequate + r.verdicts.weak > 0);
+  if (shown.length === 0) return null;
+
+  return (
+    <div>
+      <div className="mb-3 flex flex-wrap gap-4">
+        {VERDICT_STYLE.map((v) => (
+          <span key={v.key} className="flex items-center gap-1.5 text-xs text-slate-600">
+            <span className={`h-2.5 w-2.5 rounded-sm ${v.fill}`} />
+            {v.label}
+          </span>
+        ))}
+      </div>
+      <div className="space-y-2">
+        {shown.map((row, i) => {
+          const total = row.verdicts.strong + row.verdicts.adequate + row.verdicts.weak;
+          return (
+            <div key={i} className="flex items-center gap-3">
+              <span className="w-14 shrink-0 text-xs text-slate-500">{row.label}</span>
+              <div className="flex h-3 flex-1 gap-0.5 overflow-hidden rounded-sm">
+                {VERDICT_STYLE.map((v) => {
+                  const count = row.verdicts[v.key];
+                  if (count === 0) return null;
+                  return (
+                    <div
+                      key={v.key}
+                      className={v.fill}
+                      style={{ width: `${(count / total) * 100}%` }}
+                      title={`${v.label}: ${count}`}
+                    />
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}

@@ -452,3 +452,51 @@ export async function getInterview(sessionId: number): Promise<InterviewDetail> 
 export async function deleteInterview(sessionId: number): Promise<{ ok: boolean }> {
   return request(`/api/interview/${sessionId}`, { method: "DELETE" });
 }
+
+// Progress tracking: trends aggregated from past interviews.
+export interface Verdicts {
+  strong: number;
+  adequate: number;
+  weak: number;
+}
+
+export interface SessionStats {
+  session_id: number;
+  created_at: string;
+  interview_type: string;
+  title: string;
+  answered_count: number;
+  strong_rate: number | null;
+  verdicts: Verdicts;
+  avg_wpm: number | null;
+  filler_per_min: number | null;
+  eye_contact_pct: number | null;
+  head_steadiness: number | null;
+  has_delivery: boolean;
+  has_nonverbal: boolean;
+}
+
+export type TrendDirection = "improved" | "steady" | "slipped" | "na";
+
+export interface MetricDelta {
+  metric: string;
+  label: string;
+  first: number | null;
+  latest: number | null;
+  direction: TrendDirection;
+  lower_is_better: boolean;
+  good_low: number | null;
+  good_high: number | null;
+}
+
+export interface ProgressReport {
+  totals: { interviews: number; questions_answered: number; minutes_practised: number };
+  sessions: SessionStats[];
+  deltas: MetricDelta[];
+  focus_areas: string[];
+  strengths: string[];
+}
+
+export async function getProgress(): Promise<ProgressReport> {
+  return request("/api/progress");
+}

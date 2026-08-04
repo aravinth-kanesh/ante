@@ -36,6 +36,7 @@ export default function Layout({ children }: { children: ReactNode }) {
             <NavItem to="/cvs">CVs</NavItem>
             <NavItem to="/prepare">Prepare</NavItem>
             <NavItem to="/interview">Interview</NavItem>
+            <NavItem to="/progress">Progress</NavItem>
             <NavItem to="/history">History</NavItem>
             <NavItem to="/settings">Settings</NavItem>
           </nav>

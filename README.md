@@ -54,6 +54,8 @@ and camera work best in Chrome or Edge.
   preparation plan, and likely questions.
 - **Mock interview**: an adaptive spoken interview with feedback on your answers, your
   speaking (pace, pauses, filler words) and your presence on camera.
+- **Progress**: how you are improving across interviews, with trends for answer
+  quality, speaking and on-camera presence, and the recurring things to work on.
 - **History**: every past interview and its feedback, saved to your account.
 - **Accounts**: sign up, verify your email, reset or change your password, download
   your data, or delete your account.

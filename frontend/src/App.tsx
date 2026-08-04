@@ -11,6 +11,7 @@ import ForgotPassword from "./pages/ForgotPassword";
 import Login from "./pages/Login";
 import Prepare from "./pages/Prepare";
 import Privacy from "./pages/Privacy";
+import Progress from "./pages/Progress";
 import ResetPassword from "./pages/ResetPassword";
 import Results from "./pages/Results";
 import Settings from "./pages/Settings";
@@ -41,6 +42,7 @@ export default function App() {
           <Route path="/cvs" element={<Page><Cvs /></Page>} />
           <Route path="/prepare" element={<Page><Prepare /></Page>} />
           <Route path="/interview" element={<Page><Interview /></Page>} />
+          <Route path="/progress" element={<Page><Progress /></Page>} />
           <Route path="/results/:id" element={<Page><Results /></Page>} />
           <Route path="/history" element={<Page><History /></Page>} />
           <Route path="/settings" element={<Page><Settings /></Page>} />

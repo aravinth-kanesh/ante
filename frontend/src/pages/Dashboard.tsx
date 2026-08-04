@@ -76,6 +76,14 @@ export default function Dashboard() {
         </Card>
       </div>
 
+      <p className="text-center text-sm text-slate-500">
+        Been practising?{" "}
+        <Link to="/progress" className="font-medium text-brand-700 hover:underline">
+          See how you are improving
+        </Link>
+        .
+      </p>
+
       {/* At-a-glance status of the two inputs everything is tailored to */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         {/* Active CV */}
