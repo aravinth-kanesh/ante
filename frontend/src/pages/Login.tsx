@@ -5,7 +5,7 @@ import { useAuth } from "../auth/AuthContext";
 import AuthShell from "../components/AuthShell";
 import PasswordField from "../components/PasswordField";
 import { WhyAnteShort } from "../components/WhyAnte";
-import { Button, Input, Label } from "../components/ui";
+import { Button, Input } from "../components/ui";
 
 export default function Login() {
   const { login } = useAuth();
@@ -64,8 +64,8 @@ export default function Login() {
           </p>
         )}
         <div className="mb-4">
-          <Label>Email</Label>
           <Input
+            label="Email"
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}

@@ -10,7 +10,7 @@ import {
   uploadCvFile,
   type Cv,
 } from "../api";
-import { Badge, Button, Card, CardBody, CardTitle, Input, Label, TextArea } from "../components/ui";
+import { Badge, Button, Card, CardBody, CardTitle, Input, TextArea } from "../components/ui";
 
 function message(err: unknown) {
   return err instanceof Error ? err.message : String(err);
@@ -146,8 +146,8 @@ export default function Cvs() {
         <CardBody className="space-y-4">
           <CardTitle>Add a CV</CardTitle>
           <div>
-            <Label>Label</Label>
             <Input
+              label="Label"
               value={newLabel}
               onChange={(e) => setNewLabel(e.target.value)}
               placeholder="e.g. Finance CV, Tech CV"
@@ -168,11 +168,11 @@ export default function Cvs() {
                 className="hidden"
               />
             </label>
-            <span className="text-sm text-slate-400">or paste below</span>
+            <span className="text-sm text-slate-500">or paste below</span>
           </div>
           <div>
-            <Label>Paste CV text</Label>
             <TextArea
+              label="Paste CV text"
               value={newText}
               onChange={(e) => setNewText(e.target.value)}
               rows={5}
@@ -279,12 +279,9 @@ export default function Cvs() {
                     <p className="text-sm text-slate-500">Loading...</p>
                   ) : (
                     <>
-                      <Label>Extracted CV text</Label>
-                      <p className="mb-2 text-xs text-slate-500">
-                        This is the text the interviewer reads. You can correct it if the file did
-                        not extract cleanly.
-                      </p>
                       <TextArea
+                        label="Extracted CV text"
+                        hint="This is the text the interviewer reads. You can correct it if the file did not extract cleanly."
                         value={viewText}
                         onChange={(e) => setViewText(e.target.value)}
                         rows={14}

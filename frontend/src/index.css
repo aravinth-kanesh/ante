@@ -34,4 +34,25 @@
   h3 {
     letter-spacing: -0.02em;
   }
+  /* A consistent, visible keyboard-focus indicator for anything that does not
+     supply its own (links, native controls). Components with their own focus ring
+     set focus:outline-none, which keeps their ring and suppresses this. */
+  :focus-visible {
+    outline: 2px solid var(--color-brand-600);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+}
+
+/* Respect a user's reduced-motion preference: near-disable animations and
+   transitions (the spinner, the speaking indicator, hover transitions). */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

@@ -16,7 +16,6 @@ import {
   CardBody,
   CardTitle,
   Input,
-  Label,
   Select,
   SpeakerIcon,
   SpeakingIndicator,
@@ -158,8 +157,7 @@ export default function Settings() {
           ) : (
             <>
               <div>
-                <Label>Voice</Label>
-                <Select value={selected} onChange={(e) => choose(e.target.value)}>
+                <Select label="Voice" value={selected} onChange={(e) => choose(e.target.value)}>
                   {serverVoices.length > 0 && (
                     <optgroup label="Natural voices (recommended)">
                       {serverVoices.map((v) => (
@@ -283,6 +281,7 @@ export default function Settings() {
               onChange={(e) => setConfirmEmail(e.target.value)}
               placeholder="your email"
               autoComplete="off"
+              aria-label="Type your email address to confirm deleting your account"
             />
           </div>
           {deleteError && <p className="text-sm text-red-600">{deleteError}</p>}

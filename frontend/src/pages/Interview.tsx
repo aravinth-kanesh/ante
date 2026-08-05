@@ -22,7 +22,6 @@ import {
   Card,
   CardBody,
   CardTitle,
-  Label,
   MicIcon,
   Select,
   SpeakerIcon,
@@ -261,10 +260,11 @@ export default function Interview() {
           <CardBody className="space-y-6">
             <CardTitle>Set up your interview</CardTitle>
             <div>
-              <Label>Interview type</Label>
               <Select
+                label="Interview type"
                 value={interviewType}
                 onChange={(e) => setInterviewType(e.target.value as InterviewType)}
+                hint={INTERVIEW_TYPE_HINTS[interviewType]}
               >
                 <option value="general">General (a realistic mix)</option>
                 <option value="behavioural">Behavioural (about you and your fit)</option>
@@ -272,13 +272,26 @@ export default function Interview() {
                 <option value="technical">Technical (spoken, no coding)</option>
                 <option value="strengths">Strengths-based</option>
               </Select>
-              <p className="mt-2 text-xs leading-relaxed text-slate-500">
-                {INTERVIEW_TYPE_HINTS[interviewType]}
-              </p>
             </div>
             <div>
-              <Label>Focus</Label>
-              <Select value={focus} onChange={(e) => setFocus(e.target.value as Focus)}>
+              <Select
+                label="Focus"
+                value={focus}
+                onChange={(e) => setFocus(e.target.value as Focus)}
+                hint={
+                  <>
+                    {focus === "gaps"
+                      ? "The interviewer will focus on the competencies your CV is thin on."
+                      : focus === "questions"
+                        ? "The interviewer will draw mainly from your generated likely questions."
+                        : "A realistic interview across the usual questions."}{" "}
+                    <Link to="/prepare" className="font-medium text-brand-700 hover:underline">
+                      Set these up in Prepare
+                    </Link>
+                    .
+                  </>
+                }
+              >
                 <option value="balanced">Balanced (a realistic mix)</option>
                 <option value="gaps" disabled={!hasGaps}>
                   My weak spots{hasGaps ? "" : " (generate a plan in Prepare first)"}
@@ -287,17 +300,6 @@ export default function Interview() {
                   My likely questions{hasQuestions ? "" : " (generate them in Prepare first)"}
                 </option>
               </Select>
-              <p className="mt-2 text-xs leading-relaxed text-slate-500">
-                {focus === "gaps"
-                  ? "The interviewer will focus on the competencies your CV is thin on."
-                  : focus === "questions"
-                    ? "The interviewer will draw mainly from your generated likely questions."
-                    : "A realistic interview across the usual questions."}{" "}
-                <Link to="/prepare" className="font-medium text-brand-700 hover:underline">
-                  Set these up in Prepare
-                </Link>
-                .
-              </p>
             </div>
             {supported ? (
               <div className="space-y-4">

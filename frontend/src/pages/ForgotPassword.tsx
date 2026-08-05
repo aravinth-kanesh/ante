@@ -2,7 +2,7 @@ import { useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { forgotPassword } from "../api";
 import AuthShell from "../components/AuthShell";
-import { Button, Input, Label } from "../components/ui";
+import { Button, Input } from "../components/ui";
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState("");
@@ -37,8 +37,8 @@ export default function ForgotPassword() {
       ) : (
         <form onSubmit={submit}>
           <div className="mb-4">
-            <Label>Email</Label>
             <Input
+              label="Email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}

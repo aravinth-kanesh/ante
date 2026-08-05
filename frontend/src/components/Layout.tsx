@@ -25,13 +25,19 @@ export default function Layout({ children }: { children: ReactNode }) {
   const { user, logout } = useAuth();
   return (
     <div className="min-h-screen bg-slate-50">
+      <a
+        href="#main"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-50 focus:rounded-lg focus:bg-white focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-brand-700 focus:shadow"
+      >
+        Skip to content
+      </a>
       <header className="sticky top-0 z-10 border-b border-slate-200 bg-white/80 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-5xl items-center justify-between gap-4 px-4">
-          <Link to="/" className="flex items-center gap-2.5">
+          <Link to="/" className="flex items-center gap-2.5" aria-label="Ante home">
             <Logo />
             <span className="font-semibold tracking-tight text-slate-900">Ante</span>
           </Link>
-          <nav className="hidden items-center gap-1 sm:flex">
+          <nav aria-label="Primary" className="hidden items-center gap-1 sm:flex">
             <NavItem to="/">Dashboard</NavItem>
             <NavItem to="/cvs">CVs</NavItem>
             <NavItem to="/prepare">Prepare</NavItem>
@@ -50,7 +56,9 @@ export default function Layout({ children }: { children: ReactNode }) {
           </div>
         </div>
       </header>
-      <main className="mx-auto max-w-5xl px-4 py-8">{children}</main>
+      <main id="main" tabIndex={-1} className="mx-auto max-w-5xl px-4 py-8 focus:outline-none">
+        {children}
+      </main>
     </div>
   );
 }

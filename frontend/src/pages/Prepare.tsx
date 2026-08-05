@@ -17,7 +17,7 @@ import {
 } from "../api";
 import CompanyResearchView from "../components/CompanyResearchView";
 import PreparationView from "../components/PreparationView";
-import { Button, Card, CardBody, CardTitle, Label, TextArea } from "../components/ui";
+import { Button, Card, CardBody, CardTitle, TextArea } from "../components/ui";
 
 function message(err: unknown) {
   return err instanceof Error ? err.message : String(err);
@@ -143,8 +143,8 @@ export default function Prepare() {
             interview, is tailored to this and your active CV.
           </p>
           <form onSubmit={saveJd} className="mt-4">
-            <Label>Job description</Label>
             <TextArea
+              label="Job description"
               value={jd}
               onChange={(e) => setJd(e.target.value)}
               rows={7}

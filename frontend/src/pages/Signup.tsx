@@ -4,7 +4,7 @@ import { resendVerification } from "../api";
 import { useAuth } from "../auth/AuthContext";
 import AuthShell from "../components/AuthShell";
 import PasswordField from "../components/PasswordField";
-import { Button, Input, Label } from "../components/ui";
+import { Button, Input } from "../components/ui";
 
 export default function Signup() {
   const { signup } = useAuth();
@@ -73,8 +73,8 @@ export default function Signup() {
     >
       <form onSubmit={submit}>
         <div className="mb-4">
-          <Label>Email</Label>
           <Input
+            label="Email"
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
