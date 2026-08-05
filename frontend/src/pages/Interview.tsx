@@ -1,13 +1,16 @@
 import { useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import {
   analyseNonverbal,
   answerInterview,
   finishInterview,
+  getPreparation,
+  getPrepQuestions,
   startInterview,
   transcribeAudio,
   type DeliveryMetrics,
   type FeedbackReport,
+  type Focus,
   type InterviewType,
   type NonverbalMetrics,
 } from "../api";
@@ -60,7 +63,12 @@ export default function Interview() {
   const [error, setError] = useState("");
 
   const supported = recordingSupported();
+  const location = useLocation();
+  const requestedFocus = (location.state as { focus?: Focus } | null)?.focus;
   const [interviewType, setInterviewType] = useState<InterviewType>("general");
+  const [focus, setFocus] = useState<Focus>(requestedFocus ?? "balanced");
+  const [hasGaps, setHasGaps] = useState(false);
+  const [hasQuestions, setHasQuestions] = useState(false);
   const [voiceMode, setVoiceMode] = useState(supported);
   const [cameraOn, setCameraOn] = useState(false);
   const [recording, setRecording] = useState(false);
@@ -69,6 +77,23 @@ export default function Interview() {
   const [speaking, setSpeaking] = useState(false);
   const captureRef = useRef<Capture | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
+
+  // Which focus options have data to draw on (from the Prepare page).
+  useEffect(() => {
+    getPreparation()
+      .then((r) => setHasGaps(r.competencies.some((c) => c.status === "gap" || c.status === "partial")))
+      .catch(() => {});
+    getPrepQuestions()
+      .then((groups) => setHasQuestions(groups.length > 0))
+      .catch(() => {});
+  }, []);
+
+  // If the chosen focus has no data (for example arriving from a link before
+  // generating it), fall back to a balanced interview.
+  useEffect(() => {
+    if (focus === "gaps" && !hasGaps) setFocus("balanced");
+    if (focus === "questions" && !hasQuestions) setFocus("balanced");
+  }, [focus, hasGaps, hasQuestions]);
 
   // Speak each new interviewer question while voice mode is on.
   useEffect(() => {
@@ -158,7 +183,7 @@ export default function Interview() {
     setMetrics(null);
     setNonverbal(null);
     try {
-      const res = await startInterview(voiceMode ? "voice" : "text", interviewType);
+      const res = await startInterview(voiceMode ? "voice" : "text", interviewType, focus);
       setSessionId(res.session_id);
       setQuestion(res.question);
     } catch (err) {
@@ -249,6 +274,29 @@ export default function Interview() {
               </Select>
               <p className="mt-2 text-xs leading-relaxed text-slate-500">
                 {INTERVIEW_TYPE_HINTS[interviewType]}
+              </p>
+            </div>
+            <div>
+              <Label>Focus</Label>
+              <Select value={focus} onChange={(e) => setFocus(e.target.value as Focus)}>
+                <option value="balanced">Balanced (a realistic mix)</option>
+                <option value="gaps" disabled={!hasGaps}>
+                  My weak spots{hasGaps ? "" : " (generate a plan in Prepare first)"}
+                </option>
+                <option value="questions" disabled={!hasQuestions}>
+                  My likely questions{hasQuestions ? "" : " (generate them in Prepare first)"}
+                </option>
+              </Select>
+              <p className="mt-2 text-xs leading-relaxed text-slate-500">
+                {focus === "gaps"
+                  ? "The interviewer will focus on the competencies your CV is thin on."
+                  : focus === "questions"
+                    ? "The interviewer will draw mainly from your generated likely questions."
+                    : "A realistic interview across the usual questions."}{" "}
+                <Link to="/prepare" className="font-medium text-brand-700 hover:underline">
+                  Set these up in Prepare
+                </Link>
+                .
               </p>
             </div>
             {supported ? (

@@ -22,6 +22,8 @@ function describeSession(detail: InterviewDetail): string {
   const label = TYPE_LABELS[detail.interview_type] ?? "General";
   let title = detail.company ? `${detail.company} - ${label} Interview` : `${label} Interview`;
   if (detail.role) title += ` for ${detail.role}`;
+  if (detail.focus === "gaps") title += " (weak spots)";
+  else if (detail.focus === "questions") title += " (likely questions)";
   return title;
 }
 

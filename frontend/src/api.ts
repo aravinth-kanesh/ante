@@ -295,14 +295,16 @@ export async function generatePreparation(): Promise<PreparationReport> {
 
 export type InterviewMode = "text" | "voice";
 export type InterviewType = "general" | "behavioural" | "competency" | "technical" | "strengths";
+export type Focus = "balanced" | "gaps" | "questions";
 
 export async function startInterview(
   mode: InterviewMode = "text",
   interviewType: InterviewType = "general",
+  focus: Focus = "balanced",
 ): Promise<{ session_id: number; question: string; mode: InterviewMode }> {
   return request("/api/interview/start", {
     method: "POST",
-    body: JSON.stringify({ mode, interview_type: interviewType }),
+    body: JSON.stringify({ mode, interview_type: interviewType, focus }),
   });
 }
 
@@ -416,6 +418,7 @@ export interface SessionSummary {
   id: number;
   mode: InterviewMode;
   interview_type: InterviewType;
+  focus: string; // "", "gaps" or "questions"
   status: string;
   created_at: string;
   question_count: number;
@@ -435,6 +438,7 @@ export interface InterviewDetail {
   status: string;
   mode: InterviewMode;
   interview_type: InterviewType;
+  focus: string; // "", "gaps" or "questions"
   company: string;
   role: string;
   feedback: FeedbackReport | null;

@@ -244,7 +244,7 @@ export default function Progress() {
                   ))}
                 </ul>
                 <div className="mt-4 flex items-center gap-3">
-                  <Link to="/interview">
+                  <Link to="/interview" state={{ focus: "gaps" }}>
                     <Button size="sm">Practise these</Button>
                   </Link>
                   <Link to="/prepare" className="text-sm font-medium text-brand-700 hover:underline">

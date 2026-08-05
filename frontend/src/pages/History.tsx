@@ -162,6 +162,8 @@ export default function History() {
                 <div className="flex shrink-0 items-center gap-2">
                   <Badge color={s.mode === "voice" ? "brand" : "slate"}>{s.mode}</Badge>
                   <Badge color={s.status === "finished" ? "green" : "amber"}>{s.status}</Badge>
+                  {s.focus === "gaps" && <Badge color="slate">weak spots</Badge>}
+                  {s.focus === "questions" && <Badge color="slate">likely questions</Badge>}
                   {confirmId === s.id ? (
                     <>
                       <Button

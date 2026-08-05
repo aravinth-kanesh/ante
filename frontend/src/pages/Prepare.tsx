@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   generatePreparation,
   generateQuestions,
@@ -24,6 +24,7 @@ function message(err: unknown) {
 }
 
 export default function Prepare() {
+  const navigate = useNavigate();
   const [activeCv, setActiveCv] = useState<Cv | null>(null);
 
   const [jd, setJd] = useState("");
@@ -206,10 +207,15 @@ export default function Prepare() {
             An honest look at where your CV is strong and where it is thin for this role, with a
             prioritised plan to prepare.
           </p>
-          <div className="mt-4 flex items-center gap-3">
+          <div className="mt-4 flex flex-wrap items-center gap-3">
             <Button variant="secondary" onClick={runPlan} loading={planning}>
               {prep ? "Regenerate plan" : "Generate preparation"}
             </Button>
+            {prep && prep.competencies.some((c) => c.status === "gap" || c.status === "partial") && (
+              <Button onClick={() => navigate("/interview", { state: { focus: "gaps" } })}>
+                Practise these in a mock interview
+              </Button>
+            )}
             {prep && !planning && <span className="text-sm text-green-600">Ready</span>}
           </div>
           {planError && <p className="mt-3 text-sm text-red-600">{planError}</p>}
@@ -228,10 +234,15 @@ export default function Prepare() {
           <p className="mt-1 text-sm text-slate-500">
             Questions you are likely to be asked, grouped by type.
           </p>
-          <div className="mt-4 flex items-center gap-3">
+          <div className="mt-4 flex flex-wrap items-center gap-3">
             <Button variant="secondary" onClick={runQuestions} loading={generating}>
               {questions.length > 0 ? "Regenerate questions" : "Generate questions"}
             </Button>
+            {questions.length > 0 && (
+              <Button onClick={() => navigate("/interview", { state: { focus: "questions" } })}>
+                Practise these in a mock interview
+              </Button>
+            )}
             {questions.length > 0 && !generating && (
               <span className="text-sm text-green-600">Generated</span>
             )}

@@ -53,7 +53,8 @@ and camera work best in Chrome or Edge.
 - **Prepare**: company research, an honest look at where your CV fits the role, a
   preparation plan, and likely questions.
 - **Mock interview**: an adaptive spoken interview with feedback on your answers, your
-  speaking (pace, pauses, filler words) and your presence on camera.
+  speaking (pace, pauses, filler words) and your presence on camera. You can focus it
+  on your weak spots (from the gap analysis) or your likely questions.
 - **Progress**: how you are improving across interviews, with trends for answer
   quality, speaking and on-camera presence, and the recurring things to work on.
 - **History**: every past interview and its feedback, saved to your account.
