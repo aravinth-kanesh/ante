@@ -116,7 +116,7 @@ def session_stats(session: InterviewSession) -> SessionStats:
         session_id=session.id,
         created_at=session.created_at,
         interview_type=session.interview_type,
-        title=session_title(session.company, session.role, session.interview_type),
+        title=session_title(session.company, session.role, session.interview_type, focus=session.focus),
         answered_count=answered,
         strong_rate=strong_rate,
         verdicts=verdicts,

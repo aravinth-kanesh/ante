@@ -5,11 +5,15 @@ from pydantic import BaseModel, Field
 
 Mode = Literal["text", "voice"]
 InterviewType = Literal["general", "behavioural", "competency", "technical", "strengths"]
+# What the interview is steered towards: a balanced interview, the candidate's weak
+# competencies from the gap analysis, or their generated likely questions.
+Focus = Literal["balanced", "gaps", "questions"]
 
 
 class StartRequest(BaseModel):
     mode: Mode = "text"
     interview_type: InterviewType = "general"
+    focus: Focus = "balanced"
 
 
 class StartResponse(BaseModel):
@@ -151,6 +155,7 @@ class TranscriptResponse(BaseModel):
     status: str
     mode: Mode
     interview_type: InterviewType
+    focus: str = ""  # "", "gaps" or "questions"
     company: str = ""
     role: str = ""
     feedback: FeedbackReport | None = None
@@ -161,6 +166,7 @@ class SessionSummary(BaseModel):
     id: int
     mode: Mode
     interview_type: InterviewType
+    focus: str = ""  # "", "gaps" or "questions"
     status: str
     created_at: datetime
     question_count: int

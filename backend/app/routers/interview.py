@@ -62,6 +62,7 @@ def start(
 ) -> StartResponse:
     mode = data.mode if data else "text"
     interview_type = data.interview_type if data else "general"
+    focus = data.focus if data else "balanced"
     profile = _get_or_create(db, current_user)
     if not profile.cv_text.strip():
         raise HTTPException(status_code=400, detail="Add your CV before starting an interview")
@@ -72,6 +73,10 @@ def start(
             run_research(db, profile)
         except Exception:
             db.rollback()
+
+    # Steer the interview at the candidate's weak spots or likely questions when asked;
+    # falls back to a balanced interview if that prep data is not there.
+    focus_code, focus_text = interview.focus_brief(profile.preparation, profile.prep_questions, focus)
 
     try:
         session, question = interview.start(
@@ -84,6 +89,8 @@ def start(
             interview_type,
             profile.company,
             profile.role,
+            focus_code,
+            focus_text,
         )
     except Exception as exc:
         raise HTTPException(status_code=502, detail=f"Could not start interview: {exc}") from exc
@@ -190,11 +197,16 @@ def list_sessions(
                 id=session.id,
                 mode=session.mode,
                 interview_type=session.interview_type,
+                focus=session.focus,
                 status=session.status,
                 created_at=session.created_at,
                 question_count=len(questions),
                 title=interview.session_title(
-                    session.company, session.role, session.interview_type, seq_by_id[session.id]
+                    session.company,
+                    session.role,
+                    session.interview_type,
+                    seq_by_id[session.id],
+                    session.focus,
                 ),
                 preview=questions[0].content if questions else "(no questions)",
             )
@@ -220,6 +232,7 @@ def transcript(
         status=session.status,
         mode=session.mode,
         interview_type=session.interview_type,
+        focus=session.focus,
         company=session.company,
         role=session.role,
         feedback=feedback,

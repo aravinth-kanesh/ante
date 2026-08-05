@@ -7,6 +7,8 @@ from app.config import settings
 from app.models.session import InterviewSession, Turn
 from app.models.user import User
 from app.schemas.interview import DeliveryMetrics, FeedbackReport, NonverbalMetrics
+from app.schemas.prepare import PrepResponse
+from app.schemas.preparation import PreparationReport
 from app.services import llm, moderation
 from app.services.prompts import FEEDBACK_PROMPT, INTERVIEW_STYLES, INTERVIEWER_PROMPT
 from app.services.text import strip_markdown
@@ -20,12 +22,16 @@ TYPE_LABELS = {
     "strengths": "Strengths-based",
 }
 
+# Short suffix shown in session titles when the interview was steered.
+FOCUS_LABELS = {"gaps": "weak spots", "questions": "likely questions"}
 
-def session_title(company: str, role: str, interview_type: str, seq: int = 1) -> str:
+
+def session_title(company: str, role: str, interview_type: str, seq: int = 1, focus: str = "") -> str:
     """A readable session title, e.g. 'Cognizant - Behavioural Interview for Analyst 2'.
 
     `seq` numbers repeats of the same interview type for the same company and role;
-    the first of a kind is unnumbered.
+    the first of a kind is unnumbered. `focus` adds a short suffix when the interview
+    was steered at the candidate's weak spots or likely questions.
     """
     label = TYPE_LABELS.get(interview_type, TYPE_LABELS["general"])
     company = (company or "").strip()
@@ -36,13 +42,59 @@ def session_title(company: str, role: str, interview_type: str, seq: int = 1) ->
         title += f" for {role}"
     if seq > 1:
         title += f" {seq}"
+    if focus in FOCUS_LABELS:
+        title += f" ({FOCUS_LABELS[focus]})"
     return title
+
+
+def focus_brief(preparation_json: str, questions_json: str, focus: str) -> tuple[str, str]:
+    """Turn the stored gap analysis or questions into an interviewer instruction.
+
+    Returns (focus_code, focus_text). The code is stored on the session for display;
+    the text is injected into the interviewer prompt. Returns ("", "") when the
+    requested focus has no data, so the caller falls back to a balanced interview.
+    """
+    if focus == "gaps" and preparation_json:
+        try:
+            report = PreparationReport.model_validate_json(preparation_json)
+        except ValueError:
+            return "", ""
+        weak = [c.name.strip() for c in report.competencies if c.status in ("gap", "partial") and c.name.strip()]
+        if not weak:
+            return "", ""
+        listed = "; ".join(weak[:6])
+        text = (
+            "This candidate most needs to practise these areas, where their CV is thin "
+            f"for the role: {listed}. Prioritise questions that probe these areas and "
+            "draw out concrete examples, with follow-ups, while still running a natural "
+            "interview."
+        )
+        return "gaps", text
+
+    if focus == "questions" and questions_json:
+        try:
+            groups = PrepResponse.model_validate_json(questions_json).groups
+        except ValueError:
+            return "", ""
+        questions = [q.question.strip() for g in groups for q in g.questions if q.question.strip()]
+        if not questions:
+            return "", ""
+        listed = "\n".join(f"- {q}" for q in questions[:8])
+        text = (
+            "Draw your main questions from this list the candidate wants to practise, "
+            "asking them in a natural order and adding follow-ups that probe their "
+            f"answers:\n{listed}"
+        )
+        return "questions", text
+
+    return "", ""
 
 
 def _system(session: InterviewSession) -> dict:
     style = INTERVIEW_STYLES.get(session.interview_type, INTERVIEW_STYLES["general"])
     content = INTERVIEWER_PROMPT.format(
         style=style,
+        focus=session.focus_snapshot or "",
         cv=session.cv_snapshot or "(not provided)",
         jd=session.jd_snapshot or "(not provided)",
         context=session.company_context_snapshot or "(not researched)",
@@ -143,11 +195,15 @@ def start(
     interview_type: str = "general",
     company: str = "",
     role: str = "",
+    focus_code: str = "",
+    focus_text: str = "",
 ) -> tuple[InterviewSession, str]:
     session = InterviewSession(
         user_id=user.id,
         mode=mode,
         interview_type=interview_type,
+        focus=focus_code,
+        focus_snapshot=focus_text,
         company=company,
         role=role,
         cv_snapshot=cv,
