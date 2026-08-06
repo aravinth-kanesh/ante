@@ -112,7 +112,7 @@ export default function Signup() {
             .
           </span>
         </label>
-        {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
+        {error && <p role="alert" className="mb-4 text-sm text-red-600">{error}</p>}
         <Button type="submit" loading={busy} disabled={!consent} className="w-full">
           Sign up
         </Button>

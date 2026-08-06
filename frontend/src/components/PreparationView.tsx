@@ -48,7 +48,7 @@ export default function PreparationView({ report }: { report: PreparationReport 
                 <Badge color={STATUS[c.status].color}>{STATUS[c.status].label}</Badge>
                 <div className="min-w-0">
                   <p className="text-sm font-medium text-slate-900">
-                    {c.name} <span className="text-xs font-normal text-slate-400">· {c.area}</span>
+                    {c.name} <span className="text-xs font-normal text-slate-500">· {c.area}</span>
                   </p>
                   <p className="mt-0.5 text-sm text-slate-600">{c.evidence}</p>
                 </div>

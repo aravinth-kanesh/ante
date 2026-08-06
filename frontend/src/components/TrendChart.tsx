@@ -15,12 +15,15 @@ export default function TrendChart({
   format,
   goodLow,
   goodHigh,
+  label,
 }: {
   points: TrendPoint[];
   format: (v: number) => string;
   goodLow?: number | null;
   goodHigh?: number | null;
+  label: string;
 }) {
+  if (points.length === 0) return null;
   const W = 320;
   const H = 128;
   const padX = 30;
@@ -47,8 +50,16 @@ export default function TrendChart({
   const bandTop = goodHigh != null ? y(goodHigh) : null;
   const bandBottom = goodLow != null ? y(goodLow) : null;
 
+  const first = points[0];
+  const last = points[points.length - 1];
+  const summary =
+    points.length > 1
+      ? `${label}: from ${format(first.value)} on ${first.label} to ${format(last.value)} on ${last.label}, across ${points.length} interviews.`
+      : `${label}: ${format(first.value)} on ${first.label}.`;
+
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} className="h-auto w-full" role="img">
+    <figure className="m-0">
+      <svg viewBox={`0 0 ${W} ${H}`} className="h-auto w-full" aria-hidden="true">
       {bandTop != null && bandBottom != null && (
         <rect
           x={0}
@@ -94,13 +105,31 @@ export default function TrendChart({
             >
               {format(p.value)}
             </text>
-            <text x={x(i)} y={H - 7} textAnchor={anchor} className="fill-slate-400 text-[10px]">
+            <text x={x(i)} y={H - 7} textAnchor={anchor} className="fill-slate-500 text-[10px]">
               {p.label}
             </text>
           </g>
         );
       })}
-    </svg>
+      </svg>
+      <table className="sr-only">
+        <caption>{summary}</caption>
+        <thead>
+          <tr>
+            <th scope="col">Interview</th>
+            <th scope="col">{label}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {points.map((p, i) => (
+            <tr key={i}>
+              <td>{p.label}</td>
+              <td>{format(p.value)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </figure>
   );
 }
 
@@ -121,38 +150,64 @@ export function VerdictBars({ rows }: { rows: { label: string; verdicts: Verdict
 
   return (
     <div>
-      <div className="mb-3 flex flex-wrap gap-4">
-        {VERDICT_STYLE.map((v) => (
-          <span key={v.key} className="flex items-center gap-1.5 text-xs text-slate-600">
-            <span className={`h-2.5 w-2.5 rounded-sm ${v.fill}`} />
-            {v.label}
-          </span>
-        ))}
-      </div>
-      <div className="space-y-2">
-        {shown.map((row, i) => {
-          const total = row.verdicts.strong + row.verdicts.adequate + row.verdicts.weak;
-          return (
-            <div key={i} className="flex items-center gap-3">
-              <span className="w-14 shrink-0 text-xs text-slate-500">{row.label}</span>
-              <div className="flex h-3 flex-1 gap-0.5 overflow-hidden rounded-sm">
-                {VERDICT_STYLE.map((v) => {
-                  const count = row.verdicts[v.key];
-                  if (count === 0) return null;
-                  return (
-                    <div
-                      key={v.key}
-                      className={v.fill}
-                      style={{ width: `${(count / total) * 100}%` }}
-                      title={`${v.label}: ${count}`}
-                    />
-                  );
-                })}
+      {/* Visual bars, hidden from assistive tech which reads the table below instead. */}
+      <div aria-hidden="true">
+        <div className="mb-3 flex flex-wrap gap-4">
+          {VERDICT_STYLE.map((v) => (
+            <span key={v.key} className="flex items-center gap-1.5 text-xs text-slate-600">
+              <span className={`h-2.5 w-2.5 rounded-sm ${v.fill}`} />
+              {v.label}
+            </span>
+          ))}
+        </div>
+        <div className="space-y-2">
+          {shown.map((row, i) => {
+            const total = row.verdicts.strong + row.verdicts.adequate + row.verdicts.weak;
+            return (
+              <div key={i} className="flex items-center gap-3">
+                <span className="w-14 shrink-0 text-xs text-slate-500">{row.label}</span>
+                <div className="flex h-3 flex-1 gap-0.5 overflow-hidden rounded-sm">
+                  {VERDICT_STYLE.map((v) => {
+                    const count = row.verdicts[v.key];
+                    if (count === 0) return null;
+                    return (
+                      <div
+                        key={v.key}
+                        className={v.fill}
+                        style={{ width: `${(count / total) * 100}%` }}
+                        title={`${v.label}: ${count}`}
+                      />
+                    );
+                  })}
+                </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
+      <table className="sr-only">
+        <caption>Answers rated strong, adequate or weak per interview.</caption>
+        <thead>
+          <tr>
+            <th scope="col">Interview</th>
+            {VERDICT_STYLE.map((v) => (
+              <th key={v.key} scope="col">
+                {v.label}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {shown.map((row, i) => (
+            <tr key={i}>
+              <th scope="row">{row.label}</th>
+              <td>{row.verdicts.strong}</td>
+              <td>{row.verdicts.adequate}</td>
+              <td>{row.verdicts.weak}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }

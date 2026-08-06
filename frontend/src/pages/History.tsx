@@ -96,7 +96,7 @@ export default function History() {
         </p>
       </div>
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
 
       {sessions && sessions.length > 0 && (
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -147,7 +147,7 @@ export default function History() {
         <section key={group.key} className="space-y-3">
           <h2 className="text-sm font-semibold text-slate-500">
             {group.label}{" "}
-            <span className="font-normal text-slate-400">({group.items.length})</span>
+            <span className="font-normal text-slate-500">({group.items.length})</span>
           </h2>
           {group.items.map((s) => (
             <Card key={s.id} className="transition-shadow hover:shadow-lift">

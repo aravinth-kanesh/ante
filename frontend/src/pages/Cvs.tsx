@@ -139,7 +139,7 @@ export default function Cvs() {
         </p>
       </div>
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
 
       {/* Add a CV */}
       <Card>
@@ -183,7 +183,7 @@ export default function Cvs() {
             <Button onClick={onPaste} loading={adding} disabled={!newText.trim()}>
               Save pasted CV
             </Button>
-            {addError && <span className="text-sm text-red-600">{addError}</span>}
+            {addError && <span role="alert" className="text-sm text-red-600">{addError}</span>}
           </div>
         </CardBody>
       </Card>

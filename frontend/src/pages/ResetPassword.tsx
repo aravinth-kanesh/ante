@@ -42,7 +42,7 @@ export default function ResetPassword() {
       }
     >
       {!token ? (
-        <p className="text-sm text-red-600">This reset link is missing its token. Please request a new one.</p>
+        <p role="alert" className="text-sm text-red-600">This reset link is missing its token. Please request a new one.</p>
       ) : (
         <form onSubmit={submit}>
           <PasswordField
@@ -60,7 +60,7 @@ export default function ResetPassword() {
             minLength={8}
             autoComplete="new-password"
           />
-          {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
+          {error && <p role="alert" className="mb-4 text-sm text-red-600">{error}</p>}
           <Button type="submit" loading={busy} className="w-full">
             Reset password
           </Button>

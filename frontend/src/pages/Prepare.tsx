@@ -154,9 +154,9 @@ export default function Prepare() {
               <Button type="submit" loading={savingJd} disabled={!jdChanged}>
                 Save
               </Button>
-              {jdError && <span className="text-sm text-red-600">{jdError}</span>}
+              {jdError && <span role="alert" className="text-sm text-red-600">{jdError}</span>}
               {!jdError && jdChanged && <span className="text-sm text-amber-600">Unsaved changes</span>}
-              {!jdError && !jdChanged && hasJd && <span className="text-sm text-green-600">Saved</span>}
+              {!jdError && !jdChanged && hasJd && <span role="status" className="text-sm text-green-600">Saved</span>}
             </div>
           </form>
           {!activeCv && (
@@ -183,10 +183,10 @@ export default function Prepare() {
               {research?.research ? "Re-research company" : "Research company"}
             </Button>
             {research?.research && !researching && (
-              <span className="text-sm text-green-600">Researched</span>
+              <span role="status" className="text-sm text-green-600">Researched</span>
             )}
           </div>
-          {researchError && <p className="mt-3 text-sm text-red-600">{researchError}</p>}
+          {researchError && <p role="alert" className="mt-3 text-sm text-red-600">{researchError}</p>}
           {research?.research && (
             <div className="mt-5">
               <CompanyResearchView
@@ -216,9 +216,9 @@ export default function Prepare() {
                 Practise these in a mock interview
               </Button>
             )}
-            {prep && !planning && <span className="text-sm text-green-600">Ready</span>}
+            {prep && !planning && <span role="status" className="text-sm text-green-600">Ready</span>}
           </div>
-          {planError && <p className="mt-3 text-sm text-red-600">{planError}</p>}
+          {planError && <p role="alert" className="mt-3 text-sm text-red-600">{planError}</p>}
           {prep && (
             <div className="mt-5">
               <PreparationView report={prep} />
@@ -244,10 +244,10 @@ export default function Prepare() {
               </Button>
             )}
             {questions.length > 0 && !generating && (
-              <span className="text-sm text-green-600">Generated</span>
+              <span role="status" className="text-sm text-green-600">Generated</span>
             )}
           </div>
-          {genError && <p className="mt-3 text-sm text-red-600">{genError}</p>}
+          {genError && <p role="alert" className="mt-3 text-sm text-red-600">{genError}</p>}
           {questions.length > 0 && (
             <div className="mt-5 space-y-5">
               {questions.map((group) => (

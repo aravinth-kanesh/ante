@@ -2,7 +2,7 @@
 
 export function WhyAnteShort() {
   return (
-    <p className="text-center text-xs leading-relaxed text-slate-400">
+    <p className="text-center text-xs leading-relaxed text-slate-500">
       <span className="font-medium text-slate-500">Why "Ante"?</span> It is Latin for "before":
       the stake you put down before the hand is played, and the antechamber you wait in before
       the room that matters.

@@ -59,7 +59,7 @@ export default function Login() {
     >
       <form onSubmit={submit}>
         {justReset && (
-          <p className="mb-4 text-sm text-green-700">
+          <p role="status" className="mb-4 text-sm text-green-700">
             Your password has been reset. You can log in with it now.
           </p>
         )}
@@ -84,7 +84,7 @@ export default function Login() {
             Forgot password?
           </Link>
         </div>
-        {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
+        {error && <p role="alert" className="mb-4 text-sm text-red-600">{error}</p>}
         {needsVerification &&
           (resent ? (
             <p className="mb-4 text-sm text-slate-600">A new verification email is on its way.</p>

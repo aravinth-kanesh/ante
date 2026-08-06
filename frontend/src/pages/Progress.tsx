@@ -111,10 +111,16 @@ function MetricRow({ delta, points }: { delta: MetricDelta; points: TrendPoint[]
       </p>
       {points.length >= 2 ? (
         <div className="mt-3">
-          <TrendChart points={points} format={meta.format} goodLow={delta.good_low} goodHigh={delta.good_high} />
+          <TrendChart
+            label={delta.label}
+            points={points}
+            format={meta.format}
+            goodLow={delta.good_low}
+            goodHigh={delta.good_high}
+          />
         </div>
       ) : (
-        <p className="mt-2 text-xs text-slate-400">Do another interview to see this as a trend.</p>
+        <p className="mt-2 text-xs text-slate-500">Do another interview to see this as a trend.</p>
       )}
     </div>
   );
@@ -133,7 +139,7 @@ export default function Progress() {
   }, []);
 
   if (loading) return <p className="text-sm text-slate-500">Loading your progress...</p>;
-  if (error) return <p className="text-sm text-red-600">{error}</p>;
+  if (error) return <p role="alert" className="text-sm text-red-600">{error}</p>;
   if (!report) return null;
 
   if (report.totals.interviews === 0) {

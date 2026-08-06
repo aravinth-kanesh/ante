@@ -232,9 +232,9 @@ export default function Settings() {
               minLength={8}
               autoComplete="new-password"
             />
-            {passwordError && <p className="text-sm text-red-600">{passwordError}</p>}
+            {passwordError && <p role="alert" className="text-sm text-red-600">{passwordError}</p>}
             {passwordDone && (
-              <p className="text-sm text-green-700">
+              <p role="status" className="text-sm text-green-700">
                 Your password has been changed and other devices were signed out.
               </p>
             )}
@@ -252,7 +252,7 @@ export default function Settings() {
             Download a copy of everything held about your account, including your CVs, saved job
             description and every interview and its feedback.
           </p>
-          {exportError && <p className="text-sm text-red-600">{exportError}</p>}
+          {exportError && <p role="alert" className="text-sm text-red-600">{exportError}</p>}
           <Button variant="secondary" className="w-fit" onClick={downloadData}>
             Download my data
           </Button>
@@ -284,7 +284,7 @@ export default function Settings() {
               aria-label="Type your email address to confirm deleting your account"
             />
           </div>
-          {deleteError && <p className="text-sm text-red-600">{deleteError}</p>}
+          {deleteError && <p role="alert" className="text-sm text-red-600">{deleteError}</p>}
           <Button
             variant="destructive"
             loading={deleting}

@@ -86,7 +86,7 @@ export default function Results() {
         </Link>
       </div>
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
       {!error && !detail && <p className="text-sm text-slate-500">Loading...</p>}
 
       {detail && (

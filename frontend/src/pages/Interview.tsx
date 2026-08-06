@@ -240,7 +240,7 @@ export default function Interview() {
       </div>
 
       {error && (
-        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+        <div role="alert" className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           {error}
           {error.toLowerCase().includes("cv") && (
             <>
@@ -338,6 +338,7 @@ export default function Interview() {
       {/* Answered so far */}
       {history.length > 0 && !feedback && (
         <div className="space-y-3">
+          <h2 className="sr-only">Answered so far</h2>
           {history.map((ex, i) => (
             <Card key={i} className="bg-slate-50/60">
               <CardBody className="py-4">
@@ -362,10 +363,11 @@ export default function Interview() {
                       variant="ghost"
                       size="sm"
                       onClick={() => (speaking ? stopSpeaking() : replayQuestion())}
+                      aria-label={speaking ? "Stop the spoken question" : "Replay the spoken question"}
                     >
                       {speaking ? (
                         <>
-                          <SpeakingIndicator className="h-4 text-brand-600" /> Speaking
+                          <SpeakingIndicator className="h-4 text-brand-600" /> Stop
                         </>
                       ) : (
                         <>
@@ -375,7 +377,10 @@ export default function Interview() {
                     </Button>
                   )}
                 </div>
-                <p className="text-lg font-medium text-slate-900">{question}</p>
+                <div aria-live="polite">
+                  <p className="sr-only">Interviewer question {history.length + 1}:</p>
+                  <p className="text-lg font-medium text-slate-900">{question}</p>
+                </div>
 
                 {cameraOn && (
                   <video
@@ -388,6 +393,7 @@ export default function Interview() {
                 )}
 
                 <TextArea
+                  label="Your answer"
                   value={answer}
                   onChange={(e) => setAnswer(e.target.value)}
                   rows={5}

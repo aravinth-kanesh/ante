@@ -80,6 +80,15 @@ standard protective headers and rate limits. If you deploy it publicly, serve it
 HTTPS, set a strong `JWT_SECRET`, and see `backend/.env.example` for the production
 options (database, email, and so on).
 
+## Accessibility
+
+Ante aims to meet WCAG 2.1 AA. It is fully keyboard operable with a visible focus
+indicator and a skip link, forms have proper labels, the changing interview question
+and errors are announced to screen readers, page changes move focus and update the
+title, charts have text-table alternatives, and animations respect a reduced-motion
+preference. The webcam and microphone features are optional, so the whole app,
+including a complete interview, works without them.
+
 ## For developers
 
 - Interactive API documentation is served at `http://localhost:8000/docs`.
