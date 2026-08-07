@@ -184,7 +184,7 @@ export default function Progress() {
       </div>
 
       {/* Totals */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-3 gap-3 sm:gap-4">
         {[
           { label: "Interviews", value: totals.interviews },
           { label: "Questions answered", value: totals.questions_answered },

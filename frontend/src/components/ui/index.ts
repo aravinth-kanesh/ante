@@ -12,5 +12,7 @@ export {
   MicIcon,
   VideoIcon,
   DocumentIcon,
+  MenuIcon,
+  CloseIcon,
 } from "./icons";
 export { cn } from "./cn";

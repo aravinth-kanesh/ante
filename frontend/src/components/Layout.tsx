@@ -2,7 +2,18 @@ import { type ReactNode } from "react";
 import { Link, NavLink } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 import Logo from "./Logo";
+import MobileNav from "./MobileNav";
 import { Button, cn } from "./ui";
+
+const NAV_LINKS = [
+  { to: "/", label: "Dashboard" },
+  { to: "/cvs", label: "CVs" },
+  { to: "/prepare", label: "Prepare" },
+  { to: "/interview", label: "Interview" },
+  { to: "/progress", label: "Progress" },
+  { to: "/history", label: "History" },
+  { to: "/settings", label: "Settings" },
+];
 
 function NavItem({ to, children }: { to: string; children: ReactNode }) {
   return (
@@ -38,21 +49,20 @@ export default function Layout({ children }: { children: ReactNode }) {
             <span className="font-semibold tracking-tight text-slate-900">Ante</span>
           </Link>
           <nav aria-label="Primary" className="hidden items-center gap-1 sm:flex">
-            <NavItem to="/">Dashboard</NavItem>
-            <NavItem to="/cvs">CVs</NavItem>
-            <NavItem to="/prepare">Prepare</NavItem>
-            <NavItem to="/interview">Interview</NavItem>
-            <NavItem to="/progress">Progress</NavItem>
-            <NavItem to="/history">History</NavItem>
-            <NavItem to="/settings">Settings</NavItem>
+            {NAV_LINKS.map((l) => (
+              <NavItem key={l.to} to={l.to}>
+                {l.label}
+              </NavItem>
+            ))}
           </nav>
           <div className="flex items-center gap-3">
-            <span className="hidden max-w-[12rem] truncate text-sm text-slate-500 md:inline">
-              {user?.email}
-            </span>
-            <Button variant="secondary" size="sm" onClick={logout}>
-              Log out
-            </Button>
+            <div className="hidden items-center gap-3 sm:flex">
+              <span className="max-w-[12rem] truncate text-sm text-slate-500">{user?.email}</span>
+              <Button variant="secondary" size="sm" onClick={logout}>
+                Log out
+              </Button>
+            </div>
+            <MobileNav links={NAV_LINKS} email={user?.email} onLogout={logout} />
           </div>
         </div>
       </header>
