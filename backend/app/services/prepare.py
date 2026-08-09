@@ -4,6 +4,7 @@ import re
 
 from app.schemas.prepare import PrepGroup, PrepQuestion
 from app.services import llm, moderation
+from app.services.dedupe import deduped_by
 from app.services.text import strip_markdown
 
 logger = logging.getLogger(__name__)
@@ -45,11 +46,15 @@ Company and role context:
 def _clean_group(group: PrepGroup) -> PrepGroup:
     return PrepGroup(
         category=strip_markdown(group.category),
-        questions=[
-            PrepQuestion(question=strip_markdown(q.question), rationale=strip_markdown(q.rationale))
-            for q in group.questions
-            if q.question.strip()
-        ],
+        questions=deduped_by(
+            [
+                PrepQuestion(question=strip_markdown(q.question), rationale=strip_markdown(q.rationale))
+                for q in group.questions
+                if q.question.strip()
+            ],
+            key=lambda q: q.question,
+            threshold=0.7,
+        ),
     )
 
 

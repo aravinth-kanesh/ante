@@ -10,6 +10,7 @@ from app.schemas.interview import DeliveryMetrics, FeedbackReport, NonverbalMetr
 from app.schemas.prepare import PrepResponse
 from app.schemas.preparation import PreparationReport
 from app.services import llm, moderation
+from app.services.dedupe import deduped
 from app.services.prompts import FEEDBACK_PROMPT, INTERVIEW_STYLES, INTERVIEWER_PROMPT
 from app.services.text import strip_markdown
 
@@ -252,8 +253,8 @@ def parse_feedback(raw: str) -> FeedbackReport:
         if report is not None:
             return FeedbackReport(
                 summary=strip_markdown(report.summary),
-                strengths=[strip_markdown(s) for s in report.strengths if s.strip()],
-                improvements=[strip_markdown(s) for s in report.improvements if s.strip()],
+                strengths=deduped([strip_markdown(s) for s in report.strengths if s.strip()]),
+                improvements=deduped([strip_markdown(s) for s in report.improvements if s.strip()]),
                 answer_notes=[
                     note.model_copy(
                         update={
@@ -269,12 +270,35 @@ def parse_feedback(raw: str) -> FeedbackReport:
     return FeedbackReport(summary=strip_markdown(raw))
 
 
+def _has_answers(session: InterviewSession) -> bool:
+    return any(turn.kind == "answer" and turn.content.strip() for turn in session.turns)
+
+
 def _generate_feedback(session: InterviewSession) -> FeedbackReport:
-    transcript = "\n".join(
-        f"{'Interviewer' if t.role == 'interviewer' else 'Candidate'}: {t.content}"
-        for t in session.turns
-        if t.kind in ("question", "answer")
-    )
+    # If the candidate never actually answered, say so honestly rather than letting the
+    # model invent an assessment of a missing answer.
+    if not _has_answers(session):
+        return FeedbackReport(
+            summary=(
+                "You finished the interview without answering any of the questions, so "
+                "there is nothing to assess yet. Start an interview and give each "
+                "question a go, even a short attempt out loud, to get feedback on your "
+                "answers."
+            ),
+            improvements=[
+                "Have a go at answering each question, even if you are unsure. A rough "
+                "attempt is far more useful to practise on than no answer.",
+            ],
+        )
+
+    lines: list[str] = []
+    for turn in session.turns:
+        if turn.kind == "question":
+            lines.append(f"Interviewer: {turn.content}")
+        elif turn.kind == "answer":
+            content = turn.content.strip() or "(the candidate gave no answer to this question)"
+            lines.append(f"Candidate: {content}")
+    transcript = "\n".join(lines)
     prompt = FEEDBACK_PROMPT.format(transcript=transcript, delivery=_delivery_block(session))
     raw = llm.chat([{"role": "user", "content": prompt}])
     if not moderation.moderate_output(raw).allowed:

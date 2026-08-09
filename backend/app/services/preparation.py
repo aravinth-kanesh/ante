@@ -4,6 +4,7 @@ import re
 
 from app.schemas.preparation import Competency, PlanItem, PreparationReport
 from app.services import llm, moderation
+from app.services.dedupe import deduped_by
 from app.services.text import strip_markdown
 
 logger = logging.getLogger(__name__)
@@ -73,11 +74,18 @@ def _clean(report: PreparationReport) -> PreparationReport:
             for c in report.competencies
             if c.name.strip()
         ],
-        plan=[
-            PlanItem(focus=strip_markdown(p.focus), action=strip_markdown(p.action), priority=p.priority)
-            for p in report.plan
-            if p.action.strip()
-        ],
+        plan=deduped_by(
+            [
+                PlanItem(
+                    focus=strip_markdown(p.focus),
+                    action=strip_markdown(p.action),
+                    priority=p.priority,
+                )
+                for p in report.plan
+                if p.action.strip()
+            ],
+            key=lambda item: item.action,
+        ),
     )
 
 

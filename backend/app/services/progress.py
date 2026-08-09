@@ -10,6 +10,7 @@ are only reported when they were actually measured.
 from app.models.session import InterviewSession
 from app.schemas.interview import DeliveryMetrics, NonverbalMetrics
 from app.schemas.progress import MetricDelta, ProgressReport, SessionStats, Totals, Verdicts
+from app.services.dedupe import deduped
 from app.services.interview import parse_feedback, session_title
 
 # Metric identifier -> the SessionStats attribute holding it.
@@ -153,22 +154,19 @@ def _metric_delta(metric: str, series: list[float]) -> MetricDelta:
     )
 
 
-def _recurring(sessions: list[InterviewSession], field: str, cap: int = 6) -> list[str]:
-    """Collect deduplicated bullets from the most recent interviews' feedback."""
-    seen: set[str] = set()
-    out: list[str] = []
-    for session in list(reversed(sessions))[:3]:  # the last three interviews
+def _recurring(sessions: list[InterviewSession], field: str, cap: int = 5) -> list[str]:
+    """The distinct recurring points from the most recent interviews' feedback.
+
+    Bullets are collapsed across interviews with an aggressive similarity threshold so
+    a theme that keeps coming up (for example "use the STAR structure") appears once,
+    not once per interview.
+    """
+    collected: list[str] = []
+    for session in list(reversed(sessions))[:3]:  # the last three interviews, newest first
         report = _feedback(session)
-        if report is None:
-            continue
-        for bullet in getattr(report, field):
-            key = " ".join(bullet.lower().split())
-            if key and key not in seen:
-                seen.add(key)
-                out.append(bullet)
-                if len(out) >= cap:
-                    return out
-    return out
+        if report is not None:
+            collected.extend(getattr(report, field))
+    return deduped(collected, threshold=0.35)[:cap]
 
 
 def build_report(sessions: list[InterviewSession]) -> ProgressReport:

@@ -113,8 +113,16 @@ detail, clear structure (such as situation, task, action, result), and evidence 
 the competencies the role needs.
 - Prioritise the few changes that would make the biggest difference; do not pad the \
 lists. Refer to what the candidate actually said.
+- Make every point distinct. Do not repeat the same advice across items: if the same \
+underlying issue (for example using the STAR structure) applies to several answers, \
+raise it once, and use the other points for different, specific improvements. Each \
+improvement and each answer note must add something new.
 - If they did not demonstrate anything well, return an empty "strengths" list rather \
 than padding it with faint praise.
+- If the candidate did not answer a question (the transcript shows no answer, or a \
+note that they gave none), say plainly that they did not answer it, rather than \
+describing it as brief, and encourage them to attempt an answer next time, even a \
+rough one out loud.
 - Keep a supportive, professional tone, but never at the expense of honesty.
 {delivery}
 Return a single JSON object and nothing else, in exactly this shape:

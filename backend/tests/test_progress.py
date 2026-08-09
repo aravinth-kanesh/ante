@@ -124,6 +124,24 @@ def test_build_report_deltas_and_totals():
     assert report.strengths == ["Clear structure"]
 
 
+def test_focus_areas_collapse_recurring_theme():
+    # The same advice reworded across interviews should appear once, not once each.
+    s1 = make_session(
+        1, 1, [{"metrics": VOICE}],
+        _feedback(strong=1, improvements=[
+            "Use the STAR structure (Situation, Task, Action, Result) to give concrete detail from your projects."
+        ]),
+    )
+    s2 = make_session(
+        2, 2, [{"metrics": VOICE}],
+        _feedback(strong=1, improvements=[
+            "Use the STAR method (Situation, Task, Action, Result) to structure answers with concrete detail."
+        ]),
+    )
+    report = progress.build_report([s1, s2])
+    assert len(report.focus_areas) == 1
+
+
 def test_build_report_empty():
     report = progress.build_report([])
     assert report.totals.interviews == 0

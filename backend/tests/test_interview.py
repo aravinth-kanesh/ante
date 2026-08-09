@@ -233,6 +233,7 @@ def test_feedback_is_structured_and_plain_text(client, monkeypatch):
     cookies = auth_cookies(client)
     save_cv(client, cookies)
     sid = client.post("/api/interview/start", cookies=cookies).json()["session_id"]
+    client.post(f"/api/interview/{sid}/answer", cookies=cookies, json={"answer": "I built a web app."})
 
     report = client.post(f"/api/interview/{sid}/finish", cookies=cookies).json()["feedback"]
     assert report["summary"] == "Weak overall."  # markdown stripped
@@ -243,6 +244,19 @@ def test_feedback_is_structured_and_plain_text(client, monkeypatch):
     # the stored transcript exposes the same structured report
     detail = client.get(f"/api/interview/{sid}", cookies=cookies).json()
     assert detail["feedback"]["summary"] == "Weak overall."
+
+
+def test_feedback_when_no_answers_is_honest(client, monkeypatch):
+    # Finishing without answering should say so plainly, not invent a "too brief" review.
+    mock_llm(monkeypatch)
+    cookies = auth_cookies(client, "noanswer@example.com")
+    save_cv(client, cookies)
+    sid = client.post("/api/interview/start", cookies=cookies).json()["session_id"]
+
+    report = client.post(f"/api/interview/{sid}/finish", cookies=cookies).json()["feedback"]
+    assert "without answering" in report["summary"].lower()
+    assert report["answer_notes"] == []
+    assert report["strengths"] == []
 
 
 def test_regenerate_upgrades_legacy_feedback(client, monkeypatch):
