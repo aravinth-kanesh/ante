@@ -14,5 +14,6 @@ export {
   DocumentIcon,
   MenuIcon,
   CloseIcon,
+  CheckIcon,
 } from "./icons";
 export { cn } from "./cn";

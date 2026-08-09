@@ -85,3 +85,11 @@ export function CloseIcon(props: IconProps) {
     </Svg>
   );
 }
+
+export function CheckIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M4.5 12.75l6 6 9-13.5" />
+    </Svg>
+  );
+}

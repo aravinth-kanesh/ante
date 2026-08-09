@@ -1,9 +1,12 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { getHealth, getProfile, listCvs, type Cv } from "../api";
+import { getHealth, getPreparation, getProfile, listCvs, listSessions, type Cv } from "../api";
 import { useAuth } from "../auth/AuthContext";
+import GettingStarted from "../components/GettingStarted";
 import Logo from "../components/Logo";
 import { Badge, Card, CardBody, CardTitle } from "../components/ui";
+
+const HIDE_KEY = "ante:getting-started-hidden";
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -12,6 +15,9 @@ export default function Dashboard() {
 
   const [activeCv, setActiveCv] = useState<Cv | null>(null);
   const [jd, setJd] = useState("");
+  const [planDone, setPlanDone] = useState(false);
+  const [interviewDone, setInterviewDone] = useState(false);
+  const [hidden, setHidden] = useState(() => localStorage.getItem(HIDE_KEY) === "1");
 
   const trimmedJd = jd.trim();
   const jdSnippet = trimmedJd.length > 240 ? trimmedJd.slice(0, 240).trimEnd() + "..." : trimmedJd;
@@ -29,7 +35,26 @@ export default function Dashboard() {
     listCvs()
       .then((cvs) => setActiveCv(cvs.find((c) => c.selected) ?? null))
       .catch(() => {});
+    getPreparation()
+      .then((r) => setPlanDone(r.competencies.length > 0))
+      .catch(() => {});
+    listSessions()
+      .then((s) => setInterviewDone(s.length > 0))
+      .catch(() => {});
   }, []);
+
+  const steps = {
+    cv: activeCv !== null,
+    jd: trimmedJd.length > 0,
+    plan: planDone,
+    interview: interviewDone,
+  };
+  const allDone = steps.cv && steps.jd && steps.plan && steps.interview;
+
+  function hideGettingStarted() {
+    localStorage.setItem(HIDE_KEY, "1");
+    setHidden(true);
+  }
 
   return (
     <div className="space-y-6">
@@ -42,6 +67,8 @@ export default function Dashboard() {
         {health === "ok" && <Badge color="green">Connected · {model}</Badge>}
         {health === "down" && <Badge color="red">Backend unavailable</Badge>}
       </div>
+
+      {!allDone && !hidden && <GettingStarted steps={steps} onHide={hideGettingStarted} />}
 
       {/* Two paths: prepare, then interview */}
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
