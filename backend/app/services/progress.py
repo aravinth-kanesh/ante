@@ -166,7 +166,7 @@ def _recurring(sessions: list[InterviewSession], field: str, cap: int = 5) -> li
         report = _feedback(session)
         if report is not None:
             collected.extend(getattr(report, field))
-    return deduped(collected, threshold=0.35)[:cap]
+    return deduped(collected, threshold=0.5)[:cap]
 
 
 def build_report(sessions: list[InterviewSession]) -> ProgressReport:

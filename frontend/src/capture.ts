@@ -34,7 +34,20 @@ export async function startCapture(opts: {
   sampleVideo?: HTMLVideoElement | null;
 }): Promise<Capture> {
   const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: opts.video });
+  try {
+    return await setup(stream, opts);
+  } catch (err) {
+    // If any setup step fails after the stream is live (for example MediaRecorder is
+    // unsupported), release the camera and microphone rather than leaking them.
+    stream.getTracks().forEach((track) => track.stop());
+    throw err;
+  }
+}
 
+async function setup(
+  stream: MediaStream,
+  opts: { video: boolean; sampleVideo?: HTMLVideoElement | null },
+): Promise<Capture> {
   const recorder = new MediaRecorder(new MediaStream(stream.getAudioTracks()));
   const chunks: BlobPart[] = [];
   recorder.ondataavailable = (event) => {

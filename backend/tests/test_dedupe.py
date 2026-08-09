@@ -18,6 +18,20 @@ def test_deduped_keeps_genuinely_distinct_points():
     assert deduped(items) == items
 
 
+def test_deduped_keeps_points_sharing_only_a_word_or_two():
+    # Distinct advice that merely shares a common word must not be merged.
+    items = ["Good communication skills.", "Good problem solving skills."]
+    assert deduped(items, threshold=0.5) == items
+
+
+def test_deduped_collapses_exact_repeats_even_when_all_stopwords():
+    # An all-stopword bullet has an empty signature; an exact repeat is still caught.
+    assert deduped(["Use it.", "Use it.", "Prepare a genuine point."]) == [
+        "Use it.",
+        "Prepare a genuine point.",
+    ]
+
+
 def test_deduped_drops_blanks():
     assert deduped(["  ", "Real advice here.", ""]) == ["Real advice here."]
 
