@@ -14,7 +14,16 @@ def extract_text(filename: str, data: bytes) -> str:
         text = "\n".join(page.extract_text() or "" for page in reader.pages)
     elif name.endswith(".docx"):
         document = Document(io.BytesIO(data))
-        text = "\n".join(p.text for p in document.paragraphs)
+        parts = [p.text for p in document.paragraphs]
+        # Many CVs lay their content out in tables, whose cell text is not in
+        # `paragraphs`; include it so those CVs are not read as empty.
+        for table in document.tables:
+            for row in table.rows:
+                cells = [cell.text.strip() for cell in row.cells]
+                line = " | ".join(cell for cell in cells if cell)
+                if line:
+                    parts.append(line)
+        text = "\n".join(parts)
     elif name.endswith(".txt"):
         text = data.decode("utf-8", errors="replace")
     else:
