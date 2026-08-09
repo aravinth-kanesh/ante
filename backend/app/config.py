@@ -10,6 +10,10 @@ class Settings(BaseSettings):
     llm_base_url: str = "https://api.openai.com/v1"
     llm_api_key: str = ""
     llm_model: str = "gpt-4o-mini"
+    # Cap a slow or hung provider so a single request cannot tie up a worker for the
+    # client's multi-minute default.
+    llm_timeout_seconds: float = 90.0
+    llm_max_retries: int = 1
 
     backend_cors_origins: str = "http://localhost:5173"
 
