@@ -2,6 +2,11 @@
 // and when the webcam is on, also samples the video with MediaPipe to collect
 // nonverbal signals. Only audio and derived numbers leave the browser; the video
 // is used in memory and its tracks are released on stop.
+//
+// The webcam analysis is best-effort: if MediaPipe cannot load (for example the
+// models were not fetched), the camera and recording keep working, just without
+// nonverbal metrics. Frames are sampled from the visible preview element, which
+// decodes reliably across browsers (an offscreen element often does not on macOS).
 
 import type { NonverbalSample } from "./api";
 
@@ -24,7 +29,10 @@ export interface Capture {
   cancel: () => void;
 }
 
-export async function startCapture(opts: { video: boolean }): Promise<Capture> {
+export async function startCapture(opts: {
+  video: boolean;
+  sampleVideo?: HTMLVideoElement | null;
+}): Promise<Capture> {
   const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: opts.video });
 
   const recorder = new MediaRecorder(new MediaStream(stream.getAudioTracks()));
@@ -36,41 +44,45 @@ export async function startCapture(opts: { video: boolean }): Promise<Capture> {
 
   const samples: NonverbalSample[] = [];
   let timer: number | undefined;
-  let video: HTMLVideoElement | undefined;
+  let ownVideo: HTMLVideoElement | undefined; // created only if no preview was provided
 
   if (opts.video) {
-    // Load MediaPipe only when the camera is actually used, so it is code-split
-    // out of the initial bundle.
-    let vision: typeof import("./vision");
-    try {
-      vision = await import("./vision");
-      await vision.loadVision();
-    } catch (err) {
-      stream.getTracks().forEach((track) => track.stop());
-      throw err;
+    // Prefer the caller's visible preview element for sampling; fall back to an
+    // offscreen element sized large enough to decode if none was provided.
+    let sampleVideo = opts.sampleVideo ?? undefined;
+    if (!sampleVideo) {
+      ownVideo = document.createElement("video");
+      ownVideo.style.cssText = "position:fixed;left:-9999px;top:0;width:64px;height:48px;";
+      document.body.appendChild(ownVideo);
+      sampleVideo = ownVideo;
     }
-    // Attach the sampling video offscreen (not display:none, which can pause
-    // decoding) so MediaPipe reliably gets frames across browsers.
-    video = document.createElement("video");
-    video.muted = true;
-    video.playsInline = true;
-    video.style.cssText = "position:fixed;left:-9999px;width:2px;height:2px;opacity:0;";
-    document.body.appendChild(video);
-    video.srcObject = stream;
-    await video.play().catch(() => undefined);
-    timer = window.setInterval(() => {
-      if (!video) return;
-      const sample = vision.extractSample(video, performance.now());
-      if (sample) samples.push(sample);
-    }, SAMPLE_INTERVAL_MS);
+    sampleVideo.muted = true;
+    sampleVideo.playsInline = true;
+    sampleVideo.srcObject = stream;
+    await sampleVideo.play().catch(() => undefined);
+
+    // Best-effort: if MediaPipe is unavailable, keep the camera and recording going.
+    try {
+      const vision = await import("./vision");
+      await vision.loadVision();
+      const target = sampleVideo;
+      timer = window.setInterval(() => {
+        const sample = vision.extractSample(target, performance.now());
+        if (sample) samples.push(sample);
+      }, SAMPLE_INTERVAL_MS);
+    } catch (err) {
+      console.warn("Nonverbal analysis is unavailable; continuing without it.", err);
+    }
   }
 
   const release = () => {
     if (timer !== undefined) window.clearInterval(timer);
-    if (video) {
-      video.srcObject = null;
-      video.remove();
-      video = undefined;
+    if (ownVideo) {
+      ownVideo.srcObject = null;
+      ownVideo.remove();
+      ownVideo = undefined;
+    } else if (opts.sampleVideo) {
+      opts.sampleVideo.srcObject = null;
     }
     stream.getTracks().forEach((track) => track.stop());
   };

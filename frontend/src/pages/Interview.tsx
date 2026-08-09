@@ -137,16 +137,24 @@ export default function Interview() {
     cancelVoice(); // do not record the interviewer's own voice
     setSpeaking(false);
     try {
-      const capture = await startCapture({ video: cameraOn });
-      captureRef.current = capture;
-      if (cameraOn && videoRef.current) {
-        videoRef.current.srcObject = capture.stream;
-        await videoRef.current.play().catch(() => undefined);
-      }
+      // The capture attaches the stream to the preview element and samples from it.
+      captureRef.current = await startCapture({ video: cameraOn, sampleVideo: videoRef.current });
       setRecording(true);
     } catch (err) {
-      setError(`Could not start the camera or microphone: ${message(err)}`);
-      setCameraOn(false);
+      // The camera or microphone would not start. If the camera was on, fall back to a
+      // voice-only answer so the student is not blocked; only a mic failure is fatal.
+      if (cameraOn) {
+        setCameraOn(false);
+        try {
+          captureRef.current = await startCapture({ video: false });
+          setRecording(true);
+          setError("The camera could not start, so this answer is audio only.");
+        } catch (audioErr) {
+          setError(`Could not start the microphone: ${message(audioErr)}`);
+        }
+      } else {
+        setError(`Could not start the microphone: ${message(err)}`);
+      }
     } finally {
       setStarting(false);
     }
