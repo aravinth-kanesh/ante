@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import secrets
 import uuid
@@ -14,9 +15,10 @@ from app.db import run_migrations
 from app.logging import configure_logging, request_id_ctx
 import app.models  # noqa: F401  (register every table on Base.metadata)
 from app.ratelimit import limiter
+from app.services import session_media
 from fastapi import Depends
 
-from app.routers import auth, chat, cv, health, interview, prepare, profile, progress, speech, vision
+from app.routers import auth, chat, cv, health, interview, media, prepare, profile, progress, speech, vision
 from app.security import ACCESS_COOKIE, CSRF_COOKIE, REFRESH_COOKIE, require_verified_user
 
 SAFE_METHODS = {"GET", "HEAD", "OPTIONS", "TRACE"}
@@ -56,7 +58,26 @@ async def lifespan(app: FastAPI):
     # The test suite manages its own in-memory schema, so skip migrations there.
     if not settings.testing:
         run_migrations()
-    yield
+    # Sweep any answer recordings left behind by a previous run, then keep sweeping so
+    # nothing outlives its TTL even if a browser closed mid-session.
+    sweeper = None
+    if not settings.testing and settings.session_media_enabled:
+        session_media.sweep()
+        sweeper = asyncio.create_task(_sweep_media_forever())
+    try:
+        yield
+    finally:
+        if sweeper is not None:
+            sweeper.cancel()
+
+
+async def _sweep_media_forever() -> None:
+    while True:
+        await asyncio.sleep(settings.session_media_sweep_minutes * 60)
+        try:
+            session_media.sweep()
+        except Exception:
+            logger.exception("Session media sweep failed")
 
 
 app = FastAPI(title="Ante API", lifespan=lifespan)
@@ -87,9 +108,11 @@ async def request_id(request: Request, call_next):
 
 @app.middleware("http")
 async def limit_body_size(request: Request, call_next):
-    content_length = request.headers.get("content-length")
-    if content_length and content_length.isdigit() and int(content_length) > settings.max_request_bytes:
-        return JSONResponse(status_code=413, content={"detail": "Request body too large"})
+    # Answer-recording uploads are large by nature and capped in the handler instead.
+    if "/media/" not in request.url.path:
+        content_length = request.headers.get("content-length")
+        if content_length and content_length.isdigit() and int(content_length) > settings.max_request_bytes:
+            return JSONResponse(status_code=413, content={"detail": "Request body too large"})
     return await call_next(request)
 
 
@@ -137,6 +160,7 @@ app.include_router(profile.router, prefix="/api", dependencies=verified)
 app.include_router(cv.router, prefix="/api", dependencies=verified)
 app.include_router(prepare.router, prefix="/api", dependencies=verified)
 app.include_router(interview.router, prefix="/api", dependencies=verified)
+app.include_router(media.router, prefix="/api", dependencies=verified)
 app.include_router(progress.router, prefix="/api", dependencies=verified)
 app.include_router(speech.router, prefix="/api", dependencies=verified)
 app.include_router(vision.router, prefix="/api", dependencies=verified)

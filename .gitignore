@@ -11,6 +11,9 @@ venv/
 # Local database
 *.db
 
+# Temporary answer recordings (never committed; deleted when a session ends)
+backend/var/
+
 # Node / frontend
 node_modules/
 dist/

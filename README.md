@@ -62,8 +62,10 @@ and camera work best in Chrome or Edge.
   your data, or delete your account.
 
 Your privacy: your microphone audio is turned into text in memory and never saved,
-and the camera analysis runs inside your browser, so no video or image ever leaves
-your device.
+and the camera analysis runs inside your browser, so no video or image leaves your
+device for the analysis. If you opt in to saving your answers, the recordings are held
+on the server only for the length of that session so you can review and download them,
+and are deleted when the session ends; the server keeps no audio or video afterwards.
 
 ## Settings
 

@@ -40,8 +40,16 @@ export default function Privacy() {
             </p>
             <p>
               If you turn the camera on, the analysis of your webcam runs entirely in your browser.
-              No video or image is uploaded. Only derived numbers, such as an estimate of how often
-              you faced the camera and how steady you were, are sent and stored with that answer.
+              No video or image is uploaded for the analysis. Only derived numbers, such as an
+              estimate of how often you faced the camera and how steady you were, are sent and
+              stored with that answer.
+            </p>
+            <p>
+              If you choose to save your answers so you can review and download them, your recordings
+              (audio, and video when the camera is on) are sent to our server only while you are
+              interviewing. They are held so you can play them back and download them at the end, and
+              are permanently deleted when the session ends. We never keep your audio or video after
+              the session and never use it for anything else. Saving is off unless you turn it on.
             </p>
           </Section>
 

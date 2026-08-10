@@ -33,7 +33,7 @@ from app.security import (
     set_auth_cookies,
     verify_password,
 )
-from app.services import email, onetime, passwords, sessions
+from app.services import email, onetime, passwords, session_media, sessions
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -304,8 +304,10 @@ def delete_account(
     """Permanently delete the account and all of its data (right to erasure)."""
     sessions.delete_all(db, current_user.id)
     db.query(OneTimeToken).filter_by(user_id=current_user.id).delete()
-    # Interview sessions cascade to their turns via the ORM relationship.
+    # Interview sessions cascade to their turns via the ORM relationship; any answer
+    # recordings held on disk for those sessions are purged too.
     for session in db.query(InterviewSession).filter_by(user_id=current_user.id).all():
+        session_media.purge(session.id)
         db.delete(session)
     db.query(CV).filter_by(user_id=current_user.id).delete()
     if current_user.profile is not None:

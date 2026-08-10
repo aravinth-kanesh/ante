@@ -3,11 +3,14 @@ import { Link, useLocation } from "react-router-dom";
 import {
   analyseNonverbal,
   answerInterview,
+  answerMediaBundleUrl,
+  deleteAnswerMedia,
   finishInterview,
   getPreparation,
   getPrepQuestions,
   startInterview,
   transcribeAudio,
+  uploadAnswerMedia,
   type DeliveryMetrics,
   type FeedbackReport,
   type Focus,
@@ -15,7 +18,7 @@ import {
   type InterviewType,
   type NonverbalMetrics,
 } from "../api";
-import { recordingSupported, startCapture, type Capture } from "../capture";
+import { recordingSupported, startCapture, type Capture, type Replay } from "../capture";
 import FeedbackView from "../components/FeedbackView";
 import {
   Badge,
@@ -72,11 +75,15 @@ export default function Interview() {
   const [hasQuestions, setHasQuestions] = useState(false);
   const [voiceMode, setVoiceMode] = useState(supported);
   const [cameraOn, setCameraOn] = useState(false);
+  const [saveRecording, setSaveRecording] = useState(false);
+  const [hasRecordings, setHasRecordings] = useState(false);
+  const [recordingsDeleted, setRecordingsDeleted] = useState(false);
   const [recording, setRecording] = useState(false);
   const [starting, setStarting] = useState(false);
   const [analysing, setAnalysing] = useState(false);
   const [speaking, setSpeaking] = useState(false);
   const captureRef = useRef<Capture | null>(null);
+  const replayRef = useRef<Replay | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
 
   // Which focus options have data to draw on (from the Prepare page).
@@ -147,7 +154,11 @@ export default function Interview() {
     setSpeaking(false);
     try {
       // The capture attaches the stream to the preview element and samples from it.
-      captureRef.current = await startCapture({ video: cameraOn, sampleVideo: videoRef.current });
+      captureRef.current = await startCapture({
+        video: cameraOn,
+        sampleVideo: videoRef.current,
+        record: saveRecording,
+      });
       setRecording(true);
     } catch (err) {
       // The camera or microphone would not start. If the camera was on, fall back to a
@@ -155,7 +166,7 @@ export default function Interview() {
       if (cameraOn) {
         setCameraOn(false);
         try {
-          captureRef.current = await startCapture({ video: false });
+          captureRef.current = await startCapture({ video: false, record: saveRecording });
           setRecording(true);
           setError("The camera could not start, so this answer is audio only.");
         } catch (audioErr) {
@@ -177,7 +188,8 @@ export default function Interview() {
     setAnalysing(true);
     setError("");
     try {
-      const { audioBlob, samples } = await capture.stop();
+      const { audioBlob, samples, replay } = await capture.stop();
+      replayRef.current = replay; // uploaded on submit, keyed to this question
       if (videoRef.current) videoRef.current.srcObject = null;
       const res = await transcribeAudio(audioBlob);
       setAnswer(res.transcript);
@@ -198,6 +210,9 @@ export default function Interview() {
     setAnswer("");
     setMetrics(null);
     setNonverbal(null);
+    setHasRecordings(false);
+    setRecordingsDeleted(false);
+    replayRef.current = null;
     try {
       const res = await startInterview(voiceMode ? "voice" : "text", interviewType, focus, length);
       setSessionId(res.session_id);
@@ -215,16 +230,38 @@ export default function Interview() {
     setLoading(true);
     setError("");
     try {
+      const answerIndex = history.length + 1; // this answer's number, 1-based
       const res = await answerInterview(sessionId, answer, metrics, nonverbal);
       setHistory((h) => [...h, { question, answer }]);
       setAnswer("");
       setMetrics(null);
       setNonverbal(null);
       setQuestion(res.done ? null : res.question);
+      const replay = replayRef.current;
+      replayRef.current = null;
+      if (replay) {
+        // Saving the recording is best-effort: a failed upload must not block practice.
+        try {
+          await uploadAnswerMedia(sessionId, answerIndex, replay.blob);
+          setHasRecordings(true);
+        } catch {
+          /* ignore: the interview continues without this recording */
+        }
+      }
     } catch (err) {
       setError(message(err));
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function deleteRecordings() {
+    if (sessionId === null) return;
+    try {
+      await deleteAnswerMedia(sessionId);
+      setRecordingsDeleted(true);
+    } catch (err) {
+      setError(message(err));
     }
   }
 
@@ -340,17 +377,33 @@ export default function Interview() {
                     if (!v) {
                       stopCapture();
                       setCameraOn(false);
+                      setSaveRecording(false);
                     }
                     setVoiceMode(v);
                   }}
                   label="Voice mode - questions are read aloud and you answer by speaking"
                 />
                 {voiceMode && (
-                  <Toggle
-                    checked={cameraOn}
-                    onChange={setCameraOn}
-                    label="Camera - adds eye contact, composure and posture feedback (nothing is recorded)"
-                  />
+                  <>
+                    <Toggle
+                      checked={cameraOn}
+                      onChange={setCameraOn}
+                      label="Camera - adds eye contact, composure and posture feedback"
+                    />
+                    <Toggle
+                      checked={saveRecording}
+                      onChange={setSaveRecording}
+                      label="Save my answers so I can review and download them afterwards"
+                    />
+                    {saveRecording && (
+                      <p className="text-xs leading-relaxed text-slate-500">
+                        Your recordings are sent to our server only while you are interviewing, so
+                        you can play them back and download them at the end. They are permanently
+                        deleted when the session ends, and are never kept afterwards or used for
+                        anything else.
+                      </p>
+                    )}
+                  </>
                 )}
               </div>
             ) : (
@@ -501,6 +554,37 @@ export default function Interview() {
             )}
           </CardBody>
         </Card>
+      )}
+
+      {/* Recordings: available to download for this session only, then deleted */}
+      {feedback && sessionId !== null && hasRecordings && !recordingsDeleted && (
+        <Card className="border-brand-200 bg-brand-50/40">
+          <CardBody className="space-y-3">
+            <CardTitle>Your recordings</CardTitle>
+            <p className="text-sm text-slate-600">
+              Your answers were saved on our server for this session only. Download them to keep
+              them on your device: we delete them when you leave this page, and never keep your
+              audio or video afterwards.
+            </p>
+            <div className="flex flex-wrap items-center gap-3">
+              <a
+                href={answerMediaBundleUrl(sessionId)}
+                download
+                className="inline-flex items-center justify-center gap-2 rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-brand-700"
+              >
+                Download my recordings
+              </a>
+              <Button variant="danger" onClick={deleteRecordings}>
+                Delete from server now
+              </Button>
+            </div>
+          </CardBody>
+        </Card>
+      )}
+      {feedback && recordingsDeleted && (
+        <p role="status" className="text-sm text-green-600">
+          Your recordings have been deleted from our server.
+        </p>
       )}
 
       {/* Feedback */}

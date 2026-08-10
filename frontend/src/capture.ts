@@ -1,7 +1,10 @@
 // Capture a spoken answer: always records audio (for server-side transcription),
 // and when the webcam is on, also samples the video with MediaPipe to collect
-// nonverbal signals. Only audio and derived numbers leave the browser; the video
-// is used in memory and its tracks are released on stop.
+// nonverbal signals. When the candidate opts in to saving the interview, a separate
+// recorder also keeps a replay of the answer (video and audio when the camera is on,
+// audio alone otherwise) which the app uploads for the length of the session so it
+// can be reviewed and downloaded. Only audio and derived numbers leave the browser
+// otherwise; the video is used in memory and its tracks are released on stop.
 //
 // The webcam analysis is best-effort: if MediaPipe cannot load (for example the
 // models were not fetched), the camera and recording keep working, just without
@@ -11,6 +14,18 @@
 import type { NonverbalSample } from "./api";
 
 const SAMPLE_INTERVAL_MS = 125; // ~8 samples per second
+const REPLAY_VIDEO_BITRATE = 1_100_000; // ~480p; keeps a full interview a modest download
+
+export interface CaptureOptions {
+  video: boolean;
+  sampleVideo?: HTMLVideoElement | null;
+  record?: boolean; // keep a replay the candidate can review and download
+}
+
+export interface Replay {
+  blob: Blob;
+  hasVideo: boolean;
+}
 
 export function recordingSupported(): boolean {
   return (
@@ -20,20 +35,36 @@ export function recordingSupported(): boolean {
   );
 }
 
+function pickVideoType(): string | undefined {
+  const candidates = ["video/webm;codecs=vp9,opus", "video/webm;codecs=vp8,opus", "video/webm", "video/mp4"];
+  return candidates.find((type) => MediaRecorder.isTypeSupported?.(type));
+}
+
+function stopRecorder(recorder: MediaRecorder, chunks: BlobPart[], fallbackType: string): Promise<Blob> {
+  return new Promise((resolve) => {
+    const finish = () => resolve(new Blob(chunks, { type: recorder.mimeType || fallbackType }));
+    if (recorder.state === "inactive") {
+      finish();
+      return;
+    }
+    recorder.onstop = finish;
+    recorder.stop();
+  });
+}
+
 export interface Capture {
   /** Live stream, for a webcam preview (empty of video when camera is off). */
   stream: MediaStream;
-  /** Stop and resolve the recorded audio plus any collected samples. */
-  stop: () => Promise<{ audioBlob: Blob; samples: NonverbalSample[] }>;
+  /** Stop and resolve the recorded audio, any collected samples, and the replay. */
+  stop: () => Promise<{ audioBlob: Blob; samples: NonverbalSample[]; replay: Replay | null }>;
   /** Abandon capture and release the microphone and camera. */
   cancel: () => void;
 }
 
-export async function startCapture(opts: {
-  video: boolean;
-  sampleVideo?: HTMLVideoElement | null;
-}): Promise<Capture> {
-  const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: opts.video });
+export async function startCapture(opts: CaptureOptions): Promise<Capture> {
+  // Cap the camera to roughly 480p so a saved answer stays a reasonable size.
+  const video = opts.video ? { width: { ideal: 640 }, height: { ideal: 480 } } : false;
+  const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video });
   try {
     return await setup(stream, opts);
   } catch (err) {
@@ -44,16 +75,34 @@ export async function startCapture(opts: {
   }
 }
 
-async function setup(
-  stream: MediaStream,
-  opts: { video: boolean; sampleVideo?: HTMLVideoElement | null },
-): Promise<Capture> {
+async function setup(stream: MediaStream, opts: CaptureOptions): Promise<Capture> {
+  // The audio-only recorder always runs: it feeds transcription and, when the camera
+  // is off, doubles as the replay.
   const recorder = new MediaRecorder(new MediaStream(stream.getAudioTracks()));
   const chunks: BlobPart[] = [];
   recorder.ondataavailable = (event) => {
     if (event.data.size > 0) chunks.push(event.data);
   };
   recorder.start();
+
+  // When saving with the camera on, a second recorder keeps the video+audio replay.
+  let videoRecorder: MediaRecorder | undefined;
+  const videoChunks: BlobPart[] = [];
+  if (opts.record && opts.video) {
+    const type = pickVideoType();
+    try {
+      videoRecorder = new MediaRecorder(
+        stream,
+        type ? { mimeType: type, videoBitsPerSecond: REPLAY_VIDEO_BITRATE } : { videoBitsPerSecond: REPLAY_VIDEO_BITRATE },
+      );
+      videoRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) videoChunks.push(event.data);
+      };
+      videoRecorder.start();
+    } catch {
+      videoRecorder = undefined; // fall back to an audio-only replay
+    }
+  }
 
   const samples: NonverbalSample[] = [];
   let timer: number | undefined;
@@ -102,22 +151,27 @@ async function setup(
 
   return {
     stream,
-    stop: () =>
-      new Promise((resolve) => {
-        recorder.onstop = () => {
-          release();
-          resolve({
-            audioBlob: new Blob(chunks, { type: recorder.mimeType || "audio/webm" }),
-            samples,
-          });
-        };
-        recorder.stop();
-      }),
+    stop: async () => {
+      const audioBlob = await stopRecorder(recorder, chunks, "audio/webm");
+      let replay: Replay | null = null;
+      if (opts.record) {
+        if (videoRecorder) {
+          const blob = await stopRecorder(videoRecorder, videoChunks, "video/webm");
+          replay = { blob, hasVideo: true };
+        } else {
+          replay = { blob: audioBlob, hasVideo: false };
+        }
+      }
+      release();
+      return { audioBlob, samples, replay };
+    },
     cancel: () => {
-      try {
-        if (recorder.state !== "inactive") recorder.stop();
-      } catch {
-        // recorder already stopped
+      for (const rec of [recorder, videoRecorder]) {
+        try {
+          if (rec && rec.state !== "inactive") rec.stop();
+        } catch {
+          // already stopped
+        }
       }
       release();
     },

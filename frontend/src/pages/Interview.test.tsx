@@ -14,6 +14,9 @@ vi.mock("../api", () => ({
   analyseNonverbal: vi.fn(),
   getPreparation: vi.fn().mockResolvedValue({ competencies: [] }),
   getPrepQuestions: vi.fn().mockResolvedValue([]),
+  uploadAnswerMedia: vi.fn(),
+  deleteAnswerMedia: vi.fn(),
+  answerMediaBundleUrl: (sid: number) => `/api/interview/${sid}/media/bundle.zip`,
 }));
 vi.mock("../capture", () => ({
   recordingSupported: () => true,
@@ -42,6 +45,12 @@ describe("Interview setup", () => {
     expect(select.value).toBe("10");
     expect(screen.getByRole("option", { name: "5 minutes" })).toBeInTheDocument();
     expect(screen.getByRole("option", { name: "30 minutes" })).toBeInTheDocument();
+  });
+
+  it("offers saving recordings but leaves it off by default", () => {
+    renderInterview();
+    const save = screen.getByRole("checkbox", { name: /Save my answers/ });
+    expect(save).not.toBeChecked();
   });
 
   it("starts the interview with the chosen length and shows the pacing indicator", async () => {

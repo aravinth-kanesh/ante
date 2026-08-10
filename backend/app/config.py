@@ -46,6 +46,17 @@ class Settings(BaseSettings):
     # Reject request bodies larger than this many bytes (defends against memory abuse).
     max_request_bytes: int = 10 * 1024 * 1024
 
+    # Optional answer recordings the candidate can replay and download. Stored only in a
+    # temporary directory for the length of the session, never in the database or a
+    # backup, and deleted when the session ends or the TTL sweeper runs (LSEPI: the
+    # server keeps no audio or video after the interview). The media upload route is
+    # exempt from max_request_bytes and capped here instead.
+    session_media_enabled: bool = True
+    session_media_dir: str = "var/session_media"
+    session_media_max_bytes: int = 60 * 1024 * 1024  # per answer recording
+    session_media_ttl_minutes: int = 60  # hard cap: purge anything older than this
+    session_media_sweep_minutes: int = 15  # how often the background sweeper runs
+
     # Content-Security-Policy. Starts in report-only so it can be checked in the
     # browser before it is enforced; set CSP_REPORT_ONLY=false to enforce.
     csp_report_only: bool = True

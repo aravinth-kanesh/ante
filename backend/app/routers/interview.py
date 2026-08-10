@@ -21,7 +21,7 @@ from app.schemas.interview import (
     TurnRead,
 )
 from app.security import get_current_user
-from app.services import interview
+from app.services import interview, session_media
 
 router = APIRouter(prefix="/interview", tags=["interview"])
 
@@ -251,6 +251,7 @@ def delete_session(
 ) -> dict:
     # A candidate can delete their own past interviews (their own data).
     session = _owned(db, session_id, current_user)
+    session_media.purge(session.id)  # remove any recordings held for this session
     db.delete(session)
     db.commit()
     return {"ok": True}

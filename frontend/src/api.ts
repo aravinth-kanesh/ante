@@ -316,6 +316,39 @@ export async function startInterview(
   });
 }
 
+export interface AnswerMedia {
+  index: number;
+  has_video: boolean;
+}
+
+function mediaExt(type: string): string {
+  return type.includes("mp4") ? "mp4" : "webm";
+}
+
+/** Upload one answer's recording to the temporary session store. */
+export async function uploadAnswerMedia(
+  sessionId: number,
+  index: number,
+  blob: Blob,
+): Promise<AnswerMedia> {
+  const form = new FormData();
+  form.append("file", blob, `q${index}.${mediaExt(blob.type)}`);
+  return request(`/api/interview/${sessionId}/media/${index}`, { method: "POST", body: form });
+}
+
+export async function listAnswerMedia(sessionId: number): Promise<AnswerMedia[]> {
+  return request(`/api/interview/${sessionId}/media`);
+}
+
+/** A direct URL for a browser download (the cookie is sent automatically). */
+export function answerMediaBundleUrl(sessionId: number): string {
+  return `/api/interview/${sessionId}/media/bundle.zip`;
+}
+
+export async function deleteAnswerMedia(sessionId: number): Promise<void> {
+  await request(`/api/interview/${sessionId}/media`, { method: "DELETE" });
+}
+
 export interface PauseEvent {
   start: number;
   end: number;
