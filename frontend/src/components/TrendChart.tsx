@@ -31,24 +31,44 @@ export default function TrendChart({
   const padBottom = 24;
 
   const values = points.map((p) => p.value);
-  const bounds = [...values, ...(goodLow != null ? [goodLow] : []), ...(goodHigh != null ? [goodHigh] : [])];
-  let lo = Math.min(...bounds);
-  let hi = Math.max(...bounds);
+  // Scale the axis to the data so the line always uses most of the height and
+  // stays the focus. The "good" range may only pull the axis so far: a target far
+  // from the current level (say aiming for 50% strong when you are on 20%) never
+  // squashes the line into a sliver.
+  let lo = Math.min(...values);
+  let hi = Math.max(...values);
   if (lo === hi) {
     lo -= 1;
     hi += 1;
   }
-  const span = hi - lo;
-  lo -= span * 0.15;
-  hi += span * 0.15;
+  const maxSpan = (hi - lo) / 0.55; // the data keeps at least this share of the height
+  for (const bound of [goodLow, goodHigh]) {
+    if (bound == null) continue;
+    if (bound > hi) hi = Math.min(bound, lo + maxSpan);
+    if (bound < lo) lo = Math.max(bound, hi - maxSpan);
+  }
+  const pad = (hi - lo) * 0.12 || 1;
+  lo -= pad;
+  hi += pad;
 
+  const plotTop = padTop;
+  const plotBottom = H - padBottom;
   const x = (i: number) =>
     points.length === 1 ? W / 2 : padX + (i * (W - 2 * padX)) / (points.length - 1);
   const y = (v: number) => padTop + (H - padTop - padBottom) * (1 - (v - lo) / (hi - lo));
+  const inView = (v: number) => v >= lo && v <= hi;
+  const clampY = (v: number) => Math.max(plotTop, Math.min(plotBottom, v));
 
   const line = points.map((p, i) => `${x(i)},${y(p.value)}`).join(" ");
-  const bandTop = goodHigh != null ? y(goodHigh) : null;
-  const bandBottom = goodLow != null ? y(goodLow) : null;
+  // The good range as a faint band clipped to the plot, with a dashed edge on
+  // whichever boundaries are in view. A solid filled block was too heavy and
+  // pulled the eye away from the line.
+  let band: { top: number; bottom: number } | null = null;
+  if (goodLow != null && goodHigh != null) {
+    const top = clampY(y(goodHigh));
+    const bottom = clampY(y(goodLow));
+    if (bottom - top > 1) band = { top, bottom };
+  }
 
   const first = points[0];
   const last = points[points.length - 1];
@@ -60,14 +80,31 @@ export default function TrendChart({
   return (
     <figure className="m-0">
       <svg viewBox={`0 0 ${W} ${H}`} className="h-auto w-full" aria-hidden="true">
-      {bandTop != null && bandBottom != null && (
-        <rect
-          x={0}
-          y={Math.min(bandTop, bandBottom)}
-          width={W}
-          height={Math.abs(bandBottom - bandTop)}
-          className="fill-green-100"
-          opacity={0.5}
+      {band && (
+        <rect x={0} y={band.top} width={W} height={band.bottom - band.top} className="fill-green-500" opacity={0.08} />
+      )}
+      {goodLow != null && inView(goodLow) && (
+        <line
+          x1={0}
+          y1={y(goodLow)}
+          x2={W}
+          y2={y(goodLow)}
+          className="stroke-green-500"
+          strokeWidth={1}
+          strokeDasharray="4 3"
+          opacity={0.7}
+        />
+      )}
+      {goodHigh != null && inView(goodHigh) && (
+        <line
+          x1={0}
+          y1={y(goodHigh)}
+          x2={W}
+          y2={y(goodHigh)}
+          className="stroke-green-500"
+          strokeWidth={1}
+          strokeDasharray="4 3"
+          opacity={0.7}
         />
       )}
       {/* baseline */}

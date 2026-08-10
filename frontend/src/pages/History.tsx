@@ -106,10 +106,12 @@ export default function History() {
             placeholder="Search by company, role or type..."
             className="sm:max-w-xs"
           />
-          <div className="flex flex-wrap gap-2">
+          <div role="group" aria-label="Filter by interview type" className="flex flex-wrap gap-2">
             {TYPES.map((t) => (
               <button
                 key={t.value}
+                type="button"
+                aria-pressed={type === t.value}
                 onClick={() => setType(t.value)}
                 className={cn(
                   "rounded-full px-3 py-1.5 text-sm font-medium transition-colors",

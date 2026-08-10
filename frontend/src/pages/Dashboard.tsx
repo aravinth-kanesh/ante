@@ -72,7 +72,7 @@ export default function Dashboard() {
 
       {/* Two paths: prepare, then interview */}
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-        <Card className="overflow-hidden">
+        <Card className="overflow-hidden transition-shadow hover:shadow-lift">
           <Link to="/prepare" className="block h-full">
             <div className="flex h-full flex-col justify-between gap-4 bg-gradient-to-br from-slate-700 to-slate-900 p-6 text-white">
               <div>
@@ -87,7 +87,7 @@ export default function Dashboard() {
           </Link>
         </Card>
 
-        <Card className="overflow-hidden">
+        <Card className="overflow-hidden transition-shadow hover:shadow-lift">
           <Link to="/interview" className="block h-full">
             <div className="flex h-full flex-col justify-between gap-4 bg-gradient-to-br from-brand-600 to-brand-800 p-6 text-white">
               <div>

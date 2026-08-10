@@ -38,6 +38,30 @@ describe("TrendChart", () => {
     const { container } = render(<TrendChart points={[]} format={pct} label="Rate" />);
     expect(container).toBeEmptyDOMElement();
   });
+
+  it("draws a faint good-range band with dashed target edges", () => {
+    const { container } = render(
+      <TrendChart points={points} format={pct} label="Rate" goodLow={60} goodHigh={100} />,
+    );
+    // A single band rect plus a dashed line for each in-view boundary.
+    expect(container.querySelector("rect.fill-green-500")).toBeInTheDocument();
+    expect(container.querySelectorAll("line[stroke-dasharray]").length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("keeps the line prominent when the target sits far above the data", () => {
+    // Data well below the 60-100 good range must still span a fair share of the
+    // plot rather than being squashed into a sliver by the distant target.
+    const low: TrendPoint[] = [
+      { label: "1 Feb", value: 10 },
+      { label: "8 Feb", value: 20 },
+    ];
+    const { container } = render(
+      <TrendChart points={low} format={pct} label="Rate" goodLow={60} goodHigh={100} />,
+    );
+    const ys = [...container.querySelectorAll("circle")].map((c) => Number(c.getAttribute("cy")));
+    // The two points sit at least a tenth of the 128-unit viewbox apart.
+    expect(Math.abs(ys[0] - ys[1])).toBeGreaterThan(12);
+  });
 });
 
 describe("VerdictBars", () => {
