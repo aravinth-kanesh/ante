@@ -156,6 +156,24 @@ the JSON values: no asterisks, no hashes, no bullet symbols, no bold, no heading
 Transcript:
 {transcript}"""
 
+
+PROGRESS_SUMMARY_PROMPT = """You are a supportive interview coach speaking to a \
+university student about their mock interview practice so far. Below is a plain summary \
+of their measured progress.
+
+Write a short, honest and encouraging note of about three to five sentences that:
+- says what is going well and what has genuinely improved,
+- draws the recurring themes together and names the one or two things most worth \
+focusing on next,
+- stays specific to the numbers below and never invents progress that is not there,
+- speaks directly to the student as "you", in plain British English.
+
+Do not use Markdown or any special formatting: no asterisks, headings or bullet \
+symbols. Return only the note.
+
+Progress:
+{progress}"""
+
 OUTPUT_RUBRIC = """You review a reply written by an interview-coaching assistant \
 before it is shown to the student.
 

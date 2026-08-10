@@ -63,3 +63,7 @@ class ProgressReport(BaseModel):
     deltas: list[MetricDelta] = []
     focus_areas: list[str] = []  # recurring things to work on, from past feedback
     strengths: list[str] = []
+
+
+class ProgressSummary(BaseModel):
+    summary: str

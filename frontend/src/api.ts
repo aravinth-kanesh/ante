@@ -568,3 +568,7 @@ export interface ProgressReport {
 export async function getProgress(): Promise<ProgressReport> {
   return request("/api/progress");
 }
+
+export async function getProgressSummary(): Promise<{ summary: string }> {
+  return request("/api/progress/summary");
+}

@@ -45,6 +45,46 @@ _TOLERANCE = {
     "head_steadiness": 5.0,
 }
 _LOWER_IS_BETTER = {"filler_per_min"}
+# Plain formatting of each metric value, for the coach summary's input.
+_FORMAT = {
+    "strong_rate": lambda v: f"{round(v * 100)}%",
+    "wpm": lambda v: f"{round(v)} words per minute",
+    "filler_per_min": lambda v: f"{v:.1f} filler words a minute",
+    "eye_contact_pct": lambda v: f"{round(v)}%",
+    "head_steadiness": lambda v: f"{round(v)} out of 100",
+}
+_TREND_WORDS = {
+    "improved": "improving",
+    "slipped": "slipped back",
+    "steady": "about the same",
+    "na": "not enough data yet",
+}
+
+
+def describe(report: ProgressReport) -> str:
+    """A plain-text digest of a progress report, for the coach summary prompt. Pure."""
+    lines = [
+        f"Interviews completed: {report.totals.interviews}.",
+        f"Questions answered: {report.totals.questions_answered}.",
+        f"Minutes of spoken practice: {report.totals.minutes_practised}.",
+    ]
+    for delta in report.deltas:
+        if delta.latest is None:
+            continue
+        fmt = _FORMAT.get(delta.metric, str)
+        note = f"{delta.label}: now {fmt(delta.latest)}, {_TREND_WORDS.get(delta.direction, delta.direction)}"
+        if delta.first is not None and delta.direction in ("improved", "slipped"):
+            note += f" (from {fmt(delta.first)})"
+        if delta.good_low is not None and delta.good_high is not None:
+            note += f"; a good range is {fmt(delta.good_low)} to {fmt(delta.good_high)}"
+            if delta.lower_is_better:
+                note += " (lower is better)"
+        lines.append(note + ".")
+    if report.focus_areas:
+        lines.append("Recurring things to work on: " + "; ".join(report.focus_areas) + ".")
+    if report.strengths:
+        lines.append("Recurring strengths: " + "; ".join(report.strengths) + ".")
+    return "\n".join(lines)
 
 
 def _parse(model, raw: str | None):

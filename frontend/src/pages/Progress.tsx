@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   getProgress,
+  getProgressSummary,
   type MetricDelta,
   type ProgressReport,
   type SessionStats,
@@ -130,6 +131,9 @@ export default function Progress() {
   const [report, setReport] = useState<ProgressReport | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [summary, setSummary] = useState("");
+  const [summarising, setSummarising] = useState(false);
+  const [summaryError, setSummaryError] = useState("");
 
   useEffect(() => {
     getProgress()
@@ -137,6 +141,18 @@ export default function Progress() {
       .catch((err) => setError(err instanceof Error ? err.message : String(err)))
       .finally(() => setLoading(false));
   }, []);
+
+  async function summarise() {
+    setSummarising(true);
+    setSummaryError("");
+    try {
+      setSummary((await getProgressSummary()).summary);
+    } catch (err) {
+      setSummaryError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setSummarising(false);
+    }
+  }
 
   if (loading) return <p className="text-sm text-slate-500">Loading your progress...</p>;
   if (error) return <p role="alert" className="text-sm text-red-600">{error}</p>;
@@ -182,6 +198,26 @@ export default function Progress() {
         <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Progress</h1>
         <p className="mt-1 text-sm text-slate-500">{headline(deltas)}</p>
       </div>
+
+      {/* On-demand coach summary of the trends below */}
+      <Card>
+        <CardBody>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <CardTitle>Coach summary</CardTitle>
+            <Button variant="secondary" size="sm" onClick={summarise} loading={summarising}>
+              {summary ? "Regenerate" : "Summarise my progress"}
+            </Button>
+          </div>
+          {summaryError && <p role="alert" className="mt-3 text-sm text-red-600">{summaryError}</p>}
+          {summary ? (
+            <p className="mt-3 text-sm leading-relaxed text-slate-700">{summary}</p>
+          ) : (
+            <p className="mt-3 text-sm text-slate-500">
+              Get a short, plain-language read of how your practice is going and what to focus on next.
+            </p>
+          )}
+        </CardBody>
+      </Card>
 
       {/* Totals */}
       <div className="grid grid-cols-3 gap-3 sm:gap-4">

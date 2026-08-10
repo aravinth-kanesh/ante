@@ -183,3 +183,40 @@ def test_progress_endpoint_reflects_a_finished_interview(client, monkeypatch):
     assert report["sessions"][0]["has_delivery"] is True
     assert report["sessions"][0]["strong_rate"] == 1.0
     assert report["focus_areas"] == ["Add more detail"]
+
+
+def test_describe_reads_as_plain_text():
+    sessions = [
+        make_session(1, 1, [{"metrics": VOICE}], _feedback(strong=1, weak=1)),
+        make_session(2, 2, [{"metrics": {**VOICE, "wpm": 135}}], _feedback(strong=2)),
+    ]
+    text = progress.describe(progress.build_report(sessions))
+    assert "Interviews completed: 2." in text
+    assert "Strong-answer rate:" in text
+    assert "Speaking pace:" in text
+
+
+def test_coach_summary_narrates_the_trends(client, monkeypatch):
+    _mock_interview(monkeypatch)
+    res = client.post("/api/auth/signup", json={"email": "coach@example.com", "password": "password123"})
+    client.cookies.clear()
+    cookies = {"access_token": res.cookies["access_token"]}
+    client.put("/api/profile", cookies=cookies, json={"cv_text": "my cv", "jd_text": ""})
+    sid = client.post("/api/interview/start", cookies=cookies, json={"mode": "voice"}).json()["session_id"]
+    client.post(f"/api/interview/{sid}/answer", cookies=cookies, json={"answer": "I built X.", "metrics": VOICE})
+    client.post(f"/api/interview/{sid}/finish", cookies=cookies)
+
+    # the summary is its own model call, so mock what the coach returns
+    monkeypatch.setattr(
+        interview.llm, "chat", lambda *a, **k: "You are giving stronger answers than when you started."
+    )
+    summary = client.get("/api/progress/summary", cookies=cookies).json()["summary"]
+    assert "stronger answers" in summary
+
+
+def test_coach_summary_without_interviews_is_a_prompt_to_start(client):
+    res = client.post("/api/auth/signup", json={"email": "noprog@example.com", "password": "password123"})
+    client.cookies.clear()
+    cookies = {"access_token": res.cookies["access_token"]}
+    summary = client.get("/api/progress/summary", cookies=cookies).json()["summary"]
+    assert "not done any interviews" in summary
