@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { getInterview, regenerateFeedback, type InterviewDetail } from "../api";
+import AnswerTimeline from "../components/AnswerTimeline";
 import FeedbackView from "../components/FeedbackView";
 import { Badge, Button, Card, CardBody, CardTitle, MicIcon, VideoIcon } from "../components/ui";
 import { deliverySummary, nonverbalSummary } from "../format";
@@ -116,6 +117,7 @@ export default function Results() {
                         </Badge>
                       )}
                     </div>
+                    {turn.metrics && <AnswerTimeline metrics={turn.metrics} />}
                   </div>
                 ),
               )}

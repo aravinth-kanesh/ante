@@ -14,7 +14,7 @@ import string
 from dataclasses import dataclass
 
 from app.config import settings
-from app.schemas.interview import DeliveryMetrics
+from app.schemas.interview import DeliveryMetrics, FillerEvent, PauseEvent
 
 # Hesitation sounds are almost always disfluencies; the discourse markers below
 # are the crutch words interview coaching flags. "so" is deliberately excluded:
@@ -60,30 +60,43 @@ def _normalise(text: str) -> str:
 
 
 def delivery_metrics(words: list[Word], duration: float) -> DeliveryMetrics:
-    """Turn timed words into delivery metrics. Pure and deterministic."""
-    clean = [token for token in (_normalise(word.text) for word in words) if token]
+    """Turn timed words into delivery metrics. Pure and deterministic.
+
+    Also emits time-coded pause and filler events (seconds from the start of the
+    recording) so the answer can be replayed with these moments highlighted.
+    """
+    # Normalised words paired with their start time, for the timed filler events.
+    timed = [(norm, word.start) for word, norm in ((w, _normalise(w.text)) for w in words) if norm]
+    clean = [norm for norm, _ in timed]
     word_count = len(clean)
     wpm = round(word_count / (duration / 60)) if duration > 0 else 0
 
     pause_count = 0
     long_pause_count = 0
     total_pause = 0.0
+    pauses: list[PauseEvent] = []
     for prev, nxt in zip(words, words[1:]):
         gap = nxt.start - prev.end
         if gap >= settings.speech_pause_sec:
             pause_count += 1
             total_pause += gap
-            if gap >= settings.speech_long_pause_sec:
+            long = gap >= settings.speech_long_pause_sec
+            if long:
                 long_pause_count += 1
+            pauses.append(PauseEvent(start=round(prev.end, 2), end=round(nxt.start, 2), long=long))
 
     fillers: dict[str, int] = {}
-    for token in clean:
+    filler_events: list[FillerEvent] = []
+    for token, start in timed:
         if token in FILLERS:
             fillers[token] = fillers.get(token, 0) + 1
-    for first, second in zip(clean, clean[1:]):
+            filler_events.append(FillerEvent(time=round(start, 2), text=token))
+    for (first, start), (second, _) in zip(timed, timed[1:]):
         if (first, second) in FILLER_BIGRAMS:
             phrase = f"{first} {second}"
             fillers[phrase] = fillers.get(phrase, 0) + 1
+            filler_events.append(FillerEvent(time=round(start, 2), text=phrase))
+    filler_events.sort(key=lambda event: event.time)
 
     return DeliveryMetrics(
         duration_sec=round(duration, 1),
@@ -94,4 +107,6 @@ def delivery_metrics(words: list[Word], duration: float) -> DeliveryMetrics:
         total_pause_sec=round(total_pause, 1),
         filler_count=sum(fillers.values()),
         fillers=fillers,
+        pauses=pauses,
+        filler_events=filler_events,
     )

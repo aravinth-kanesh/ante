@@ -26,6 +26,21 @@ class StartResponse(BaseModel):
     duration_target_min: int
 
 
+class PauseEvent(BaseModel):
+    """A silent gap in an answer, in seconds from the start of the recording."""
+
+    start: float
+    end: float
+    long: bool = False
+
+
+class FillerEvent(BaseModel):
+    """A filler word and when it was said, in seconds from the start of the recording."""
+
+    time: float
+    text: str
+
+
 class DeliveryMetrics(BaseModel):
     """How the candidate spoke an answer, measured from the audio."""
 
@@ -37,6 +52,10 @@ class DeliveryMetrics(BaseModel):
     total_pause_sec: float
     filler_count: int
     fillers: dict[str, int]
+    # Time-coded events for the annotated replay; default empty so older stored
+    # metrics (saved before this field existed) still parse.
+    pauses: list[PauseEvent] = []
+    filler_events: list[FillerEvent] = []
 
     def summary(self) -> str:
         """A short British English sentence for the feedback prompt and the UI."""

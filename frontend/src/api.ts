@@ -316,6 +316,17 @@ export async function startInterview(
   });
 }
 
+export interface PauseEvent {
+  start: number;
+  end: number;
+  long: boolean;
+}
+
+export interface FillerEvent {
+  time: number;
+  text: string;
+}
+
 export interface DeliveryMetrics {
   duration_sec: number;
   word_count: number;
@@ -325,6 +336,8 @@ export interface DeliveryMetrics {
   total_pause_sec: number;
   filler_count: number;
   fillers: Record<string, number>;
+  pauses: PauseEvent[];
+  filler_events: FillerEvent[];
 }
 
 export async function transcribeAudio(

@@ -76,6 +76,27 @@ def test_common_connector_so_is_not_a_filler():
     assert metrics.filler_count == 0
 
 
+def test_time_coded_events_for_the_annotated_replay():
+    spoken = words(
+        [
+            ("So", 0.0, 0.3),
+            ("um", 0.4, 0.6),  # a filler at 0.4s
+            ("I", 2.2, 2.4),  # a 1.6s gap after "um" -> a long pause
+            ("built", 2.5, 3.0),
+        ]
+    )
+    metrics = delivery_metrics(spoken, duration=3.0)
+
+    # the filler is placed at the moment it was said
+    assert [(round(e.time, 1), e.text) for e in metrics.filler_events] == [(0.4, "um")]
+    # the single long pause spans the gap, and its count still agrees
+    assert metrics.pause_count == 1 and metrics.long_pause_count == 1
+    assert len(metrics.pauses) == 1
+    pause = metrics.pauses[0]
+    assert pause.long is True
+    assert round(pause.start, 1) == 0.6 and round(pause.end, 1) == 2.2
+
+
 def test_transcribe_endpoint_returns_transcript_and_metrics(client, monkeypatch):
     spoken = words([("I", 0.0, 0.3), ("um", 0.4, 0.7), ("built", 0.8, 1.2)])
     monkeypatch.setattr(speech, "transcribe", lambda data: ("I um built", spoken, 1.2))
