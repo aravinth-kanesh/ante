@@ -252,9 +252,20 @@ export default function Prepare() {
             <div className="mt-5 space-y-5">
               {questions.map((group) => (
                 <div key={group.category}>
-                  <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    {group.category}
-                  </h3>
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      {group.category}
+                    </h3>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        navigate("/interview", { state: { focus: "questions", category: group.category } })
+                      }
+                      className="text-xs font-medium text-brand-700 hover:underline"
+                    >
+                      Practise this category
+                    </button>
+                  </div>
                   <ol className="mt-2 space-y-3">
                     {group.questions.map((q, i) => (
                       <li key={i} className="flex gap-2.5 text-sm text-slate-800">

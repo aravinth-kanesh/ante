@@ -63,6 +63,7 @@ def start(
     mode = data.mode if data else "text"
     interview_type = data.interview_type if data else "general"
     focus = data.focus if data else "balanced"
+    category = data.category if data else ""
     duration_target_min = data.duration_target_min if data else 10
     profile = _get_or_create(db, current_user)
     if not profile.cv_text.strip():
@@ -77,7 +78,9 @@ def start(
 
     # Steer the interview at the candidate's weak spots or likely questions when asked;
     # falls back to a balanced interview if that prep data is not there.
-    focus_code, focus_text = interview.focus_brief(profile.preparation, profile.prep_questions, focus)
+    focus_code, focus_text = interview.focus_brief(
+        profile.preparation, profile.prep_questions, focus, category
+    )
 
     try:
         session, question = interview.start(

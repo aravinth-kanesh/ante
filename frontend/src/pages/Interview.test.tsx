@@ -65,8 +65,8 @@ describe("Interview setup", () => {
     await userEvent.selectOptions(screen.getByLabelText("Length"), "15");
     await userEvent.click(screen.getByRole("button", { name: "Start interview" }));
 
-    // the length is passed through as the fourth argument
-    expect(startInterview).toHaveBeenCalledWith("voice", "general", "balanced", 15);
+    // the length is passed through as the fourth argument, with no category focus
+    expect(startInterview).toHaveBeenCalledWith("voice", "general", "balanced", 15, "");
     // the active question shows the subtle "about N min" indicator and the stop control
     expect(await screen.findByText(/about 15 min interview/)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Stop . get feedback/ })).toBeInTheDocument();

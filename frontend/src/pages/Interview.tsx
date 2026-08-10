@@ -68,9 +68,10 @@ export default function Interview() {
 
   const supported = recordingSupported();
   const location = useLocation();
-  const requestedFocus = (location.state as { focus?: Focus } | null)?.focus;
+  const requested = location.state as { focus?: Focus; category?: string } | null;
   const [interviewType, setInterviewType] = useState<InterviewType>("general");
-  const [focus, setFocus] = useState<Focus>(requestedFocus ?? "balanced");
+  const [focus, setFocus] = useState<Focus>(requested?.focus ?? "balanced");
+  const [category, setCategory] = useState(requested?.category ?? "");
   const [length, setLength] = useState<InterviewLength>(10);
   const [hasGaps, setHasGaps] = useState(false);
   const [hasQuestions, setHasQuestions] = useState(false);
@@ -227,7 +228,13 @@ export default function Interview() {
     setReview(null);
     replayRef.current = null;
     try {
-      const res = await startInterview(voiceMode ? "voice" : "text", interviewType, focus, length);
+      const res = await startInterview(
+        voiceMode ? "voice" : "text",
+        interviewType,
+        focus,
+        length,
+        focus === "questions" ? category : "",
+      );
       setSessionId(res.session_id);
       setQuestion(res.question);
     } catch (err) {
@@ -345,7 +352,11 @@ export default function Interview() {
               <Select
                 label="Focus"
                 value={focus}
-                onChange={(e) => setFocus(e.target.value as Focus)}
+                onChange={(e) => {
+                  const next = e.target.value as Focus;
+                  setFocus(next);
+                  if (next !== "questions") setCategory("");
+                }}
                 hint={
                   <>
                     {focus === "gaps"
@@ -368,6 +379,11 @@ export default function Interview() {
                   My likely questions{hasQuestions ? "" : " (generate them in Prepare first)"}
                 </option>
               </Select>
+              {focus === "questions" && category && (
+                <p className="mt-1 text-xs font-medium text-brand-700">
+                  Focusing on your {category} questions.
+                </p>
+              )}
             </div>
             <div>
               <Select

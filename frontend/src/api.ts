@@ -304,6 +304,7 @@ export async function startInterview(
   interviewType: InterviewType = "general",
   focus: Focus = "balanced",
   durationTargetMin: InterviewLength = 10,
+  category = "",
 ): Promise<{ session_id: number; question: string; mode: InterviewMode; duration_target_min: number }> {
   return request("/api/interview/start", {
     method: "POST",
@@ -311,6 +312,7 @@ export async function startInterview(
       mode,
       interview_type: interviewType,
       focus,
+      category,
       duration_target_min: durationTargetMin,
     }),
   });

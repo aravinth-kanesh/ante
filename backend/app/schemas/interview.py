@@ -14,6 +14,8 @@ class StartRequest(BaseModel):
     mode: Mode = "text"
     interview_type: InterviewType = "general"
     focus: Focus = "balanced"
+    # When focusing on likely questions, optionally narrow to a single category.
+    category: str = Field("", max_length=100)
     # The candidate's chosen interview length, a soft target in minutes.
     duration_target_min: Literal[5, 10, 15, 20, 25, 30] = 10
 

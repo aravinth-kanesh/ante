@@ -94,11 +94,14 @@ def session_title(company: str, role: str, interview_type: str, seq: int = 1, fo
     return title
 
 
-def focus_brief(preparation_json: str, questions_json: str, focus: str) -> tuple[str, str]:
+def focus_brief(
+    preparation_json: str, questions_json: str, focus: str, category: str = ""
+) -> tuple[str, str]:
     """Turn the stored gap analysis or questions into an interviewer instruction.
 
     Returns (focus_code, focus_text). The code is stored on the session for display;
-    the text is injected into the interviewer prompt. Returns ("", "") when the
+    the text is injected into the interviewer prompt. When focusing on likely
+    questions, `category` narrows the draw to a single group. Returns ("", "") when the
     requested focus has no data, so the caller falls back to a balanced interview.
     """
     if focus == "gaps" and preparation_json:
@@ -123,14 +126,21 @@ def focus_brief(preparation_json: str, questions_json: str, focus: str) -> tuple
             groups = PrepResponse.model_validate_json(questions_json).groups
         except ValueError:
             return "", ""
+        wanted = category.strip().lower()
+        if wanted:
+            groups = [g for g in groups if g.category.strip().lower() == wanted]
         questions = [q.question.strip() for g in groups for q in g.questions if q.question.strip()]
         if not questions:
             return "", ""
         listed = "\n".join(f"- {q}" for q in questions[:8])
+        scope = (
+            f"the candidate's {category.strip()} questions"
+            if wanted
+            else "this list the candidate wants to practise"
+        )
         text = (
-            "Draw your main questions from this list the candidate wants to practise, "
-            "asking them in a natural order and adding follow-ups that probe their "
-            f"answers:\n{listed}"
+            f"Draw your main questions from {scope}, asking them in a natural order and "
+            f"adding follow-ups that probe their answers:\n{listed}"
         )
         return "questions", text
 

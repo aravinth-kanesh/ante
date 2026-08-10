@@ -473,6 +473,24 @@ def test_llm_can_end_the_interview_early(client, monkeypatch):
     assert sum(1 for t in turns if t["kind"] == "question") == 1
 
 
+def test_focus_brief_can_narrow_to_one_category():
+    questions_json = (
+        '{"groups": ['
+        '{"category": "Behavioural", "questions": [{"question": "Tell me about a conflict."}]},'
+        '{"category": "Technical", "questions": [{"question": "Explain a REST API."}]}'
+        "]}"
+    )
+    code, text = interview.focus_brief("", questions_json, "questions", category="Behavioural")
+    assert code == "questions"
+    assert "conflict" in text and "REST API" not in text
+    assert "Behavioural questions" in text
+    # a whole-set practice still draws from every category
+    _, all_text = interview.focus_brief("", questions_json, "questions")
+    assert "conflict" in all_text and "REST API" in all_text
+    # an unknown category yields no brief, so the caller falls back to balanced
+    assert interview.focus_brief("", questions_json, "questions", category="Nope") == ("", "")
+
+
 def test_list_sessions_newest_first_and_scoped(client, monkeypatch):
     mock_llm(monkeypatch)
     owner = auth_cookies(client, "hist-owner@example.com")
