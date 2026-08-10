@@ -142,8 +142,9 @@ action on another aspect>", "<a third, distinct action>"],
 tip on how to make it stronger, with a short example of a better phrasing where it \
 helps>"}}
   ],
-  "delivery": "<a brief honest note on pace, pauses, fillers and on-camera presence, \
-or an empty string if nothing was measured>"
+  "delivery": "<an honest, specific assessment of pace, pauses, filler words and \
+on-camera presence: what came across well and the one or two things most worth \
+improving, each tied to the measurements; an empty string if nothing was measured>"
 }}
 
 Write in plain British English. Do not use Markdown or any special formatting inside \

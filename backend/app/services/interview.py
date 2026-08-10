@@ -143,12 +143,21 @@ def _add_turn(
     db.refresh(session)
 
 
+def _mean(values: list[float]) -> float:
+    return sum(values) / len(values)
+
+
 def _delivery_block(session: InterviewSession) -> str:
-    """A feedback-prompt block summarising measured delivery, or empty if none."""
-    lines: list[str] = []
+    """A feedback-prompt block summarising measured delivery, or empty if none.
+
+    Gives the model a per-answer breakdown and an overall picture, and states the
+    healthy range for each measure so it can judge whether a number is good or bad
+    rather than guessing, and turn the measurements into specific, honest feedback.
+    """
+    per_answer: list[str] = []
+    speech: list[DeliveryMetrics] = []
+    nonverbal: list[NonverbalMetrics] = []
     answered = 0
-    has_speech = False
-    has_nonverbal = False
     for turn in session.turns:
         if turn.kind != "answer":
             continue
@@ -156,34 +165,68 @@ def _delivery_block(session: InterviewSession) -> str:
         parts: list[str] = []
         if turn.metrics:
             try:
-                parts.append(DeliveryMetrics.model_validate_json(turn.metrics).summary())
-                has_speech = True
+                metrics = DeliveryMetrics.model_validate_json(turn.metrics)
+                parts.append(metrics.summary())
+                if metrics.word_count:
+                    speech.append(metrics)
             except ValueError:
                 pass
         if turn.nonverbal:
             try:
-                parts.append(NonverbalMetrics.model_validate_json(turn.nonverbal).summary())
-                has_nonverbal = True
+                nv = NonverbalMetrics.model_validate_json(turn.nonverbal)
+                parts.append(nv.summary())
+                if nv.face_detected:
+                    nonverbal.append(nv)
             except ValueError:
                 pass
         if parts:
-            lines.append(f"- Answer {answered}: " + " ".join(parts))
-    if not lines:
+            per_answer.append(f"- Answer {answered}: " + " ".join(parts))
+    if not per_answer:
         return ""
+
     aspects: list[str] = []
-    if has_speech:
+    overall: list[str] = []
+    if speech:
         aspects.append("speaking pace, pauses and filler words")
-    if has_nonverbal:
+        total_sec = sum(m.duration_sec for m in speech)
+        total_words = sum(m.word_count for m in speech)
+        total_fillers = sum(m.filler_count for m in speech)
+        wpm = round(total_words / total_sec * 60) if total_sec else 0
+        per_min = round(total_fillers / (total_sec / 60), 1) if total_sec else 0.0
+        overall.append(
+            f"they spoke at about {wpm} words per minute and used about {per_min} "
+            "filler words a minute"
+        )
+    if nonverbal:
         aspects.append("eye contact, composure and posture")
+        clauses = [
+            f"looked at the camera about {round(_mean([n.eye_contact_pct for n in nonverbal]))}% of the time",
+            f"scored {round(_mean([n.head_steadiness for n in nonverbal]))} out of 100 for head steadiness",
+        ]
+        postures = [n.posture_pct for n in nonverbal if n.posture_pct is not None]
+        if postures:
+            clauses.append(f"kept level posture in about {round(_mean(postures))}% of frames")
+        overall.append("on camera they " + ", ".join(clauses))
+
     header = (
         "\nThe candidate's delivery was measured during the interview ("
         + "; ".join(aspects)
-        + "). Comment briefly and honestly on it using these measurements: flag "
-        "genuine issues such as a very slow or very fast pace, long pauses or "
-        "frequent fillers, and do not spin a weak signal as a positive. Do not "
-        "overstate the numbers or diagnose emotion:\n"
+        + "). Across the interview overall, "
+        + "; ".join(overall)
+        + ". For reference, a comfortable pace is about 110 to 160 words a minute, "
+        "under about three filler words a minute sounds assured, and looking at the "
+        "camera for at least 60% of the time comes across as engaged. Use these "
+        "measurements to give honest, specific delivery feedback in the 'delivery' "
+        "field: name what genuinely came across well and the one or two habits most "
+        "worth improving (for example slowing down, cutting filler words, or holding "
+        "more eye contact), each tied to the numbers. Where a delivery point is clearly "
+        "a strength or clearly worth working on, also add it to 'strengths' or "
+        "'improvements'. Do not overstate small differences, do not spin a weak signal "
+        "as a positive, and do not diagnose emotion; only mention what was actually "
+        "measured.\n"
+        "Per answer:\n"
     )
-    return header + "\n".join(lines) + "\n"
+    return header + "\n".join(per_answer) + "\n"
 
 
 def start(

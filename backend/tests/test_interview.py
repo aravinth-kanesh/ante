@@ -221,6 +221,30 @@ def test_feedback_includes_nonverbal_when_present(client, monkeypatch):
     assert "diagnose emotion" in prompt
 
 
+def test_feedback_delivery_block_has_overall_and_reference_ranges(client, monkeypatch):
+    # The prompt should give the model an overall aggregate and the healthy ranges, so
+    # it can judge the numbers rather than guess, and feed clear signals into the lists.
+    prompts = _capture_prompts(monkeypatch)
+    cookies = auth_cookies(client)
+    save_cv(client, cookies)
+    sid = client.post(
+        "/api/interview/start", cookies=cookies, json={"mode": "voice"}
+    ).json()["session_id"]
+    client.post(
+        f"/api/interview/{sid}/answer",
+        cookies=cookies,
+        json={"answer": "I led the team.", "metrics": VOICE_METRICS, "nonverbal": NONVERBAL_METRICS},
+    )
+    client.post(f"/api/interview/{sid}/finish", cookies=cookies)
+
+    prompt = prompts[-1]
+    assert "Across the interview overall" in prompt
+    assert "110 to 160 words a minute" in prompt  # the healthy pace range
+    assert "filler words a minute" in prompt
+    assert "at least 60% of the time" in prompt  # the eye-contact reference
+    assert "add it to 'strengths' or 'improvements'" in prompt
+
+
 def test_feedback_is_structured_and_plain_text(client, monkeypatch):
     reply = (
         '{"summary": "### **Weak** overall.", "strengths": [], '
