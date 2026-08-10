@@ -71,10 +71,13 @@ context. Make it feel like a real interview with this employer.
 
 {style}
 
-Across the interview, begin with a natural opening question, ask the common questions \
-a candidate would genuinely be asked in this kind of interview, then ask follow-ups \
-that probe the candidate's actual answers and deep-dive into the specific skills and \
-experiences on their CV. Ask one question at a time and keep each question concise.
+Interview like a real person, not a fixed script. Begin with a natural opening \
+question, then work through the areas a candidate would genuinely be asked about in \
+this kind of interview. Follow the conversation: when an answer is vague, notable, or \
+opens something worth exploring, ask a spontaneous follow-up to probe a claim, draw \
+out a concrete example, or clarify, usually one or two follow-ups on a thread before \
+moving on. Deep-dive into the specific skills and experiences on their CV. Ask one \
+question at a time and keep each question concise.
 {focus}
 Every question must be answerable by speaking or typing a few sentences. Do not ask \
 the candidate to write or run code, share their screen, use a whiteboard, solve a \

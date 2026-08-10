@@ -14,6 +14,8 @@ class StartRequest(BaseModel):
     mode: Mode = "text"
     interview_type: InterviewType = "general"
     focus: Focus = "balanced"
+    # The candidate's chosen interview length, a soft target in minutes.
+    duration_target_min: Literal[5, 10, 15, 20, 25, 30] = 10
 
 
 class StartResponse(BaseModel):
@@ -21,6 +23,7 @@ class StartResponse(BaseModel):
     question: str
     mode: Mode
     interview_type: InterviewType
+    duration_target_min: int
 
 
 class DeliveryMetrics(BaseModel):

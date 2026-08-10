@@ -364,6 +364,115 @@ def test_transcript_null_metrics_for_typed_answer(client, monkeypatch):
     assert answer_turn["metrics"] is None and answer_turn["nonverbal"] is None
 
 
+def test_interview_length_is_stored_and_validated(client, monkeypatch):
+    mock_llm(monkeypatch)
+    cookies = auth_cookies(client)
+    save_cv(client, cookies)
+    res = client.post("/api/interview/start", cookies=cookies, json={"duration_target_min": 15})
+    assert res.status_code == 200
+    assert res.json()["duration_target_min"] == 15
+    # only the offered five-minute increments are accepted
+    assert client.post(
+        "/api/interview/start", cookies=cookies, json={"duration_target_min": 7}
+    ).status_code == 422
+
+
+def test_default_interview_length_is_ten_minutes(client, monkeypatch):
+    mock_llm(monkeypatch)
+    cookies = auth_cookies(client)
+    save_cv(client, cookies)
+    assert client.post("/api/interview/start", cookies=cookies).json()["duration_target_min"] == 10
+
+
+def test_stops_at_the_question_cap(client, monkeypatch):
+    _capture_prompts(monkeypatch)
+    monkeypatch.setattr(interview.settings, "interview_max_questions", 3)
+    monkeypatch.setattr(interview, "_elapsed_seconds", lambda s: 5.0)  # well within the target
+    cookies = auth_cookies(client)
+    save_cv(client, cookies)
+    sid = client.post("/api/interview/start", cookies=cookies).json()["session_id"]
+    for text, done in (("a", False), ("b", False), ("c", True)):
+        res = client.post(f"/api/interview/{sid}/answer", cookies=cookies, json={"answer": text})
+        assert res.json()["done"] is done
+
+
+def test_winds_down_with_a_closing_question(client, monkeypatch):
+    prompts = _capture_prompts(monkeypatch)
+    elapsed = {"v": 10.0}
+    monkeypatch.setattr(interview, "_elapsed_seconds", lambda s: elapsed["v"])
+    cookies = auth_cookies(client)
+    save_cv(client, cookies)
+    sid = client.post(
+        "/api/interview/start", cookies=cookies, json={"duration_target_min": 10}
+    ).json()["session_id"]
+    # three answers well within the target: no wind-down yet
+    for text in ("a", "b", "c"):
+        assert client.post(
+            f"/api/interview/{sid}/answer", cookies=cookies, json={"answer": text}
+        ).json()["done"] is False
+    assert "Time is nearly up" not in prompts[-1]
+
+    # now near the target: one closing question, then the interview ends after it
+    elapsed["v"] = 560.0  # target 600s, wind-down within 90s
+    winding = client.post(f"/api/interview/{sid}/answer", cookies=cookies, json={"answer": "d"}).json()
+    assert winding["done"] is False and winding["question"]
+    assert "Time is nearly up" in prompts[-1]
+    ended = client.post(f"/api/interview/{sid}/answer", cookies=cookies, json={"answer": "e"}).json()
+    assert ended["done"] is True and ended["question"] is None
+
+
+def test_minimum_questions_before_winding_down(client, monkeypatch):
+    prompts = _capture_prompts(monkeypatch)
+    monkeypatch.setattr(interview, "_elapsed_seconds", lambda s: 560.0)  # already past the wind-down point
+    cookies = auth_cookies(client)
+    save_cv(client, cookies)
+    sid = client.post(
+        "/api/interview/start", cookies=cookies, json={"duration_target_min": 10}
+    ).json()["session_id"]
+    # despite being past the target, it will not close before the minimum is reached
+    client.post(f"/api/interview/{sid}/answer", cookies=cookies, json={"answer": "a"})
+    assert "Time is nearly up" not in prompts[-1]
+    client.post(f"/api/interview/{sid}/answer", cookies=cookies, json={"answer": "b"})
+    assert "Time is nearly up" not in prompts[-1]
+    client.post(f"/api/interview/{sid}/answer", cookies=cookies, json={"answer": "c"})
+    assert "Time is nearly up" in prompts[-1]
+
+
+def test_followup_prompt_includes_a_pacing_note(client, monkeypatch):
+    prompts = _capture_prompts(monkeypatch)
+    monkeypatch.setattr(interview, "_elapsed_seconds", lambda s: 120.0)
+    cookies = auth_cookies(client)
+    save_cv(client, cookies)
+    sid = client.post(
+        "/api/interview/start", cookies=cookies, json={"duration_target_min": 10}
+    ).json()["session_id"]
+    client.post(f"/api/interview/{sid}/answer", cookies=cookies, json={"answer": "a"})
+    note = prompts[-1]
+    assert "of 10 minutes have passed" in note
+    assert "natural follow-up" in note
+
+
+def test_llm_can_end_the_interview_early(client, monkeypatch):
+    calls = {"n": 0}
+
+    def fake_chat(messages, *args, **kwargs):
+        calls["n"] += 1
+        return "Tell me about yourself." if calls["n"] == 1 else "[[END]]"
+
+    monkeypatch.setattr(interview.llm, "chat", fake_chat)
+    monkeypatch.setattr(interview.moderation, "moderate_output", lambda t: Verdict(allowed=True))
+    monkeypatch.setattr(interview.settings, "interview_min_questions", 1)
+    monkeypatch.setattr(interview, "_elapsed_seconds", lambda s: 30.0)
+    cookies = auth_cookies(client)
+    save_cv(client, cookies)
+    sid = client.post("/api/interview/start", cookies=cookies).json()["session_id"]
+    ended = client.post(f"/api/interview/{sid}/answer", cookies=cookies, json={"answer": "a"}).json()
+    assert ended["done"] is True and ended["question"] is None
+    # the end token is never stored as a question
+    turns = client.get(f"/api/interview/{sid}", cookies=cookies).json()["turns"]
+    assert sum(1 for t in turns if t["kind"] == "question") == 1
+
+
 def test_list_sessions_newest_first_and_scoped(client, monkeypatch):
     mock_llm(monkeypatch)
     owner = auth_cookies(client, "hist-owner@example.com")

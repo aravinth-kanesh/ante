@@ -26,6 +26,8 @@ class InterviewSession(Base):
     cv_snapshot: Mapped[str] = mapped_column(Text, default="")
     jd_snapshot: Mapped[str] = mapped_column(Text, default="")
     company_context_snapshot: Mapped[str] = mapped_column(Text, default="")
+    duration_target_min: Mapped[int] = mapped_column(default=10)  # the candidate's chosen soft length
+    wrapping_up: Mapped[bool] = mapped_column(default=False)  # set once the closing question is asked
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
 
     user: Mapped[User] = relationship()

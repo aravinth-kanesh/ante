@@ -1,5 +1,6 @@
 import json
 import re
+from datetime import datetime, timezone
 
 from sqlalchemy.orm import Session
 
@@ -25,6 +26,51 @@ TYPE_LABELS = {
 
 # Short suffix shown in session titles when the interview was steered.
 FOCUS_LABELS = {"gaps": "weak spots", "questions": "likely questions"}
+
+# When the interviewer judges the conversation has naturally run its course it replies
+# with this token instead of a question, and the session ends (subject to the floor).
+_END_SENTINEL = "[[END]]"
+
+
+def _now() -> datetime:
+    """Wrapped so tests can control the interview clock."""
+    return datetime.now(timezone.utc)
+
+
+def _elapsed_seconds(session: InterviewSession) -> float:
+    """Seconds since the interview started, tolerant of a naive stored timestamp."""
+    now = _now()
+    created = session.created_at
+    if created.tzinfo is None:
+        now = now.replace(tzinfo=None)
+    return (now - created).total_seconds()
+
+
+def _pacing_note(session: InterviewSession, elapsed: float, asked: int, closing: bool) -> dict:
+    """A per-turn note so the interviewer paces itself like a real one glancing at the clock."""
+    used = round(elapsed / 60)
+    lines = [
+        f"About {used} of {session.duration_target_min} minutes have passed and you have "
+        f"asked {asked} question{'s' if asked != 1 else ''} so far."
+    ]
+    if closing:
+        lines.append(
+            "Time is nearly up. Ask one brief, natural closing question (for example "
+            "whether there is anything they would like to add, or a strong final "
+            "question), then the interview will end. Do not announce that it is over."
+        )
+    else:
+        lines.append(
+            "While there is time, ask the next planned question or a natural follow-up "
+            "that probes the last answer; keep it conversational and cover a realistic "
+            "breadth of areas."
+        )
+        if asked >= settings.interview_min_questions:
+            lines.append(
+                f"If the interview has genuinely covered enough and would naturally end "
+                f"here, reply with only {_END_SENTINEL} and nothing else."
+            )
+    return {"role": "system", "content": " ".join(lines)}
 
 
 def session_title(company: str, role: str, interview_type: str, seq: int = 1, focus: str = "") -> str:
@@ -241,6 +287,7 @@ def start(
     role: str = "",
     focus_code: str = "",
     focus_text: str = "",
+    duration_target_min: int = 10,
 ) -> tuple[InterviewSession, str]:
     session = InterviewSession(
         user_id=user.id,
@@ -253,6 +300,7 @@ def start(
         cv_snapshot=cv,
         jd_snapshot=jd,
         company_context_snapshot=context,
+        duration_target_min=duration_target_min,
     )
     db.add(session)
     db.commit()
@@ -273,11 +321,38 @@ def answer(
 ) -> str | None:
     _add_turn(db, session, "candidate", "answer", text, metrics=metrics, nonverbal=nonverbal)
 
+    # The stop decision is only ever taken here, after an answer, so a question is never
+    # cut off part way through. The chosen length is a soft target.
     asked = sum(1 for turn in session.turns if turn.kind == "question")
+    if session.wrapping_up:
+        return None  # the closing question has now been answered; end the interview
     if asked >= settings.interview_max_questions:
-        return None  # interview complete; caller should finish
+        return None  # the hard cap on questions including follow-ups
+    elapsed = _elapsed_seconds(session)
+    target = session.duration_target_min * 60
+    if elapsed >= target * settings.interview_runaway_multiple:
+        return None  # absolute guard against a session left running
 
-    question = _generate(_messages(session))
+    # Near the end of the chosen length (and past the minimum), the next question is a
+    # natural closing one, after which the interview ends.
+    closing = (
+        asked >= settings.interview_min_questions
+        and elapsed >= target - settings.interview_wind_down_sec
+    )
+    messages = _messages(session)
+    messages.append(_pacing_note(session, elapsed, asked, closing))
+    question = _generate(messages)
+
+    if _END_SENTINEL in question:
+        if asked >= settings.interview_min_questions:
+            return None  # the interviewer judged the conversation naturally complete
+        # Too early to end: drop the token and keep whatever question remains.
+        question = question.replace(_END_SENTINEL, "").strip()
+        if not question:
+            question = "Could you tell me a little more about that?"
+
+    if closing:
+        session.wrapping_up = True
     _add_turn(db, session, "interviewer", "question", question)
     return question
 

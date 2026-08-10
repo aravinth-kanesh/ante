@@ -297,14 +297,22 @@ export type InterviewMode = "text" | "voice";
 export type InterviewType = "general" | "behavioural" | "competency" | "technical" | "strengths";
 export type Focus = "balanced" | "gaps" | "questions";
 
+export type InterviewLength = 5 | 10 | 15 | 20 | 25 | 30;
+
 export async function startInterview(
   mode: InterviewMode = "text",
   interviewType: InterviewType = "general",
   focus: Focus = "balanced",
-): Promise<{ session_id: number; question: string; mode: InterviewMode }> {
+  durationTargetMin: InterviewLength = 10,
+): Promise<{ session_id: number; question: string; mode: InterviewMode; duration_target_min: number }> {
   return request("/api/interview/start", {
     method: "POST",
-    body: JSON.stringify({ mode, interview_type: interviewType, focus }),
+    body: JSON.stringify({
+      mode,
+      interview_type: interviewType,
+      focus,
+      duration_target_min: durationTargetMin,
+    }),
   });
 }
 

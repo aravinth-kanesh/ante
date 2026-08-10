@@ -95,7 +95,12 @@ class Settings(BaseSettings):
     moderation_model: str = ""  # falls back to llm_model
     moderation_max_retries: int = 1
 
-    interview_max_questions: int = 6
+    # Interview pacing. The chosen length is a soft target: the stop decision is only
+    # taken when the candidate submits an answer, so a final question is never cut off.
+    interview_max_questions: int = 12  # hard cap on questions including follow-ups
+    interview_min_questions: int = 3  # ask at least this many before winding down
+    interview_wind_down_sec: int = 90  # within this of the target, ask a closing question
+    interview_runaway_multiple: float = 2.0  # absolute guard: end once past this * the target
 
     # Speech delivery analysis. Answer audio is transcribed with faster-whisper
     # to measure speaking pace, pauses and filler words. Audio is processed in

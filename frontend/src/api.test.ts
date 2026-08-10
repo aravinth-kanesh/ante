@@ -7,6 +7,7 @@ import {
   hasSessionHint,
   readCookie,
   saveJobDescription,
+  startInterview,
 } from "./api";
 
 function jsonResponse(body: unknown, status = 200): Response {
@@ -81,5 +82,18 @@ describe("request()", () => {
     document.cookie = "csrf_token=t";
     fetchMock.mockResolvedValueOnce(new Response(null, { status: 204 }));
     await expect(authLogout()).resolves.toBeUndefined();
+  });
+});
+
+describe("startInterview", () => {
+  it("sends the chosen length, defaulting to 10 minutes", async () => {
+    fetchMock.mockImplementation(async () =>
+      jsonResponse({ session_id: 1, question: "Q", mode: "voice", duration_target_min: 10 }),
+    );
+    await startInterview("voice", "general", "balanced");
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body).duration_target_min).toBe(10);
+
+    await startInterview("voice", "general", "balanced", 20);
+    expect(JSON.parse(fetchMock.mock.calls[1][1].body).duration_target_min).toBe(20);
   });
 });

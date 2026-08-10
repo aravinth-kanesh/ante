@@ -63,6 +63,7 @@ def start(
     mode = data.mode if data else "text"
     interview_type = data.interview_type if data else "general"
     focus = data.focus if data else "balanced"
+    duration_target_min = data.duration_target_min if data else 10
     profile = _get_or_create(db, current_user)
     if not profile.cv_text.strip():
         raise HTTPException(status_code=400, detail="Add your CV before starting an interview")
@@ -91,6 +92,7 @@ def start(
             profile.role,
             focus_code,
             focus_text,
+            duration_target_min,
         )
     except Exception as exc:
         raise HTTPException(status_code=502, detail=f"Could not start interview: {exc}") from exc
@@ -99,6 +101,7 @@ def start(
         question=question,
         mode=session.mode,
         interview_type=session.interview_type,
+        duration_target_min=session.duration_target_min,
     )
 
 

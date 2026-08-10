@@ -11,6 +11,7 @@ import {
   type DeliveryMetrics,
   type FeedbackReport,
   type Focus,
+  type InterviewLength,
   type InterviewType,
   type NonverbalMetrics,
 } from "../api";
@@ -66,6 +67,7 @@ export default function Interview() {
   const requestedFocus = (location.state as { focus?: Focus } | null)?.focus;
   const [interviewType, setInterviewType] = useState<InterviewType>("general");
   const [focus, setFocus] = useState<Focus>(requestedFocus ?? "balanced");
+  const [length, setLength] = useState<InterviewLength>(10);
   const [hasGaps, setHasGaps] = useState(false);
   const [hasQuestions, setHasQuestions] = useState(false);
   const [voiceMode, setVoiceMode] = useState(supported);
@@ -197,7 +199,7 @@ export default function Interview() {
     setMetrics(null);
     setNonverbal(null);
     try {
-      const res = await startInterview(voiceMode ? "voice" : "text", interviewType, focus);
+      const res = await startInterview(voiceMode ? "voice" : "text", interviewType, focus, length);
       setSessionId(res.session_id);
       setQuestion(res.question);
     } catch (err) {
@@ -316,6 +318,20 @@ export default function Interview() {
                 </option>
               </Select>
             </div>
+            <div>
+              <Select
+                label="Length"
+                value={length}
+                onChange={(e) => setLength(Number(e.target.value) as InterviewLength)}
+                hint="A guide, not a hard cut-off: you will always finish the question you are on, and you can stop any time."
+              >
+                {[5, 10, 15, 20, 25, 30].map((m) => (
+                  <option key={m} value={m}>
+                    {m} minutes
+                  </option>
+                ))}
+              </Select>
+            </div>
             {supported ? (
               <div className="space-y-4">
                 <Toggle
@@ -372,7 +388,10 @@ export default function Interview() {
             {question !== null ? (
               <>
                 <div className="flex items-center justify-between">
-                  <Badge color="brand">Question {history.length + 1}</Badge>
+                  <div className="flex items-center gap-2.5">
+                    <Badge color="brand">Question {history.length + 1}</Badge>
+                    <span className="text-xs text-slate-500">about {length} min interview</span>
+                  </div>
                   {voiceMode && (
                     <Button
                       variant="ghost"
@@ -466,13 +485,15 @@ export default function Interview() {
                     Submit answer
                   </Button>
                   <Button variant="ghost" onClick={end} disabled={busy}>
-                    Finish &amp; get feedback
+                    Stop &amp; get feedback
                   </Button>
                 </div>
               </>
             ) : (
               <div className="space-y-3">
-                <p className="text-sm text-slate-700">You have answered all the questions.</p>
+                <p className="text-sm text-slate-700">
+                  That is the end of the interview. Get your feedback when you are ready.
+                </p>
                 <Button onClick={end} loading={loading}>
                   Get feedback
                 </Button>
