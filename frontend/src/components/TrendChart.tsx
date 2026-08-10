@@ -149,6 +149,15 @@ export default function TrendChart({
         );
       })}
       </svg>
+      {goodLow != null && goodHigh != null && (
+        <figcaption className="mt-1.5 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-slate-500">
+          <span
+            aria-hidden="true"
+            className="inline-block h-2.5 w-4 shrink-0 rounded-[3px] border border-dashed border-green-500 bg-green-100"
+          />
+          Good range: {format(goodLow)} to {format(goodHigh)}
+        </figcaption>
+      )}
       <table className="sr-only">
         <caption>{summary}</caption>
         <thead>

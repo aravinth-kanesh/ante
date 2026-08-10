@@ -111,8 +111,12 @@ empty praise. Only credit something the candidate genuinely did well.
 - For weak answers, show what a strong answer would include: a specific example, real \
 detail, clear structure (such as situation, task, action, result), and evidence of \
 the competencies the role needs.
-- Prioritise the few changes that would make the biggest difference; do not pad the \
-lists. Refer to what the candidate actually said.
+- In "improvements", give at least three distinct, genuinely useful points, each on a \
+different aspect (for example answer structure, being specific and giving evidence, \
+directly answering the question that was asked, or spoken delivery). Refer to what the \
+candidate actually said. Lead with the changes that would make the biggest difference. \
+Never repeat a point or pad with generic filler; if the interview was short, still \
+find three different things worth practising.
 - Make every point distinct. Do not repeat the same advice across items: if the same \
 underlying issue (for example using the STAR structure) applies to several answers, \
 raise it once, and use the other points for different, specific improvements. Each \
@@ -129,7 +133,8 @@ Return a single JSON object and nothing else, in exactly this shape:
 {{
   "summary": "<two or three sentences giving an honest overall assessment>",
   "strengths": ["<something they genuinely did well, in plain language>"],
-  "improvements": ["<a specific, plain-language action the student can take>"],
+  "improvements": ["<a specific, plain-language action on one aspect>", "<a different \
+action on another aspect>", "<a third, distinct action>"],
   "answer_notes": [
     {{"question": "<a short reference to the question>",
       "verdict": "strong|adequate|weak",

@@ -121,6 +121,13 @@ export default function Interview() {
     };
   }, []);
 
+  // Start the live preview once it is on screen. Safari on macOS will not begin
+  // playing a video element that was still hidden when play() was first called, so
+  // the preview stayed black; nudging it here once it is visible fixes that.
+  useEffect(() => {
+    if (recording) videoRef.current?.play().catch(() => undefined);
+  }, [recording]);
+
   function stopCapture() {
     captureRef.current?.cancel();
     captureRef.current = null;
@@ -391,13 +398,19 @@ export default function Interview() {
                 </div>
 
                 {cameraOn && (
-                  <video
-                    ref={videoRef}
-                    muted
-                    playsInline
-                    className="w-56 rounded-xl border border-slate-200 shadow-sm"
-                    style={{ display: recording ? "block" : "none", transform: "scaleX(-1)" }}
-                  />
+                  <div style={{ display: recording ? "block" : "none" }}>
+                    <video
+                      ref={videoRef}
+                      autoPlay
+                      muted
+                      playsInline
+                      className="w-56 rounded-xl border border-slate-200 shadow-sm"
+                      style={{ transform: "scaleX(-1)" }}
+                    />
+                    <p className="mt-1 text-xs text-slate-500">
+                      Live camera preview. Nothing is recorded.
+                    </p>
+                  </div>
                 )}
 
                 <TextArea

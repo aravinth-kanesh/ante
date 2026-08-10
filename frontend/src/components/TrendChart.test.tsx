@@ -48,6 +48,11 @@ describe("TrendChart", () => {
     expect(container.querySelectorAll("line[stroke-dasharray]").length).toBeGreaterThanOrEqual(1);
   });
 
+  it("labels the good range so the green zone is explained", () => {
+    render(<TrendChart points={points} format={pct} label="Rate" goodLow={60} goodHigh={100} />);
+    expect(screen.getByText(/Good range: 60% to 100%/)).toBeInTheDocument();
+  });
+
   it("keeps the line prominent when the target sits far above the data", () => {
     // Data well below the 60-100 good range must still span a fair share of the
     // plot rather than being squashed into a sliver by the distant target.
