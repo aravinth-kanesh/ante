@@ -19,6 +19,7 @@ import {
   type NonverbalMetrics,
 } from "../api";
 import { recordingSupported, startCapture, type Capture, type Replay } from "../capture";
+import AnswerPlayer from "../components/AnswerPlayer";
 import FeedbackView from "../components/FeedbackView";
 import {
   Badge,
@@ -78,6 +79,8 @@ export default function Interview() {
   const [saveRecording, setSaveRecording] = useState(false);
   const [hasRecordings, setHasRecordings] = useState(false);
   const [recordingsDeleted, setRecordingsDeleted] = useState(false);
+  // A local object URL for reviewing the just-recorded answer before submitting it.
+  const [review, setReview] = useState<{ url: string; hasVideo: boolean } | null>(null);
   const [recording, setRecording] = useState(false);
   const [starting, setStarting] = useState(false);
   const [analysing, setAnalysing] = useState(false);
@@ -137,6 +140,13 @@ export default function Interview() {
     if (recording) videoRef.current?.play().catch(() => undefined);
   }, [recording]);
 
+  // Free the local review URL when it is replaced or the page unmounts.
+  useEffect(() => {
+    return () => {
+      if (review) URL.revokeObjectURL(review.url);
+    };
+  }, [review]);
+
   function stopCapture() {
     captureRef.current?.cancel();
     captureRef.current = null;
@@ -150,6 +160,7 @@ export default function Interview() {
     if (starting || recording) return; // guard against a double click during load
     setStarting(true);
     setError("");
+    setReview(null); // a new answer replaces the previous review
     cancelVoice(); // do not record the interviewer's own voice
     setSpeaking(false);
     try {
@@ -190,6 +201,7 @@ export default function Interview() {
     try {
       const { audioBlob, samples, replay } = await capture.stop();
       replayRef.current = replay; // uploaded on submit, keyed to this question
+      if (replay) setReview({ url: URL.createObjectURL(replay.blob), hasVideo: replay.hasVideo });
       if (videoRef.current) videoRef.current.srcObject = null;
       const res = await transcribeAudio(audioBlob);
       setAnswer(res.transcript);
@@ -212,6 +224,7 @@ export default function Interview() {
     setNonverbal(null);
     setHasRecordings(false);
     setRecordingsDeleted(false);
+    setReview(null);
     replayRef.current = null;
     try {
       const res = await startInterview(voiceMode ? "voice" : "text", interviewType, focus, length);
@@ -237,6 +250,7 @@ export default function Interview() {
       setMetrics(null);
       setNonverbal(null);
       setQuestion(res.done ? null : res.question);
+      setReview(null); // the answer is submitted; clear the local review
       const replay = replayRef.current;
       replayRef.current = null;
       if (replay) {
@@ -505,6 +519,13 @@ export default function Interview() {
                         <VideoIcon className="h-3.5 w-3.5" /> {nonverbalSummary(nonverbal)}
                       </Badge>
                     )}
+                  </div>
+                )}
+
+                {review && metrics && (
+                  <div className="space-y-1.5">
+                    <p className="text-sm font-medium text-slate-700">Review your answer</p>
+                    <AnswerPlayer src={review.url} hasVideo={review.hasVideo} metrics={metrics} />
                   </div>
                 )}
 
