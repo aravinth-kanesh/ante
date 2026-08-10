@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { type DeliveryMetrics } from "../api";
+import { type DeliveryMetrics, type NonverbalMetrics } from "../api";
 import AnswerPlayer from "./AnswerPlayer";
 
 function metrics(overrides: Partial<DeliveryMetrics> = {}): DeliveryMetrics {
@@ -46,5 +46,25 @@ describe("AnswerPlayer", () => {
   it("uses a video element when the answer has video", () => {
     const { container } = render(<AnswerPlayer src="blob:v" hasVideo metrics={metrics()} />);
     expect(container.querySelector("video")).toBeInTheDocument();
+  });
+
+  it("shows the eye-contact track when a nonverbal timeline is present", () => {
+    const nonverbal: NonverbalMetrics = {
+      frames_analysed: 24,
+      face_detected: true,
+      eye_contact_pct: 67,
+      head_steadiness: 80,
+      steadiness_label: "steady",
+      smile_pct: null,
+      posture_pct: null,
+      timeline: [
+        { t: 0, eye_contact: true, movement: 0.1 },
+        { t: 1, eye_contact: false, movement: 0.4 },
+        { t: 2, eye_contact: true, movement: 0.1 },
+      ],
+    };
+    render(<AnswerPlayer src="blob:v" hasVideo metrics={metrics()} nonverbal={nonverbal} />);
+    expect(screen.getByText("Eye contact on camera")).toBeInTheDocument();
+    expect(screen.getByText(/Looked at the camera about 67%/)).toBeInTheDocument();
   });
 });

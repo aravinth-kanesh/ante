@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { type DeliveryMetrics } from "../api";
+import { type DeliveryMetrics, type NonverbalMetrics } from "../api";
 import { cn } from "./ui";
 
 function formatTime(seconds: number): string {
@@ -26,10 +26,12 @@ export default function AnswerPlayer({
   src,
   hasVideo,
   metrics,
+  nonverbal,
 }: {
   src: string;
   hasVideo: boolean;
   metrics: DeliveryMetrics;
+  nonverbal?: NonverbalMetrics | null;
 }) {
   const mediaRef = useRef<HTMLMediaElement | null>(null);
   const [current, setCurrent] = useState(0);
@@ -134,6 +136,34 @@ export default function AnswerPlayer({
             ))}
           </ul>
         </>
+      )}
+
+      {nonverbal && nonverbal.timeline.length > 1 && duration > 0 && (
+        <div className="mt-2">
+          <p className="text-xs font-medium text-slate-600">Eye contact on camera</p>
+          <svg viewBox={`0 0 ${W} 6`} className="mt-1 h-1.5 w-full" aria-hidden="true">
+            {nonverbal.timeline.map((tick, i) => (
+              <rect
+                key={i}
+                x={x(tick.t)}
+                y={0}
+                width={Math.max(2, x(tick.t + 1) - x(tick.t))}
+                height={6}
+                className={tick.eye_contact ? "fill-green-400" : "fill-amber-400"}
+              />
+            ))}
+            <line x1={x(current)} y1={0} x2={x(current)} y2={6} className="stroke-brand-600" strokeWidth={1.5} />
+          </svg>
+          <div className="mt-0.5 flex gap-3 text-[11px] text-slate-500">
+            <span className="flex items-center gap-1">
+              <span className="inline-block h-2 w-2 rounded-sm bg-green-400" /> facing
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="inline-block h-2 w-2 rounded-sm bg-amber-400" /> looked away
+            </span>
+          </div>
+          <p className="sr-only">Looked at the camera about {nonverbal.eye_contact_pct}% of the time.</p>
+        </div>
       )}
     </figure>
   );

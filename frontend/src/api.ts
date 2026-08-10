@@ -415,6 +415,13 @@ export interface NonverbalSample {
   smile: number;
   pose_detected: boolean;
   shoulder_tilt: number | null;
+  t: number; // seconds from the start of the recording
+}
+
+export interface NonverbalTick {
+  t: number;
+  eye_contact: boolean;
+  movement: number;
 }
 
 export interface NonverbalMetrics {
@@ -425,6 +432,7 @@ export interface NonverbalMetrics {
   steadiness_label: string;
   smile_pct: number | null;
   posture_pct: number | null;
+  timeline: NonverbalTick[];
 }
 
 export async function analyseNonverbal(samples: NonverbalSample[]): Promise<NonverbalMetrics> {

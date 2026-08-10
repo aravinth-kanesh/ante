@@ -525,7 +525,12 @@ export default function Interview() {
                 {review && metrics && (
                   <div className="space-y-1.5">
                     <p className="text-sm font-medium text-slate-700">Review your answer</p>
-                    <AnswerPlayer src={review.url} hasVideo={review.hasVideo} metrics={metrics} />
+                    <AnswerPlayer
+                      src={review.url}
+                      hasVideo={review.hasVideo}
+                      metrics={metrics}
+                      nonverbal={nonverbal}
+                    />
                   </div>
                 )}
 

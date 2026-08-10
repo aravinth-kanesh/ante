@@ -84,6 +84,7 @@ async function setup(stream: MediaStream, opts: CaptureOptions): Promise<Capture
     if (event.data.size > 0) chunks.push(event.data);
   };
   recorder.start();
+  const startedAt = performance.now(); // to time nonverbal samples against the recording
 
   // When saving with the camera on, a second recorder keeps the video+audio replay.
   let videoRecorder: MediaRecorder | undefined;
@@ -129,8 +130,12 @@ async function setup(stream: MediaStream, opts: CaptureOptions): Promise<Capture
       await vision.loadVision();
       const target = sampleVideo;
       timer = window.setInterval(() => {
-        const sample = vision.extractSample(target, performance.now());
-        if (sample) samples.push(sample);
+        const now = performance.now();
+        const sample = vision.extractSample(target, now);
+        if (sample) {
+          sample.t = (now - startedAt) / 1000; // seconds into the recording
+          samples.push(sample);
+        }
       }, SAMPLE_INTERVAL_MS);
     } catch (err) {
       console.warn("Nonverbal analysis is unavailable; continuing without it.", err);

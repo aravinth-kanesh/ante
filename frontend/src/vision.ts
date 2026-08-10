@@ -102,5 +102,6 @@ export function extractSample(video: HTMLVideoElement, timestampMs: number): Non
     smile,
     pose_detected: tilt !== null,
     shoulder_tilt: tilt,
+    t: 0, // filled in by the caller relative to the recording start
   };
 }

@@ -13,9 +13,10 @@ candidate appears to face the camera), not true gaze tracking.
 import statistics
 
 from app.config import settings
-from app.schemas.interview import NonverbalMetrics, NonverbalSample
+from app.schemas.interview import NonverbalMetrics, NonverbalSample, NonverbalTick
 
 _LEVEL_SHOULDER_DEG = 6.0  # shoulders within this of level count as level posture
+_MOVEMENT_FULL_DEG = 12.0  # head spread within a second that reads as full movement
 
 
 def _steadiness_label(score: int) -> str:
@@ -24,6 +25,43 @@ def _steadiness_label(score: int) -> str:
     if score >= 50:
         return "mostly steady"
     return "restless"
+
+
+def _looking(sample: NonverbalSample) -> bool:
+    return (
+        sample.eyes_open
+        and abs(sample.yaw) <= settings.eye_contact_yaw_deg
+        and abs(sample.pitch) <= settings.eye_contact_pitch_deg
+    )
+
+
+def _timeline(samples: list[NonverbalSample]) -> list[NonverbalTick]:
+    """A one-second eye-contact and movement summary for the replay overlay.
+
+    Empty unless the samples carry usable per-frame timing (older clients send none).
+    """
+    if not samples or max(s.t for s in samples) <= 1.0:
+        return []
+    buckets: dict[int, list[NonverbalSample]] = {}
+    for sample in samples:
+        buckets.setdefault(int(sample.t), []).append(sample)
+
+    ticks: list[NonverbalTick] = []
+    for second in sorted(buckets):
+        face = [s for s in buckets[second] if s.face_detected]
+        if face:
+            eye_contact = sum(1 for s in face if _looking(s)) / len(face) >= 0.5
+            spread = (
+                (statistics.pstdev([s.yaw for s in face]) + statistics.pstdev([s.pitch for s in face])) / 2
+                if len(face) > 1
+                else 0.0
+            )
+            movement = min(1.0, spread / _MOVEMENT_FULL_DEG)
+        else:
+            eye_contact = False
+            movement = 0.0
+        ticks.append(NonverbalTick(t=float(second), eye_contact=eye_contact, movement=round(movement, 2)))
+    return ticks
 
 
 def nonverbal_metrics(samples: list[NonverbalSample]) -> NonverbalMetrics:
@@ -38,13 +76,7 @@ def nonverbal_metrics(samples: list[NonverbalSample]) -> NonverbalMetrics:
             steadiness_label="unknown",
         )
 
-    looking = sum(
-        1
-        for s in face
-        if s.eyes_open
-        and abs(s.yaw) <= settings.eye_contact_yaw_deg
-        and abs(s.pitch) <= settings.eye_contact_pitch_deg
-    )
+    looking = sum(1 for s in face if _looking(s))
     eye_contact_pct = round(100 * looking / len(face))
 
     spread = (statistics.pstdev([s.yaw for s in face]) + statistics.pstdev([s.pitch for s in face])) / 2
@@ -69,4 +101,5 @@ def nonverbal_metrics(samples: list[NonverbalSample]) -> NonverbalMetrics:
         steadiness_label=_steadiness_label(head_steadiness),
         smile_pct=smile_pct,
         posture_pct=posture_pct,
+        timeline=_timeline(samples),
     )

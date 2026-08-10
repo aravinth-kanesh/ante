@@ -48,6 +48,22 @@ def test_restless_head_scores_low():
     assert metrics.steadiness_label == "restless"
 
 
+def test_timeline_summarises_eye_contact_per_second():
+    samples = (
+        [facing(t=0.0), facing(t=0.5)]  # second 0: facing the camera
+        + [facing(yaw=40.0, t=1.0), facing(yaw=45.0, t=1.5)]  # second 1: looked away
+        + [facing(t=2.0)]  # second 2: facing again
+    )
+    ticks = nonverbal_metrics(samples).timeline
+    assert [tick.t for tick in ticks] == [0.0, 1.0, 2.0]
+    assert [tick.eye_contact for tick in ticks] == [True, False, True]
+
+
+def test_timeline_empty_without_per_frame_timing():
+    # Older clients send no timestamps (t defaults to 0), so no overlay is built.
+    assert nonverbal_metrics([facing()] * 4).timeline == []
+
+
 def test_smile_percentage_when_expression_enabled(monkeypatch):
     monkeypatch.setattr(settings, "expression_enabled", True)
     samples = [facing(smile=0.6)] * 3 + [facing(smile=0.0)]  # 3 of 4 smiling

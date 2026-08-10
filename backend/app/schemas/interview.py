@@ -98,10 +98,19 @@ class NonverbalSample(BaseModel):
     smile: float = 0.0  # mean smile blendshape, 0..1
     pose_detected: bool = False
     shoulder_tilt: float | None = None  # degrees off level, None when no pose
+    t: float = 0.0  # seconds from the start of the recording (0 from older clients)
 
 
 class AnalyseRequest(BaseModel):
     samples: list[NonverbalSample] = Field(..., max_length=5000)
+
+
+class NonverbalTick(BaseModel):
+    """A one-second summary of the webcam for the replay overlay."""
+
+    t: float  # seconds from the start of the recording
+    eye_contact: bool  # facing the camera for most of this second
+    movement: float  # 0..1, how much the head moved this second
 
 
 class NonverbalMetrics(BaseModel):
@@ -114,6 +123,8 @@ class NonverbalMetrics(BaseModel):
     steadiness_label: str
     smile_pct: int | None = None  # None when expression analysis is off or no face
     posture_pct: int | None = None  # None when no pose was detected
+    # A ~1 Hz timeline for the replay overlay; empty when timing was not available.
+    timeline: list[NonverbalTick] = []
 
     def summary(self) -> str:
         """A short British English sentence for the feedback prompt and the UI."""
