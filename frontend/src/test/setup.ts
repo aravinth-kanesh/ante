@@ -11,6 +11,12 @@ if (typeof HTMLMediaElement !== "undefined") {
   HTMLMediaElement.prototype.pause = () => {};
 }
 
+// jsdom does not implement object URLs; stub them so recording review can be tested.
+if (typeof URL !== "undefined") {
+  URL.createObjectURL = () => "blob:mock";
+  URL.revokeObjectURL = () => {};
+}
+
 // jsdom does not implement matchMedia; provide a no-op so components can query it.
 if (typeof window !== "undefined" && !window.matchMedia) {
   window.matchMedia = (query: string) =>

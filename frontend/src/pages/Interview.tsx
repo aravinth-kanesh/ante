@@ -6,6 +6,7 @@ import {
   answerMediaBundleUrl,
   deleteAnswerMedia,
   finishInterview,
+  listAnswerMedia,
   getPreparation,
   getPrepQuestions,
   startInterview,
@@ -78,7 +79,10 @@ export default function Interview() {
   const [voiceMode, setVoiceMode] = useState(supported);
   const [cameraOn, setCameraOn] = useState(false);
   const [saveRecording, setSaveRecording] = useState(false);
-  const [hasRecordings, setHasRecordings] = useState(false);
+  // Whether each answer's recording actually uploaded (by answer number), so a failure
+  // is visible rather than silently swallowed.
+  const [savedByIndex, setSavedByIndex] = useState<Record<number, boolean>>({});
+  const [recordedAnswers, setRecordedAnswers] = useState<number[]>([]);
   const [recordingsDeleted, setRecordingsDeleted] = useState(false);
   // A local object URL for reviewing the just-recorded answer before submitting it.
   const [review, setReview] = useState<{ url: string; hasVideo: boolean } | null>(null);
@@ -227,7 +231,8 @@ export default function Interview() {
     setAnswer("");
     setMetrics(null);
     setNonverbal(null);
-    setHasRecordings(false);
+    setSavedByIndex({});
+    setRecordedAnswers([]);
     setRecordingsDeleted(false);
     setReview(null);
     replayRef.current = null;
@@ -265,12 +270,13 @@ export default function Interview() {
       const replay = replayRef.current;
       replayRef.current = null;
       if (replay) {
-        // Saving the recording is best-effort: a failed upload must not block practice.
+        // Saving the recording is best-effort: a failed upload must not block practice,
+        // but the candidate is told so it is not a silent loss.
         try {
           await uploadAnswerMedia(sessionId, answerIndex, replay.blob);
-          setHasRecordings(true);
+          setSavedByIndex((m) => ({ ...m, [answerIndex]: true }));
         } catch {
-          /* ignore: the interview continues without this recording */
+          setSavedByIndex((m) => ({ ...m, [answerIndex]: false }));
         }
       }
     } catch (err) {
@@ -299,6 +305,16 @@ export default function Interview() {
       const res = await finishInterview(sessionId);
       setFeedback(res.feedback);
       setQuestion(null);
+      // Reflect what actually reached the server, rather than assuming every upload
+      // succeeded, so the download panel is accurate.
+      if (saveRecording) {
+        try {
+          const media = await listAnswerMedia(sessionId);
+          setRecordedAnswers(media.map((m) => m.index));
+        } catch {
+          /* the panel simply will not show if the list cannot be fetched */
+        }
+      }
     } catch (err) {
       setError(message(err));
     } finally {
@@ -462,6 +478,14 @@ export default function Interview() {
               <CardBody className="py-4">
                 <p className="text-sm font-medium text-slate-800">{ex.question}</p>
                 <p className="mt-1 text-sm text-slate-500">{ex.answer}</p>
+                {savedByIndex[i + 1] === true && (
+                  <p className="mt-1 text-xs text-green-600">Recording saved.</p>
+                )}
+                {savedByIndex[i + 1] === false && (
+                  <p className="mt-1 text-xs text-amber-600">
+                    This recording could not be saved, so it will not be available to download.
+                  </p>
+                )}
               </CardBody>
             </Card>
           ))}
@@ -575,7 +599,7 @@ export default function Interview() {
                         "Analysing..."
                       ) : (
                         <>
-                          <MicIcon className="h-4 w-4" /> Speak answer
+                          <MicIcon className="h-4 w-4" /> {review ? "Record again" : "Speak answer"}
                         </>
                       )}
                     </Button>
@@ -603,14 +627,15 @@ export default function Interview() {
       )}
 
       {/* Recordings: available to download for this session only, then deleted */}
-      {feedback && sessionId !== null && hasRecordings && !recordingsDeleted && (
+      {feedback && sessionId !== null && recordedAnswers.length > 0 && !recordingsDeleted && (
         <Card className="border-brand-200 bg-brand-50/40">
           <CardBody className="space-y-3">
             <CardTitle>Your recordings</CardTitle>
             <p className="text-sm text-slate-600">
-              Your answers were saved on our server for this session only. Download them to keep
-              them on your device: we delete them when you leave this page, and never keep your
-              audio or video afterwards.
+              {recordedAnswers.length} of your answers{" "}
+              {recordedAnswers.length === 1 ? "was" : "were"} saved on our server for this session
+              only. Download them to keep them on your device: we delete them when you leave this
+              page, and never keep your audio or video afterwards.
             </p>
             <div className="flex flex-wrap items-center gap-3">
               <a
