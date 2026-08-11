@@ -58,9 +58,9 @@ describe("AnswerPlayer", () => {
       smile_pct: null,
       posture_pct: null,
       timeline: [
-        { t: 0, eye_contact: true, movement: 0.1 },
-        { t: 1, eye_contact: false, movement: 0.4 },
-        { t: 2, eye_contact: true, movement: 0.1 },
+        { t: 0, eye_contact: true },
+        { t: 1, eye_contact: false },
+        { t: 2, eye_contact: true },
       ],
     };
     render(<AnswerPlayer src="blob:v" hasVideo metrics={metrics()} nonverbal={nonverbal} />);

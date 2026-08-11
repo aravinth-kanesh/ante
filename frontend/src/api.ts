@@ -423,7 +423,6 @@ export interface NonverbalSample {
 export interface NonverbalTick {
   t: number;
   eye_contact: boolean;
-  movement: number;
 }
 
 export interface NonverbalMetrics {
@@ -570,5 +569,5 @@ export async function getProgress(): Promise<ProgressReport> {
 }
 
 export async function getProgressSummary(): Promise<{ summary: string }> {
-  return request("/api/progress/summary");
+  return request("/api/progress/summary", { method: "POST" });
 }

@@ -121,7 +121,11 @@ def answer(
     if session.status != "active":
         raise HTTPException(status_code=400, detail="This interview has finished")
     metrics_json = data.metrics.model_dump_json() if data.metrics else None
-    nonverbal_json = data.nonverbal.model_dump_json() if data.nonverbal else None
+    # The per-second timeline is only used by the live in-session replay, so it is not
+    # persisted with the turn; only the aggregate numbers are stored and read back.
+    nonverbal_json = (
+        data.nonverbal.model_copy(update={"timeline": []}).model_dump_json() if data.nonverbal else None
+    )
     try:
         question = interview.answer(db, session, data.answer, metrics_json, nonverbal_json)
     except Exception as exc:

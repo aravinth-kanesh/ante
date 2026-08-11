@@ -161,7 +161,11 @@ export default function Interview() {
     if (starting || recording) return; // guard against a double click during load
     setStarting(true);
     setError("");
-    setReview(null); // a new answer replaces the previous review
+    // A fresh take supersedes the previous one: clear its review and derived metrics
+    // so a re-record never shows the earlier take's delivery or on-camera overlay.
+    setReview(null);
+    setMetrics(null);
+    setNonverbal(null);
     cancelVoice(); // do not record the interviewer's own voice
     setSpeaking(false);
     try {

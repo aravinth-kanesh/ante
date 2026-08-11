@@ -16,7 +16,6 @@ from app.config import settings
 from app.schemas.interview import NonverbalMetrics, NonverbalSample, NonverbalTick
 
 _LEVEL_SHOULDER_DEG = 6.0  # shoulders within this of level count as level posture
-_MOVEMENT_FULL_DEG = 12.0  # head spread within a second that reads as full movement
 
 
 def _steadiness_label(score: int) -> str:
@@ -49,18 +48,8 @@ def _timeline(samples: list[NonverbalSample]) -> list[NonverbalTick]:
     ticks: list[NonverbalTick] = []
     for second in sorted(buckets):
         face = [s for s in buckets[second] if s.face_detected]
-        if face:
-            eye_contact = sum(1 for s in face if _looking(s)) / len(face) >= 0.5
-            spread = (
-                (statistics.pstdev([s.yaw for s in face]) + statistics.pstdev([s.pitch for s in face])) / 2
-                if len(face) > 1
-                else 0.0
-            )
-            movement = min(1.0, spread / _MOVEMENT_FULL_DEG)
-        else:
-            eye_contact = False
-            movement = 0.0
-        ticks.append(NonverbalTick(t=float(second), eye_contact=eye_contact, movement=round(movement, 2)))
+        eye_contact = bool(face) and sum(1 for s in face if _looking(s)) / len(face) >= 0.5
+        ticks.append(NonverbalTick(t=float(second), eye_contact=eye_contact))
     return ticks
 
 

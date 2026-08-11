@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 
 from app.config import settings
@@ -34,7 +34,8 @@ def read_progress(
     return progress.build_report(_usable_sessions(db, current_user))
 
 
-@router.get("/summary", response_model=ProgressSummary)
+# A POST because it makes a billable model call: it must not be cached or prefetched.
+@router.post("/summary", response_model=ProgressSummary)
 @limiter.limit(settings.llm_rate_limit)
 def coach_summary(
     request: Request,
@@ -51,7 +52,10 @@ def coach_summary(
             )
         )
     prompt = PROGRESS_SUMMARY_PROMPT.format(progress=progress.describe(report))
-    reply = llm.chat([{"role": "user", "content": prompt}])
-    if not moderation.moderate_output(reply).allowed:
-        reply = llm.chat([{"role": "user", "content": prompt}])  # one retry
+    try:
+        reply = llm.chat([{"role": "user", "content": prompt}])
+        if not moderation.moderate_output(reply).allowed:
+            reply = llm.chat([{"role": "user", "content": prompt}])  # one retry
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"Could not summarise your progress: {exc}") from exc
     return ProgressSummary(summary=strip_markdown(reply))

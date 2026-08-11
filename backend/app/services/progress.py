@@ -76,9 +76,12 @@ def describe(report: ProgressReport) -> str:
         if delta.first is not None and delta.direction in ("improved", "slipped"):
             note += f" (from {fmt(delta.first)})"
         if delta.good_low is not None and delta.good_high is not None:
-            note += f"; a good range is {fmt(delta.good_low)} to {fmt(delta.good_high)}"
-            if delta.lower_is_better:
-                note += " (lower is better)"
+            if delta.latest < delta.good_low:
+                note += "; below the good range"
+            elif delta.latest > delta.good_high:
+                note += "; above the good range"
+            else:
+                note += "; within the good range"
         lines.append(note + ".")
     if report.focus_areas:
         lines.append("Recurring things to work on: " + "; ".join(report.focus_areas) + ".")

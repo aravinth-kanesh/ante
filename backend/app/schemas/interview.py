@@ -112,7 +112,6 @@ class NonverbalTick(BaseModel):
 
     t: float  # seconds from the start of the recording
     eye_contact: bool  # facing the camera for most of this second
-    movement: float  # 0..1, how much the head moved this second
 
 
 class NonverbalMetrics(BaseModel):

@@ -210,7 +210,7 @@ def test_coach_summary_narrates_the_trends(client, monkeypatch):
     monkeypatch.setattr(
         interview.llm, "chat", lambda *a, **k: "You are giving stronger answers than when you started."
     )
-    summary = client.get("/api/progress/summary", cookies=cookies).json()["summary"]
+    summary = client.post("/api/progress/summary", cookies=cookies).json()["summary"]
     assert "stronger answers" in summary
 
 
@@ -218,5 +218,5 @@ def test_coach_summary_without_interviews_is_a_prompt_to_start(client):
     res = client.post("/api/auth/signup", json={"email": "noprog@example.com", "password": "password123"})
     client.cookies.clear()
     cookies = {"access_token": res.cookies["access_token"]}
-    summary = client.get("/api/progress/summary", cookies=cookies).json()["summary"]
+    summary = client.post("/api/progress/summary", cookies=cookies).json()["summary"]
     assert "not done any interviews" in summary
