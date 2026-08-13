@@ -10,6 +10,9 @@ class Settings(BaseSettings):
     llm_base_url: str = "https://api.openai.com/v1"
     llm_api_key: str = ""
     llm_model: str = "gpt-4o-mini"
+    # Run with a deterministic offline stand-in instead of a real model. Lets the app
+    # be demonstrated without an API key and makes the end-to-end test deterministic.
+    llm_fake: bool = False
     # Cap a slow or hung provider so a single request cannot tie up a worker for the
     # client's multi-minute default.
     llm_timeout_seconds: float = 90.0

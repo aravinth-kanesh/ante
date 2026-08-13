@@ -491,6 +491,19 @@ def test_focus_brief_can_narrow_to_one_category():
     assert interview.focus_brief("", questions_json, "questions", category="Nope") == ("", "")
 
 
+def test_offline_mode_runs_a_full_interview(client, monkeypatch):
+    # With the offline stand-in, a whole interview works with no model mocking at all.
+    monkeypatch.setattr(interview.settings, "llm_fake", True)
+    cookies = auth_cookies(client, "offline@example.com")
+    save_cv(client, cookies)
+    start = client.post("/api/interview/start", cookies=cookies, json={"mode": "text"}).json()
+    assert start["question"]
+    sid = start["session_id"]
+    client.post(f"/api/interview/{sid}/answer", cookies=cookies, json={"answer": "My answer."})
+    report = client.post(f"/api/interview/{sid}/finish", cookies=cookies).json()["feedback"]
+    assert report["summary"] and len(report["improvements"]) >= 1
+
+
 def test_list_sessions_newest_first_and_scoped(client, monkeypatch):
     mock_llm(monkeypatch)
     owner = auth_cookies(client, "hist-owner@example.com")

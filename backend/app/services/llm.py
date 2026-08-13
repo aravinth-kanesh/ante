@@ -23,6 +23,11 @@ def chat(
     temperature: float | None = None,
     max_tokens: int | None = None,
 ) -> str:
+    if settings.llm_fake:
+        from app.services import fake_llm
+
+        return fake_llm.reply(messages)
+
     kwargs: dict = {}
     if temperature is not None:
         kwargs["temperature"] = temperature
