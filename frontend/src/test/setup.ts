@@ -17,6 +17,18 @@ if (typeof URL !== "undefined") {
   URL.revokeObjectURL = () => {};
 }
 
+// jsdom does not implement the Web Speech API; provide a no-op so the voice settings
+// can be rendered in tests.
+if (typeof window !== "undefined" && !window.speechSynthesis) {
+  window.speechSynthesis = {
+    getVoices: () => [],
+    speak: () => {},
+    cancel: () => {},
+    addEventListener: () => {},
+    removeEventListener: () => {},
+  } as unknown as SpeechSynthesis;
+}
+
 // jsdom does not implement matchMedia; provide a no-op so components can query it.
 if (typeof window !== "undefined" && !window.matchMedia) {
   window.matchMedia = (query: string) =>
