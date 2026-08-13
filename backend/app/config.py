@@ -15,6 +15,13 @@ class Settings(BaseSettings):
     llm_timeout_seconds: float = 90.0
     llm_max_retries: int = 1
 
+    # Optional web grounding for company research: when on, a few DuckDuckGo snippets
+    # about the company are fetched (no API key) and fed into the research prompt so the
+    # briefing is grounded in real results. Off by default to keep the app self-contained;
+    # it fails open, so research still works LLM-only if search is unavailable.
+    web_search_enabled: bool = False
+    web_search_max_results: int = 5
+
     backend_cors_origins: str = "http://localhost:5173"
 
     environment: str = "development"  # set to "production" to enforce a real secret

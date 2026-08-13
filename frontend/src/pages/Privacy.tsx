@@ -58,6 +58,11 @@ export default function Privacy() {
               Your CV, the job description and your answers are sent to a language model to generate
               questions and feedback. Do not paste anything you would not want processed this way.
             </p>
+            <p>
+              To ground the company research in real information, the company name and role from
+              your job description may also be sent to a web search service. Your CV is never sent
+              to search.
+            </p>
           </Section>
 
           <Section heading="Your choices">

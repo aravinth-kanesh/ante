@@ -1,4 +1,5 @@
-from app.services import research
+from app.config import settings
+from app.services import research, websearch
 
 
 def auth_cookies(client, email="research@example.com"):
@@ -35,6 +36,31 @@ def test_research_output_is_structured_and_plain(monkeypatch):
     assert "`" not in report.interview_process
     assert "Acme values craft." in report.overview
     assert report.skills == ["Python"]  # blank dropped, markdown stripped
+
+
+def test_web_search_is_off_by_default():
+    # The self-contained default makes no external search call and no grounding.
+    assert settings.web_search_enabled is False
+    assert websearch.search("Acme") == []
+
+
+def test_research_is_ungrounded_when_web_search_off(monkeypatch):
+    prompts = []
+    monkeypatch.setattr(research.llm, "chat", lambda messages, *a, **k: prompts.append(messages[-1]["content"]) or "{}")
+    research.research_company("Acme", "Engineer")
+    assert "web search results" not in prompts[-1]
+
+
+def test_research_is_grounded_when_web_search_returns_snippets(monkeypatch):
+    monkeypatch.setattr(settings, "web_search_enabled", True)
+    monkeypatch.setattr(
+        research.websearch, "search", lambda q, *a, **k: ["Acme Ltd makes climbing gear."]
+    )
+    prompts = []
+    monkeypatch.setattr(research.llm, "chat", lambda messages, *a, **k: prompts.append(messages[-1]["content"]) or "{}")
+    research.research_company("Acme", "Engineer")
+    assert "Acme Ltd makes climbing gear." in prompts[-1]
+    assert "web search results" in prompts[-1]
 
 
 def test_render_flattens_structured_research():

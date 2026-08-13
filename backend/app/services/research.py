@@ -1,8 +1,9 @@
 import json
 import re
 
+from app.config import settings
 from app.schemas.profile import CompanyResearch
-from app.services import llm
+from app.services import llm, websearch
 from app.services.text import strip_markdown
 
 _JSON = re.compile(r"\{.*\}", re.DOTALL)
@@ -15,7 +16,8 @@ Job description:
 """
 
 RESEARCH_PROMPT = """You are briefing a candidate who is about to interview for the \
-role of {role} at {company}. Return a structured briefing as a single JSON object and \
+role of {role} at {company}.
+{context}Return a structured briefing as a single JSON object and \
 nothing else, in exactly this shape:
 {{
   "overview": "<what the company does and the values or culture it is known for>",
@@ -65,9 +67,30 @@ def _clean(report: CompanyResearch) -> CompanyResearch:
     )
 
 
+def _grounding(company: str, role: str) -> str:
+    """A prompt block of web snippets to ground the briefing, or "" when off/empty."""
+    if not company.strip():
+        return ""
+    snippets: list[str] = []
+    snippets.extend(websearch.search(f"{company} company overview what they do"))
+    snippets.extend(websearch.search(f"{company} {role} interview process".strip()))
+    snippets = snippets[: settings.web_search_max_results]
+    if not snippets:
+        return ""
+    listed = "\n".join(f"- {s}" for s in snippets)
+    return (
+        "Use these recent web search results to ground the briefing. Prefer them over "
+        "guesswork, but where they are thin or conflicting, fall back to the norms for "
+        "this role and industry and say plainly when you are unsure rather than "
+        f"inventing details:\n{listed}\n\n"
+    )
+
+
 def research_company(company: str, role: str) -> CompanyResearch:
     prompt = RESEARCH_PROMPT.format(
-        company=company or "the employer", role=role or "the advertised role"
+        company=company or "the employer",
+        role=role or "the advertised role",
+        context=_grounding(company, role),
     )
     raw = llm.chat([{"role": "user", "content": prompt}], temperature=0.3)
     match = _JSON.search(raw)
