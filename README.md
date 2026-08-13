@@ -95,8 +95,26 @@ including a complete interview, works without them.
 
 - Interactive API documentation is served at `http://localhost:8000/docs`.
 - Run the backend tests with `pytest` (from `backend/`, with the virtual environment
-  active).
+  active). The frontend has `npm test` (Vitest) and `npm run e2e` (Playwright, which
+  launches the backend in its offline mode and drives a full interview in a browser).
 - The backend is FastAPI + SQLAlchemy (SQLite locally, PostgreSQL in production, with
   Alembic migrations applied automatically at startup). The frontend is React +
   Vite + TypeScript. The interviewer voice, speech-to-text and webcam analysis all run
   locally or in the browser, so that content is not sent to a third party.
+
+## Deployment
+
+1. **Backend.** Copy `backend/.env.example` to `backend/.env` and fill it in: set
+   `ENVIRONMENT=production`, a long random `JWT_SECRET`, `DATABASE_URL` for your
+   PostgreSQL instance, `BACKEND_CORS_ORIGINS` to your site's origin, and the `LLM_*`
+   keys (or `LLM_FAKE=1` to run without a model). Build the image from
+   `backend/Dockerfile` and run it; migrations apply automatically at startup. Put it
+   behind a reverse proxy that terminates TLS (the app already emits HSTS and marks
+   cookies Secure in production).
+2. **Frontend.** `npm --prefix frontend run build` produces static files in
+   `frontend/dist/`. Serve them from the same origin as the API (or a CDN) and proxy
+   `/api` to the backend, so the auth cookies stay first-party.
+3. **Optional.** Configure SMTP (`SMTP_*`, `APP_BASE_URL`) so verification and reset
+   emails send; set `WEB_SEARCH_ENABLED=1` to ground company research in web results;
+   point `RATE_LIMIT_STORAGE_URI` at Redis if you run multiple workers; and flip
+   `CSP_REPORT_ONLY=false` once you have checked the policy in a browser.
