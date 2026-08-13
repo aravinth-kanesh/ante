@@ -18,6 +18,11 @@ backend/var/
 node_modules/
 dist/
 
+# Playwright
+frontend/playwright-report/
+frontend/test-results/
+frontend/.playwright/
+
 # MediaPipe assets (fetched by `npm run setup`, not committed)
 frontend/public/mediapipe/
 
