@@ -36,8 +36,8 @@ def upgrade() -> None:
     # Server defaults let these NOT NULL columns be added to a table that already
     # has rows; new accounts get their values from the ORM model defaults.
     with op.batch_alter_table('users', schema=None) as batch_op:
-        batch_op.add_column(sa.Column('is_active', sa.Boolean(), nullable=False, server_default=sa.text("1")))
-        batch_op.add_column(sa.Column('is_verified', sa.Boolean(), nullable=False, server_default=sa.text("0")))
+        batch_op.add_column(sa.Column('is_active', sa.Boolean(), nullable=False, server_default=sa.text("true")))
+        batch_op.add_column(sa.Column('is_verified', sa.Boolean(), nullable=False, server_default=sa.text("false")))
         batch_op.add_column(sa.Column('failed_login_count', sa.Integer(), nullable=False, server_default=sa.text("0")))
         batch_op.add_column(sa.Column('locked_until', sa.DateTime(timezone=True), nullable=True))
         batch_op.add_column(sa.Column('password_changed_at', sa.DateTime(timezone=True), nullable=True))

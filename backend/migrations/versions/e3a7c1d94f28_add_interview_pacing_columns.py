@@ -21,7 +21,7 @@ def upgrade() -> None:
     # new sessions get their values from the ORM model defaults.
     with op.batch_alter_table('interview_sessions', schema=None) as batch_op:
         batch_op.add_column(sa.Column('duration_target_min', sa.Integer(), nullable=False, server_default=sa.text("10")))
-        batch_op.add_column(sa.Column('wrapping_up', sa.Boolean(), nullable=False, server_default=sa.text("0")))
+        batch_op.add_column(sa.Column('wrapping_up', sa.Boolean(), nullable=False, server_default=sa.text("false")))
 
 
 def downgrade() -> None:

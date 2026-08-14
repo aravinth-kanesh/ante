@@ -1,0 +1,55 @@
+# Production stack: PostgreSQL, the FastAPI backend, and a Caddy container that serves
+# the built frontend and terminates TLS. Set the variables below in a `.env` file next
+# to this one (see backend/.env.example), then run: docker compose up -d --build
+#
+# Required: JWT_SECRET. For a real model set LLM_BASE_URL/LLM_API_KEY/LLM_MODEL, or set
+# LLM_FAKE=1 to run without one. Set SITE_ADDRESS to your domain for automatic HTTPS.
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ante
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-ante}
+      POSTGRES_DB: ante
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ante"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  backend:
+    build: ./backend
+    environment:
+      ENVIRONMENT: production
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env}
+      DATABASE_URL: postgresql+psycopg2://ante:${DB_PASSWORD:-ante}@db:5432/ante
+      BACKEND_CORS_ORIGINS: ${SITE_ORIGIN:-http://localhost}
+      LLM_BASE_URL: ${LLM_BASE_URL:-https://api.openai.com/v1}
+      LLM_API_KEY: ${LLM_API_KEY:-}
+      LLM_MODEL: ${LLM_MODEL:-gpt-4o-mini}
+      LLM_FAKE: ${LLM_FAKE:-0}
+      WEB_SEARCH_ENABLED: ${WEB_SEARCH_ENABLED:-0}
+    depends_on:
+      db:
+        condition: service_healthy
+    expose:
+      - "8000"
+    restart: unless-stopped
+
+  frontend:
+    build: ./frontend
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:-:80}
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
+      - "443:443"
+    restart: unless-stopped
+
+volumes:
+  db-data:
