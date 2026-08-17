@@ -10,7 +10,6 @@ are only reported when they were actually measured.
 from app.models.session import InterviewSession
 from app.schemas.interview import DeliveryMetrics, NonverbalMetrics
 from app.schemas.progress import MetricDelta, ProgressReport, SessionStats, Totals, Verdicts
-from app.services.dedupe import deduped
 from app.services.interview import parse_feedback, session_title
 
 # Metric identifier -> the SessionStats attribute holding it.
@@ -197,26 +196,74 @@ def _metric_delta(metric: str, series: list[float]) -> MetricDelta:
     )
 
 
-def _recurring(sessions: list[InterviewSession], field: str, cap: int = 5) -> list[str]:
-    """The distinct recurring points from the most recent interviews' feedback.
+# Progress is the broad, longitudinal view, so its "keep working on" and "you do this
+# well" points are derived from the measured metrics rather than from per-interview
+# feedback text (which is tied to a specific company, role and technology). Each metric
+# maps to general, transferable coaching, shown only when the latest figure is outside
+# its good range. Answer quality expands into two technique points because a low strong-
+# answer rate almost always comes down to structure and answering the question.
+_FOCUS_ORDER = ["strong_rate", "filler_per_min", "wpm", "eye_contact_pct", "head_steadiness"]
+_FOCUS = {
+    "strong_rate": {
+        "below": [
+            "Aim for more of your answers to land as strong: give a specific example with "
+            "a clear outcome, structured as Situation, Task, Action and Result.",
+            "Answer the question that was actually asked before adding extra detail, so "
+            "each answer stays on point.",
+        ]
+    },
+    "filler_per_min": {
+        "above": [
+            "Cut down on filler words like 'um'; aim for under about three a minute, and "
+            "pause instead when you need a moment to think.",
+        ]
+    },
+    "wpm": {
+        "above": ["Slow your speaking pace a little; a comfortable range is about 110 to 160 words a minute."],
+        "below": ["Lift your speaking pace a little; a comfortable range is about 110 to 160 words a minute."],
+    },
+    "eye_contact_pct": {
+        "below": ["Look at the camera more of the time so you come across as engaged and confident."],
+    },
+    "head_steadiness": {
+        "below": ["Keep a steadier, more settled posture on camera to look composed."],
+    },
+}
+_WINS = {
+    "strong_rate": "A good share of your answers are landing as strong.",
+    "filler_per_min": "You keep filler words low, which sounds assured.",
+    "wpm": "Your speaking pace is comfortable and easy to follow.",
+    "eye_contact_pct": "You hold good eye contact with the camera.",
+    "head_steadiness": "You keep a steady, composed posture on camera.",
+}
 
-    Progress shows broad, transferable coaching, so points that name a specific
-    interview's company are dropped here (that advice belongs in the interview's own
-    feedback, not the longitudinal view). Bullets are then collapsed across interviews
-    with an aggressive similarity threshold so a theme that keeps coming up (for example
-    "use the STAR structure") appears once, not once per interview.
-    """
-    collected: list[str] = []
-    for session in list(reversed(sessions))[:3]:  # the last three interviews, newest first
-        report = _feedback(session)
-        if report is None:
+
+def _focus_areas(deltas: list[MetricDelta]) -> list[str]:
+    """General, data-driven things to work on, from the metrics that are out of range."""
+    by = {d.metric: d for d in deltas}
+    focus: list[str] = []
+    for metric in _FOCUS_ORDER:
+        d = by.get(metric)
+        if d is None or d.latest is None or d.good_low is None or d.good_high is None:
             continue
-        company = (session.company or "").strip().lower()
-        for item in getattr(report, field):
-            if company and company in item.lower():
-                continue  # company-specific; not for the broad progress view
-            collected.append(item)
-    return deduped(collected, threshold=0.5)[:cap]
+        if d.latest > d.good_high and "above" in _FOCUS[metric]:
+            focus.extend(_FOCUS[metric]["above"])
+        elif d.latest < d.good_low and "below" in _FOCUS[metric]:
+            focus.extend(_FOCUS[metric]["below"])
+    return focus[:5]
+
+
+def _strengths(deltas: list[MetricDelta]) -> list[str]:
+    """General strengths, from the metrics that sit within their good range."""
+    by = {d.metric: d for d in deltas}
+    wins: list[str] = []
+    for metric in _FOCUS_ORDER:
+        d = by.get(metric)
+        if d is None or d.latest is None or d.good_low is None or d.good_high is None:
+            continue
+        if d.good_low <= d.latest <= d.good_high:
+            wins.append(_WINS[metric])
+    return wins[:5]
 
 
 def build_report(sessions: list[InterviewSession]) -> ProgressReport:
@@ -240,6 +287,6 @@ def build_report(sessions: list[InterviewSession]) -> ProgressReport:
         totals=totals,
         sessions=stats,
         deltas=deltas,
-        focus_areas=_recurring(sessions, "improvements"),
-        strengths=_recurring(sessions, "strengths"),
+        focus_areas=_focus_areas(deltas),
+        strengths=_strengths(deltas),
     )

@@ -119,46 +119,22 @@ def test_build_report_deltas_and_totals():
     assert by["wpm"].direction == "steady"  # unchanged
     assert by["strong_rate"].good_low == 0.5
 
-    # recurring feedback is deduplicated across sessions
-    assert report.focus_areas == ["Give a concrete example"]
-    assert report.strengths == ["Clear structure"]
+    # focus and strengths are derived from the metrics; the latest interview is in range
+    assert report.focus_areas == []
+    assert "A good share of your answers are landing as strong." in report.strengths
 
 
-def test_focus_areas_collapse_recurring_theme():
-    # The same advice reworded across interviews should appear once, not once each.
-    s1 = make_session(
-        1, 1, [{"metrics": VOICE}],
-        _feedback(strong=1, improvements=[
-            "Use the STAR structure (Situation, Task, Action, Result) to give concrete detail from your projects."
-        ]),
-    )
-    s2 = make_session(
-        2, 2, [{"metrics": VOICE}],
-        _feedback(strong=1, improvements=[
-            "Use the STAR method (Situation, Task, Action, Result) to structure answers with concrete detail."
-        ]),
-    )
-    report = progress.build_report([s1, s2])
-    assert len(report.focus_areas) == 1
-
-
-def test_progress_drops_company_specific_improvements():
-    # Progress is the broad, longitudinal view, so a point naming the company (make_session
-    # uses "Acme") is not surfaced there; the transferable one is.
+def test_progress_focus_is_general_and_metric_driven():
+    # Weak answers and heavy fillers produce general, transferable coaching drawn from the
+    # metrics, never company- or role-specific text (make_session uses company "Acme").
     session = make_session(
-        1,
-        1,
-        [{"metrics": VOICE}],
-        _feedback(
-            strong=1,
-            improvements=[
-                "Give at least two specific details about Acme that appeal to you.",
-                "Use the STAR structure to give concrete examples.",
-            ],
-        ),
+        1, 1, [{"metrics": {**VOICE, "filler_count": 20}}], _feedback(strong=0, weak=2)
     )
     report = progress.build_report([session])
-    assert report.focus_areas == ["Use the STAR structure to give concrete examples."]
+    assert report.focus_areas  # not empty
+    assert any("strong" in f.lower() for f in report.focus_areas)  # answer-quality coaching
+    assert any("filler" in f.lower() for f in report.focus_areas)  # delivery coaching
+    assert not any("Acme" in f for f in report.focus_areas)  # never company-specific
 
 
 def test_build_report_empty():
@@ -201,7 +177,8 @@ def test_progress_endpoint_reflects_a_finished_interview(client, monkeypatch):
     assert report["totals"]["questions_answered"] == 1
     assert report["sessions"][0]["has_delivery"] is True
     assert report["sessions"][0]["strong_rate"] == 1.0
-    assert report["focus_areas"] == ["Add more detail"]
+    # focus is metric-driven: fillers were 6/min (VOICE), which is above the good range
+    assert any("filler" in f.lower() for f in report["focus_areas"])
 
 
 def test_describe_reads_as_plain_text():
