@@ -142,6 +142,25 @@ def test_focus_areas_collapse_recurring_theme():
     assert len(report.focus_areas) == 1
 
 
+def test_progress_drops_company_specific_improvements():
+    # Progress is the broad, longitudinal view, so a point naming the company (make_session
+    # uses "Acme") is not surfaced there; the transferable one is.
+    session = make_session(
+        1,
+        1,
+        [{"metrics": VOICE}],
+        _feedback(
+            strong=1,
+            improvements=[
+                "Give at least two specific details about Acme that appeal to you.",
+                "Use the STAR structure to give concrete examples.",
+            ],
+        ),
+    )
+    report = progress.build_report([session])
+    assert report.focus_areas == ["Use the STAR structure to give concrete examples."]
+
+
 def test_build_report_empty():
     report = progress.build_report([])
     assert report.totals.interviews == 0

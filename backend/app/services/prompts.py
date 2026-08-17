@@ -116,10 +116,13 @@ detail, clear structure (such as situation, task, action, result), and evidence 
 the competencies the role needs.
 - In "improvements", give at least three distinct, genuinely useful points, each on a \
 different aspect (for example answer structure, being specific and giving evidence, \
-directly answering the question that was asked, or spoken delivery). Refer to what the \
-candidate actually said. Lead with the changes that would make the biggest difference. \
-Never repeat a point or pad with generic filler; if the interview was short, still \
-find three different things worth practising.
+directly answering the question that was asked, or spoken delivery). Each must be a \
+transferable interview skill the candidate can carry into any interview, phrased \
+generally: do NOT name this company, its products, or the specific role in an \
+improvement (put any advice tied to this company or role in the per-answer notes \
+instead). Lead with the changes that would make the biggest difference. Never repeat a \
+point or pad with generic filler; if the interview was short, still find three \
+different transferable things worth practising.
 - Make every point distinct. Do not repeat the same advice across items: if the same \
 underlying issue (for example using the STAR structure) applies to several answers, \
 raise it once, and use the other points for different, specific improvements. Each \
@@ -136,8 +139,9 @@ Return a single JSON object and nothing else, in exactly this shape:
 {{
   "summary": "<two or three sentences giving an honest overall assessment>",
   "strengths": ["<something they genuinely did well, in plain language>"],
-  "improvements": ["<a specific, plain-language action on one aspect>", "<a different \
-action on another aspect>", "<a third, distinct action>"],
+  "improvements": ["<a transferable action on one aspect, not naming the company or \
+role>", "<a different transferable action on another aspect>", "<a third, distinct \
+transferable action>"],
   "answer_notes": [
     {{"question": "<a short reference to the question>",
       "verdict": "strong|adequate|weak",

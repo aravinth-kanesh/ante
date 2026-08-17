@@ -313,6 +313,13 @@ def test_regenerate_requires_answers(client, monkeypatch):
     assert client.post(f"/api/interview/{sid}/feedback", cookies=cookies).status_code == 400
 
 
+def test_feedback_prompt_asks_for_transferable_improvements():
+    from app.services.prompts import FEEDBACK_PROMPT
+
+    assert "transferable interview skill" in FEEDBACK_PROMPT
+    assert "NOT name this company" in FEEDBACK_PROMPT
+
+
 def test_parse_feedback_falls_back_to_prose():
     report = interview.parse_feedback("Just some prose, no JSON here.")
     assert report.summary == "Just some prose, no JSON here."

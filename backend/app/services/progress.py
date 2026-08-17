@@ -200,15 +200,22 @@ def _metric_delta(metric: str, series: list[float]) -> MetricDelta:
 def _recurring(sessions: list[InterviewSession], field: str, cap: int = 5) -> list[str]:
     """The distinct recurring points from the most recent interviews' feedback.
 
-    Bullets are collapsed across interviews with an aggressive similarity threshold so
-    a theme that keeps coming up (for example "use the STAR structure") appears once,
-    not once per interview.
+    Progress shows broad, transferable coaching, so points that name a specific
+    interview's company are dropped here (that advice belongs in the interview's own
+    feedback, not the longitudinal view). Bullets are then collapsed across interviews
+    with an aggressive similarity threshold so a theme that keeps coming up (for example
+    "use the STAR structure") appears once, not once per interview.
     """
     collected: list[str] = []
     for session in list(reversed(sessions))[:3]:  # the last three interviews, newest first
         report = _feedback(session)
-        if report is not None:
-            collected.extend(getattr(report, field))
+        if report is None:
+            continue
+        company = (session.company or "").strip().lower()
+        for item in getattr(report, field):
+            if company and company in item.lower():
+                continue  # company-specific; not for the broad progress view
+            collected.append(item)
     return deduped(collected, threshold=0.5)[:cap]
 
 
