@@ -1,0 +1,21 @@
+# gitleaks configuration for the CI secret scan. Extends the default rules and allows
+# the placeholder and test values in the repo, which are not real secrets.
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Test fixtures and documented placeholder values"
+paths = [
+  '''backend/tests/.*''',
+  '''.*\.test\.(ts|tsx)$''',
+  '''frontend/e2e/.*''',
+  '''.*\.env\.example$''',
+  '''docker-compose\.yml$''',
+]
+regexes = [
+  '''change-me[-a-z]*''',
+  '''password123''',
+  '''compose-test-secret''',
+  '''your-api-key''',
+  '''Str0ng-[a-z0-9-]+''',
+]
