@@ -23,21 +23,29 @@ services:
 
   backend:
     build: ./backend
+    # Every optional setting the user puts in .env (LLM_*, SMTP_*, WEB_SEARCH_ENABLED,
+    # REQUIRE_EMAIL_VERIFICATION, COOKIE_SECURE, ...) is passed straight through; only
+    # values missing from .env are left to their defaults (an empty value would fail to
+    # parse). The fixed and computed ones are set explicitly below.
+    env_file:
+      - path: .env
+        required: false
     environment:
       ENVIRONMENT: production
       JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env}
       DATABASE_URL: postgresql+psycopg2://ante:${DB_PASSWORD:-ante}@db:5432/ante
       BACKEND_CORS_ORIGINS: ${SITE_ORIGIN:-http://localhost}
-      LLM_BASE_URL: ${LLM_BASE_URL:-https://api.openai.com/v1}
-      LLM_API_KEY: ${LLM_API_KEY:-}
-      LLM_MODEL: ${LLM_MODEL:-gpt-4o-mini}
-      LLM_FAKE: ${LLM_FAKE:-0}
-      WEB_SEARCH_ENABLED: ${WEB_SEARCH_ENABLED:-0}
     depends_on:
       db:
         condition: service_healthy
     expose:
       - "8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/api/health').status==200 else 1)"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 40s
     restart: unless-stopped
 
   frontend:
@@ -45,7 +53,8 @@ services:
     environment:
       SITE_ADDRESS: ${SITE_ADDRESS:-:80}
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     ports:
       - "80:80"
       - "443:443"
