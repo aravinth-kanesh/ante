@@ -10,7 +10,7 @@ import {
   uploadCvFile,
   type Cv,
 } from "../api";
-import { Badge, Button, Card, CardBody, CardTitle, Input, TextArea } from "../components/ui";
+import { Badge, Button, Card, CardBody, CardTitle, Input, Loading, TextArea } from "../components/ui";
 
 function message(err: unknown) {
   return err instanceof Error ? err.message : String(err);
@@ -189,7 +189,7 @@ export default function Cvs() {
       </Card>
 
       {/* List */}
-      {!cvs && <p className="text-sm text-slate-500">Loading...</p>}
+      {!cvs && <Loading label="Loading your CVs" />}
       {cvs && cvs.length === 0 && (
         <p className="text-sm text-slate-500">No CVs yet. Add one above to get started.</p>
       )}
@@ -276,7 +276,7 @@ export default function Cvs() {
               {viewingId === cv.id && (
                 <div className="border-t border-slate-200 pt-4">
                   {viewLoading ? (
-                    <p className="text-sm text-slate-500">Loading...</p>
+                    <Loading label="Loading CV text" />
                   ) : (
                     <>
                       <TextArea

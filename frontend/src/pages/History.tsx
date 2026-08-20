@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { deleteInterview, listSessions, type SessionSummary } from "../api";
-import { Badge, Button, Card, Input, cn } from "../components/ui";
+import { Badge, Button, Card, Input, Loading, cn } from "../components/ui";
 
 function message(err: unknown) {
   return err instanceof Error ? err.message : String(err);
@@ -127,7 +127,7 @@ export default function History() {
         </div>
       )}
 
-      {!error && !sessions && <p className="text-sm text-slate-500">Loading...</p>}
+      {!error && !sessions && <Loading label="Loading your interviews" />}
 
       {sessions && sessions.length === 0 && (
         <Card>

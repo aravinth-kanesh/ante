@@ -3,7 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import { getInterview, regenerateFeedback, type InterviewDetail } from "../api";
 import AnswerTimeline from "../components/AnswerTimeline";
 import FeedbackView from "../components/FeedbackView";
-import { Badge, Button, Card, CardBody, CardTitle, MicIcon, VideoIcon } from "../components/ui";
+import { Badge, Button, Card, CardBody, CardTitle, Loading, MicIcon, VideoIcon } from "../components/ui";
 import { deliverySummary, nonverbalSummary } from "../format";
 
 function message(err: unknown) {
@@ -102,7 +102,7 @@ export default function Results() {
       </div>
 
       {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
-      {!error && !detail && <p className="text-sm text-slate-500">Loading...</p>}
+      {!error && !detail && <Loading label="Loading your results" />}
 
       {detail && (
         <>
