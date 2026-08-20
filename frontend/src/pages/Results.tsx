@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { getInterview, regenerateFeedback, type InterviewDetail } from "../api";
 import AnswerTimeline from "../components/AnswerTimeline";
 import FeedbackView from "../components/FeedbackView";
@@ -30,6 +30,7 @@ function describeSession(detail: InterviewDetail): string {
 
 export default function Results() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [detail, setDetail] = useState<InterviewDetail | null>(null);
   const [error, setError] = useState("");
   const [regenerating, setRegenerating] = useState(false);
@@ -66,6 +67,9 @@ export default function Results() {
   const isLegacyFeedback =
     !!fb && fb.strengths.length === 0 && fb.improvements.length === 0 && fb.answer_notes.length === 0;
   const hasAnswers = exchanges.some((t) => t.kind === "answer");
+  // Whether any answer fell short, so we can point the student back to their gap
+  // analysis in Prepare rather than leaving the feedback as a dead end.
+  const needsWork = !!fb && fb.answer_notes.some((n) => n.verdict !== "strong");
 
   return (
     <div className="print-report space-y-6">
@@ -171,6 +175,48 @@ export default function Results() {
               </div>
             </CardBody>
           </Card>
+
+          {fb && !isLegacyFeedback && (
+            <Card className="no-print border-brand-200 bg-brand-50/40">
+              <CardBody className="space-y-3">
+                <CardTitle>What next</CardTitle>
+                {needsWork ? (
+                  <>
+                    <p className="text-sm text-slate-600">
+                      Some answers were rated weak or adequate. Take these back to your preparation
+                      plan to see which competencies to shore up, then practise them in a focused
+                      mock.
+                    </p>
+                    <div className="flex flex-wrap items-center gap-3">
+                      <Button onClick={() => navigate("/prepare")}>Review your weak spots</Button>
+                      <Link
+                        to="/interview"
+                        className="text-sm font-medium text-brand-700 hover:underline"
+                      >
+                        Practise again
+                      </Link>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-sm text-slate-600">
+                      Strong across the board. Keep it sharp with another mock, or move on to your
+                      next role in Prepare.
+                    </p>
+                    <div className="flex flex-wrap items-center gap-3">
+                      <Button onClick={() => navigate("/interview")}>Start another interview</Button>
+                      <Link
+                        to="/prepare"
+                        className="text-sm font-medium text-brand-700 hover:underline"
+                      >
+                        Review your preparation plan
+                      </Link>
+                    </div>
+                  </>
+                )}
+              </CardBody>
+            </Card>
+          )}
         </>
       )}
     </div>

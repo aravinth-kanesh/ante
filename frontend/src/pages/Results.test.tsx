@@ -70,4 +70,30 @@ describe("Results", () => {
     renderResults();
     expect(await screen.findByText(/Report printed on/)).toBeInTheDocument();
   });
+
+  it("points a student with weak answers back to their preparation plan", async () => {
+    mocks.getInterview.mockResolvedValue({
+      ...detail,
+      feedback: {
+        ...detail.feedback!,
+        answer_notes: [{ question: "Q", verdict: "weak", comment: "Vague.", model_answer: "" }],
+      },
+    });
+    renderResults();
+    expect(await screen.findByText(/rated weak or adequate/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Review your weak spots" })).toBeInTheDocument();
+  });
+
+  it("congratulates a strong interview instead of flagging gaps", async () => {
+    mocks.getInterview.mockResolvedValue({
+      ...detail,
+      feedback: {
+        ...detail.feedback!,
+        answer_notes: [{ question: "Q", verdict: "strong", comment: "Great.", model_answer: "" }],
+      },
+    });
+    renderResults();
+    expect(await screen.findByText(/Strong across the board/)).toBeInTheDocument();
+    expect(screen.queryByText(/rated weak or adequate/)).not.toBeInTheDocument();
+  });
 });
