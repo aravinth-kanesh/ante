@@ -327,6 +327,13 @@ export default function Interview() {
 
   const busy = loading || analysing || recording || starting;
 
+  // A soft estimate of the interview's length in questions (roughly one every two and a
+  // half minutes), used only to give a sense of progress. The bar is kept just short of
+  // full while questions remain, since the real end is decided by the interviewer.
+  const estimatedQuestions = Math.max(3, Math.round(length / 2.5));
+  const questionNumber = history.length + 1;
+  const interviewProgress = Math.min(questionNumber / (estimatedQuestions + 1), 0.9);
+
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       <div>
@@ -524,7 +531,9 @@ export default function Interview() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2.5">
                     <Badge color="brand">Question {history.length + 1}</Badge>
-                    <span className="text-xs text-slate-500">about {length} min interview</span>
+                    <span className="text-xs text-slate-500">
+                      about {length} min, roughly {estimatedQuestions} questions
+                    </span>
                   </div>
                   {voiceMode && (
                     <Button
@@ -545,6 +554,16 @@ export default function Interview() {
                     </Button>
                   )}
                 </div>
+                {/* A calm sense of how far through the interview is. The length is a soft
+                    time target, so the bar grows toward an estimated question count but never
+                    fills before feedback, to avoid implying a hard cut-off. */}
+                <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100" aria-hidden>
+                  <div
+                    className="h-full rounded-full bg-brand-500 transition-all duration-500"
+                    style={{ width: `${Math.round(interviewProgress * 100)}%` }}
+                  />
+                </div>
+
                 <div aria-live="polite">
                   <p className="sr-only">Interviewer question {history.length + 1}:</p>
                   <p className="text-lg font-medium text-slate-900">{question}</p>

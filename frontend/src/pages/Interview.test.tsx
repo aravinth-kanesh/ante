@@ -102,7 +102,8 @@ describe("Interview setup", () => {
     await userEvent.click(screen.getByRole("button", { name: "Start interview" }));
 
     expect(mocks.startInterview).toHaveBeenCalledWith("voice", "general", "balanced", 15, "", false);
-    expect(await screen.findByText(/about 15 min interview/)).toBeInTheDocument();
+    expect(await screen.findByText(/about 15 min, roughly 6 questions/)).toBeInTheDocument();
+    expect(screen.getByText("Question 1")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Stop . get feedback/ })).toBeInTheDocument();
   });
 });
