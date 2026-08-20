@@ -44,6 +44,41 @@
   }
 }
 
+/* Elements shown only on paper (a print-report header), hidden on screen. Their
+   counterpart, .no-print, hides screen-only chrome (nav, buttons) when printing. */
+.print-only {
+  display: none;
+}
+
+/* Printable interview report: when a student prints or saves the results page as a
+   PDF, drop the app chrome and lift the transcript and feedback onto a clean white
+   page so it can be handed to a tutor or kept as a record. */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  .print-only {
+    display: block;
+  }
+  body {
+    background: #fff;
+    color: #000;
+  }
+  /* let the report use the full page and never clip a card across a page break */
+  main {
+    max-width: none !important;
+    padding: 0 !important;
+  }
+  .print-report .shadow-card,
+  .print-report [class*="shadow"] {
+    box-shadow: none !important;
+  }
+  .print-report section,
+  .print-report article {
+    break-inside: avoid;
+  }
+}
+
 /* Respect a user's reduced-motion preference: near-disable animations and
    transitions (the spinner, the speaking indicator, hover transitions). */
 @media (prefers-reduced-motion: reduce) {

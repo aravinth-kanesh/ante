@@ -68,7 +68,7 @@ export default function Results() {
   const hasAnswers = exchanges.some((t) => t.kind === "answer");
 
   return (
-    <div className="space-y-6">
+    <div className="print-report space-y-6">
       <div className="flex items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Interview results</h1>
@@ -79,12 +79,26 @@ export default function Results() {
                 {detail.status === "finished" ? "Completed" : "In progress"} · {detail.mode}{" "}
                 interview
               </p>
+              <p className="print-only mt-1 text-sm text-slate-500">
+                Report printed on {new Date().toLocaleDateString("en-GB", {
+                  day: "numeric",
+                  month: "long",
+                  year: "numeric",
+                })}
+              </p>
             </>
           )}
         </div>
-        <Link to="/history" className="text-sm font-medium text-brand-700 hover:underline">
-          Back to history
-        </Link>
+        <div className="no-print flex items-center gap-4">
+          {detail && (
+            <Button variant="secondary" size="sm" onClick={() => window.print()}>
+              Save as PDF
+            </Button>
+          )}
+          <Link to="/history" className="text-sm font-medium text-brand-700 hover:underline">
+            Back to history
+          </Link>
+        </div>
       </div>
 
       {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
@@ -129,7 +143,13 @@ export default function Results() {
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <CardTitle>Feedback</CardTitle>
                 {hasAnswers && (
-                  <Button variant="secondary" size="sm" onClick={regenerate} loading={regenerating}>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    className="no-print"
+                    onClick={regenerate}
+                    loading={regenerating}
+                  >
                     {fb ? "Regenerate feedback" : "Generate feedback"}
                   </Button>
                 )}
