@@ -76,6 +76,19 @@ describe("Interview setup", () => {
     expect(screen.getByRole("checkbox", { name: /Save my answers/ })).not.toBeChecked();
   });
 
+  it("starts a sample interview with no setup", async () => {
+    mocks.startInterview.mockResolvedValue({
+      session_id: 1,
+      question: "Tell me about yourself.",
+      mode: "voice",
+      duration_target_min: 10,
+    });
+    renderInterview();
+    await userEvent.click(screen.getByRole("button", { name: "Try a sample interview" }));
+    expect(mocks.startInterview).toHaveBeenCalledWith("voice", "general", "balanced", 10, "", true);
+    expect(await screen.findByText(/sample interview using an example CV/)).toBeInTheDocument();
+  });
+
   it("starts the interview with the chosen length and shows the pacing indicator", async () => {
     mocks.startInterview.mockResolvedValue({
       session_id: 1,
@@ -88,7 +101,7 @@ describe("Interview setup", () => {
     await userEvent.selectOptions(screen.getByLabelText("Length"), "15");
     await userEvent.click(screen.getByRole("button", { name: "Start interview" }));
 
-    expect(mocks.startInterview).toHaveBeenCalledWith("voice", "general", "balanced", 15, "");
+    expect(mocks.startInterview).toHaveBeenCalledWith("voice", "general", "balanced", 15, "", false);
     expect(await screen.findByText(/about 15 min interview/)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Stop . get feedback/ })).toBeInTheDocument();
   });

@@ -15,6 +15,7 @@ def test_feedback_reply_is_valid_and_has_three_improvements():
     out = fake_llm.reply([{"role": "user", "content": "Give feedback.\nTranscript:\nInterviewer: Q\nCandidate: A"}])
     report = FeedbackReport.model_validate_json(out)
     assert report.summary and len(report.improvements) >= 3
+    assert report.answer_notes[0].model_answer  # shows how a strong answer might sound
 
 
 def test_research_reply_is_valid():

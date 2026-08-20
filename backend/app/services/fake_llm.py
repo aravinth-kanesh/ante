@@ -37,6 +37,9 @@ _FEEDBACK = {
             "verdict": "adequate",
             "comment": "A reasonable answer; make it stronger with a specific example and "
             "the outcome you achieved.",
+            "model_answer": "In my final-year project I led a team of four to build a "
+            "working prototype in eight weeks; I coordinated the plan, took the database "
+            "design myself, and we delivered on time with positive user feedback.",
         }
     ],
     "delivery": "",

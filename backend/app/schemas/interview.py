@@ -16,6 +16,9 @@ class StartRequest(BaseModel):
     focus: Focus = "balanced"
     # When focusing on likely questions, optionally narrow to a single category.
     category: str = Field("", max_length=100)
+    # Start from a built-in sample CV and role instead of the user's profile (a no-setup
+    # way to try the app).
+    sample: bool = False
     # The candidate's chosen interview length, a soft target in minutes.
     duration_target_min: Literal[5, 10, 15, 20, 25, 30] = 10
 
@@ -161,6 +164,8 @@ class AnswerNote(BaseModel):
     question: str
     verdict: Literal["strong", "adequate", "weak"]
     comment: str
+    # A short example of how a strong answer might sound; empty for an already-strong one.
+    model_answer: str = ""
 
 
 class FeedbackReport(BaseModel):

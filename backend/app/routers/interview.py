@@ -21,7 +21,7 @@ from app.schemas.interview import (
     TurnRead,
 )
 from app.security import get_current_user
-from app.services import interview, session_media
+from app.services import interview, samples, session_media
 
 router = APIRouter(prefix="/interview", tags=["interview"])
 
@@ -65,34 +65,43 @@ def start(
     focus = data.focus if data else "balanced"
     category = data.category if data else ""
     duration_target_min = data.duration_target_min if data else 10
-    profile = _get_or_create(db, current_user)
-    if not profile.cv_text.strip():
-        raise HTTPException(status_code=400, detail="Add your CV before starting an interview")
+    sample = data.sample if data else False
 
-    # ground on the company if the job description is set but not yet researched
-    if not profile.company_context.strip() and profile.jd_text.strip():
-        try:
-            run_research(db, profile)
-        except Exception:
-            db.rollback()
+    if sample:
+        # A no-setup try of the app: use the built-in sample CV and role, no profile.
+        cv, jd, context = samples.SAMPLE_CV, samples.SAMPLE_JD, samples.SAMPLE_CONTEXT
+        company, role, focus_code, focus_text = samples.SAMPLE_COMPANY, samples.SAMPLE_ROLE, "", ""
+    else:
+        profile = _get_or_create(db, current_user)
+        if not profile.cv_text.strip():
+            raise HTTPException(status_code=400, detail="Add your CV before starting an interview")
 
-    # Steer the interview at the candidate's weak spots or likely questions when asked;
-    # falls back to a balanced interview if that prep data is not there.
-    focus_code, focus_text = interview.focus_brief(
-        profile.preparation, profile.prep_questions, focus, category
-    )
+        # ground on the company if the job description is set but not yet researched
+        if not profile.company_context.strip() and profile.jd_text.strip():
+            try:
+                run_research(db, profile)
+            except Exception:
+                db.rollback()
+
+        # Steer the interview at the candidate's weak spots or likely questions when
+        # asked; falls back to a balanced interview if that prep data is not there.
+        focus_code, focus_text = interview.focus_brief(
+            profile.preparation, profile.prep_questions, focus, category
+        )
+        cv, jd, context = profile.cv_text, profile.jd_text, profile.company_context
+        company, role = profile.company, profile.role
 
     try:
         session, question = interview.start(
             db,
             current_user,
-            profile.cv_text,
-            profile.jd_text,
-            profile.company_context,
+            cv,
+            jd,
+            context,
             mode,
             interview_type,
-            profile.company,
-            profile.role,
+            company,
+            role,
             focus_code,
             focus_text,
             duration_target_min,

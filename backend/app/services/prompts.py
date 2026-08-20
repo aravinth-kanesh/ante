@@ -114,6 +114,9 @@ empty praise. Only credit something the candidate genuinely did well.
 - For weak answers, show what a strong answer would include: a specific example, real \
 detail, clear structure (such as situation, task, action, result), and evidence of \
 the competencies the role needs.
+- For every weak or adequate answer, fill in "model_answer" with a short, concrete \
+example of how a strong answer might sound, in the first person and grounded in the \
+candidate's own CV, so they can hear the difference. Leave it empty for strong answers.
 - In "improvements", give at least three distinct, genuinely useful points, each on a \
 different aspect (for example answer structure, being specific and giving evidence, \
 directly answering the question that was asked, or spoken delivery). Each must be a \
@@ -147,7 +150,10 @@ transferable action>"],
       "verdict": "strong|adequate|weak",
       "comment": "<in plain language: why the answer landed as it did, and a concrete \
 tip on how to make it stronger, with a short example of a better phrasing where it \
-helps>"}}
+helps>",
+      "model_answer": "<for a weak or adequate answer, one to three sentences showing \
+how a strong answer to this question might sound, grounded in the candidate's own CV \
+and using a clear structure; an empty string for an answer already rated strong>"}}
   ],
   "delivery": "<an honest, specific assessment of pace, pauses, filler words and \
 on-camera presence: what came across well and the one or two things most worth \

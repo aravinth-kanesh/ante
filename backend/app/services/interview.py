@@ -388,6 +388,7 @@ def parse_feedback(raw: str) -> FeedbackReport:
                         update={
                             "question": strip_markdown(note.question),
                             "comment": strip_markdown(note.comment),
+                            "model_answer": strip_markdown(note.model_answer),
                         }
                     )
                     for note in report.answer_notes

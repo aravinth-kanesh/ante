@@ -74,6 +74,7 @@ export default function Interview() {
   const [focus, setFocus] = useState<Focus>(requested?.focus ?? "balanced");
   const [category, setCategory] = useState(requested?.category ?? "");
   const [length, setLength] = useState<InterviewLength>(10);
+  const [isSample, setIsSample] = useState(false);
   const [hasGaps, setHasGaps] = useState(false);
   const [hasQuestions, setHasQuestions] = useState(false);
   const [voiceMode, setVoiceMode] = useState(supported);
@@ -223,7 +224,7 @@ export default function Interview() {
     }
   }
 
-  async function begin() {
+  async function begin(sample = false) {
     setLoading(true);
     setError("");
     setFeedback(null);
@@ -235,14 +236,16 @@ export default function Interview() {
     setRecordedAnswers([]);
     setRecordingsDeleted(false);
     setReview(null);
+    setIsSample(sample);
     replayRef.current = null;
     try {
       const res = await startInterview(
         voiceMode ? "voice" : "text",
         interviewType,
-        focus,
+        sample ? "balanced" : focus,
         length,
-        focus === "questions" ? category : "",
+        sample ? "" : focus === "questions" ? category : "",
+        sample,
       );
       setSessionId(res.session_id);
       setQuestion(res.question);
@@ -333,6 +336,12 @@ export default function Interview() {
           delivery.
         </p>
       </div>
+
+      {isSample && sessionId !== null && !feedback && (
+        <div className="rounded-lg border border-brand-200 bg-brand-50 px-4 py-2.5 text-sm text-brand-800">
+          This is a sample interview using an example CV and role, so you can see how it works.
+        </div>
+      )}
 
       {error && (
         <div role="alert" className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
@@ -462,9 +471,23 @@ export default function Interview() {
                 mode works best in Chrome or Edge.
               </p>
             )}
-            <Button onClick={begin} loading={loading}>
-              Start interview
-            </Button>
+            <div className="flex flex-wrap items-center gap-3">
+              <Button onClick={() => begin()} loading={loading}>
+                Start interview
+              </Button>
+              <button
+                type="button"
+                onClick={() => begin(true)}
+                disabled={loading}
+                className="text-sm font-medium text-brand-700 hover:underline disabled:opacity-50"
+              >
+                Try a sample interview
+              </button>
+            </div>
+            <p className="text-xs text-slate-500">
+              New here? "Try a sample interview" uses an example CV and role, so you can see how it
+              works with no setup.
+            </p>
           </CardBody>
         </Card>
       )}
@@ -665,7 +688,7 @@ export default function Interview() {
             <CardTitle>Feedback</CardTitle>
             <FeedbackView report={feedback} />
             <div className="flex flex-wrap items-center gap-3 pt-1">
-              <Button onClick={begin} loading={loading}>
+              <Button onClick={() => begin()} loading={loading}>
                 Start another interview
               </Button>
               {sessionId !== null && (

@@ -320,6 +320,13 @@ def test_feedback_prompt_asks_for_transferable_improvements():
     assert "NOT name this company" in FEEDBACK_PROMPT
 
 
+def test_feedback_prompt_asks_for_model_answers():
+    from app.services.prompts import FEEDBACK_PROMPT
+
+    assert "model_answer" in FEEDBACK_PROMPT
+    assert "might sound" in FEEDBACK_PROMPT
+
+
 def test_parse_feedback_falls_back_to_prose():
     report = interview.parse_feedback("Just some prose, no JSON here.")
     assert report.summary == "Just some prose, no JSON here."
@@ -496,6 +503,17 @@ def test_focus_brief_can_narrow_to_one_category():
     assert "conflict" in all_text and "REST API" in all_text
     # an unknown category yields no brief, so the caller falls back to balanced
     assert interview.focus_brief("", questions_json, "questions", category="Nope") == ("", "")
+
+
+def test_sample_interview_starts_without_a_cv(client, monkeypatch):
+    # "Try a sample interview" works with no profile set up, using the built-in sample.
+    mock_llm(monkeypatch)
+    cookies = auth_cookies(client, "sample@example.com")  # note: no save_cv
+    res = client.post("/api/interview/start", cookies=cookies, json={"mode": "text", "sample": True})
+    assert res.status_code == 200 and res.json()["question"]
+    # the session was grounded in the sample company and role, visible in its title
+    listing = client.get("/api/interview", cookies=cookies).json()
+    assert "Northwind Analytics" in listing[0]["title"]
 
 
 def test_offline_mode_runs_a_full_interview(client, monkeypatch):
