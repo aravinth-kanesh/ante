@@ -334,6 +334,10 @@ export default function Interview() {
   const questionNumber = history.length + 1;
   const interviewProgress = Math.min(questionNumber / (estimatedQuestions + 1), 0.9);
 
+  // A gentle STAR reminder for the interview types that lean on worked examples; it is
+  // noise for a technical or strengths interview, so it is not shown there.
+  const showStarHint = ["general", "behavioural", "competency"].includes(interviewType);
+
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       <div>
@@ -589,9 +593,42 @@ export default function Interview() {
                   label="Your answer"
                   value={answer}
                   onChange={(e) => setAnswer(e.target.value)}
+                  onKeyDown={(e) => {
+                    // A quick keyboard submit for typed answers, the usual chat convention.
+                    if (e.key === "Enter" && (e.metaKey || e.ctrlKey) && answer.trim() && !busy) {
+                      e.preventDefault();
+                      submit();
+                    }
+                  }}
                   rows={5}
                   placeholder={voiceMode ? "Speak your answer, or type it here..." : "Your answer..."}
                 />
+
+                {showStarHint && (
+                  <details className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">
+                    <summary className="cursor-pointer font-medium text-slate-700">
+                      Structure your answer (STAR)
+                    </summary>
+                    <ul className="mt-2 space-y-1">
+                      <li>
+                        <span className="font-medium text-slate-800">Situation</span> - set the scene
+                        in a sentence.
+                      </li>
+                      <li>
+                        <span className="font-medium text-slate-800">Task</span> - what you needed to
+                        achieve.
+                      </li>
+                      <li>
+                        <span className="font-medium text-slate-800">Action</span> - what you did, and
+                        why you chose it.
+                      </li>
+                      <li>
+                        <span className="font-medium text-slate-800">Result</span> - the outcome, with
+                        numbers where you can.
+                      </li>
+                    </ul>
+                  </details>
+                )}
 
                 {(metrics || nonverbal) && (
                   <div className="flex flex-wrap gap-2">

@@ -108,6 +108,38 @@ describe("Interview setup", () => {
   });
 });
 
+describe("Interview answering", () => {
+  it("offers a STAR structure reminder during the interview", async () => {
+    mocks.startInterview.mockResolvedValue({
+      session_id: 1,
+      question: "Tell me about a time you led a team.",
+      mode: "voice",
+      duration_target_min: 10,
+    });
+    renderInterview();
+    await userEvent.click(screen.getByRole("button", { name: "Start interview" }));
+    expect(await screen.findByText("Structure your answer (STAR)")).toBeInTheDocument();
+  });
+
+  it("submits a typed answer with ctrl+enter", async () => {
+    mocks.startInterview.mockResolvedValue({
+      session_id: 1,
+      question: "Q1",
+      mode: "voice",
+      duration_target_min: 10,
+    });
+    mocks.answerInterview.mockResolvedValue({ question: "Q2", done: false });
+    renderInterview();
+    await userEvent.click(screen.getByRole("button", { name: "Start interview" }));
+
+    const box = await screen.findByLabelText("Your answer");
+    await userEvent.type(box, "My structured answer.");
+    await userEvent.keyboard("{Control>}{Enter}{/Control}");
+
+    expect(mocks.answerInterview).toHaveBeenCalledWith(1, "My structured answer.", null, null);
+  });
+});
+
 describe("Interview recording", () => {
   it("tells the candidate when a recording could not be saved", async () => {
     mocks.startInterview.mockResolvedValue({
