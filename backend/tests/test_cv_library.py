@@ -22,9 +22,9 @@ def test_selecting_switches_active_and_mirrors_profile(client):
     finance = client.post(
         "/api/cv", cookies=cookies, json={"label": "Finance CV", "text": "excel and modelling"}
     ).json()
-    tech = client.post(
+    client.post(
         "/api/cv", cookies=cookies, json={"label": "Tech CV", "text": "python and react"}
-    ).json()
+    )
 
     # newest (tech) is active; the profile mirror follows it
     assert client.get("/api/profile", cookies=cookies).json()["cv_text"] == "python and react"
