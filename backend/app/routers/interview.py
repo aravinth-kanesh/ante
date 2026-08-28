@@ -105,6 +105,7 @@ def start(
             focus_code,
             focus_text,
             duration_target_min,
+            is_sample=sample,
         )
     except Exception as exc:
         raise HTTPException(status_code=502, detail=f"Could not start interview: {exc}") from exc
@@ -228,6 +229,7 @@ def list_sessions(
                     session.focus,
                 ),
                 preview=questions[0].content if questions else "(no questions)",
+                is_sample=session.is_sample,
             )
         )
     return summaries

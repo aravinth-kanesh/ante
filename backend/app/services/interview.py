@@ -298,6 +298,7 @@ def start(
     focus_code: str = "",
     focus_text: str = "",
     duration_target_min: int = 10,
+    is_sample: bool = False,
 ) -> tuple[InterviewSession, str]:
     session = InterviewSession(
         user_id=user.id,
@@ -311,6 +312,7 @@ def start(
         jd_snapshot=jd,
         company_context_snapshot=context,
         duration_target_min=duration_target_min,
+        is_sample=is_sample,
     )
     db.add(session)
     db.commit()

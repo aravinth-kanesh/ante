@@ -511,9 +511,26 @@ def test_sample_interview_starts_without_a_cv(client, monkeypatch):
     cookies = auth_cookies(client, "sample@example.com")  # note: no save_cv
     res = client.post("/api/interview/start", cookies=cookies, json={"mode": "text", "sample": True})
     assert res.status_code == 200 and res.json()["question"]
-    # the session was grounded in the sample company and role, visible in its title
+    # the session was grounded in the sample company and role, visible in its title, and is
+    # flagged as a sample so the history can badge it
     listing = client.get("/api/interview", cookies=cookies).json()
     assert "Northwind Analytics" in listing[0]["title"]
+    assert listing[0]["is_sample"] is True
+
+
+def test_sample_interview_is_excluded_from_progress(client, monkeypatch):
+    # A sample run should not skew a student's real progress trends.
+    mock_llm(monkeypatch)
+    cookies = auth_cookies(client, "sampleprog@example.com")
+    start = client.post(
+        "/api/interview/start", cookies=cookies, json={"mode": "text", "sample": True}
+    ).json()
+    sid = start["session_id"]
+    client.post(f"/api/interview/{sid}/answer", cookies=cookies, json={"answer": "A sample answer."})
+    client.post(f"/api/interview/{sid}/finish", cookies=cookies)
+    # the sample answered and finished, but progress treats the student as having no data
+    report = client.get("/api/progress", cookies=cookies).json()
+    assert report["totals"]["interviews"] == 0
 
 
 def test_offline_mode_runs_a_full_interview(client, monkeypatch):

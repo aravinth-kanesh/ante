@@ -22,8 +22,14 @@ def _usable_sessions(db: Session, user: User) -> list[InterviewSession]:
         .order_by(InterviewSession.created_at)
         .all()
     )
-    # A session counts once it is finished or has at least one answer to measure.
-    return [s for s in sessions if s.status == "finished" or any(t.kind == "answer" for t in s.turns)]
+    # A session counts once it is finished or has at least one answer to measure. Sample
+    # interviews run on the built-in example CV are excluded so they do not skew a
+    # student's real trends.
+    return [
+        s
+        for s in sessions
+        if not s.is_sample and (s.status == "finished" or any(t.kind == "answer" for t in s.turns))
+    ]
 
 
 @router.get("", response_model=ProgressReport)

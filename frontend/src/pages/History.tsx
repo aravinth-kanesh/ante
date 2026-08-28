@@ -162,6 +162,7 @@ export default function History() {
                   </p>
                 </Link>
                 <div className="flex shrink-0 items-center gap-2">
+                  {s.is_sample && <Badge color="amber">sample</Badge>}
                   <Badge color={s.mode === "voice" ? "brand" : "slate"}>{s.mode}</Badge>
                   <Badge color={s.status === "finished" ? "green" : "amber"}>{s.status}</Badge>
                   {s.focus === "gaps" && <Badge color="slate">weak spots</Badge>}

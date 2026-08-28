@@ -211,3 +211,4 @@ class SessionSummary(BaseModel):
     question_count: int
     title: str
     preview: str
+    is_sample: bool = False

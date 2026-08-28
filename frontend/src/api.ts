@@ -490,6 +490,7 @@ export interface SessionSummary {
   question_count: number;
   title: string;
   preview: string;
+  is_sample: boolean;
 }
 
 export interface TurnRead {
