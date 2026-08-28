@@ -56,6 +56,31 @@ const INTERVIEW_TYPE_HINTS: Record<InterviewType, string> = {
   strengths: "What you enjoy, what you are good at, and how your strengths fit the role.",
 };
 
+// Short, transferable pointers shown before starting, so a student knows how to play each
+// kind of interview rather than only what it covers.
+const INTERVIEW_TYPE_TIPS: Record<InterviewType, string[]> = {
+  general: [
+    "Have two or three strong stories ready that you can adapt to different questions.",
+    "Open confidently: a crisp, ninety-second answer to 'tell me about yourself' sets the tone.",
+  ],
+  behavioural: [
+    "Be specific about why this role and this company, not reasons that fit any job.",
+    "Back motivation with evidence: something you have done that shows the interest is real.",
+  ],
+  competency: [
+    "Use STAR, and centre the Action on what you personally did, not what the team did.",
+    "Finish on a measurable result, and say what you learned or would do differently.",
+  ],
+  technical: [
+    "Think aloud: your reasoning and assumptions matter more than reaching the answer fastest.",
+    "If you are unsure, say how you would find out rather than guessing silently.",
+  ],
+  strengths: [
+    "Answer quickly and honestly; there are no wrong answers, so let real enthusiasm show.",
+    "Give a quick example of a strength in action rather than just naming it.",
+  ],
+};
+
 export default function Interview() {
   const [sessionId, setSessionId] = useState<number | null>(null);
   const [question, setQuestion] = useState<string | null>(null);
@@ -387,6 +412,21 @@ export default function Interview() {
                 <option value="technical">Technical (spoken, no coding)</option>
                 <option value="strengths">Strengths-based</option>
               </Select>
+              <details className="mt-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">
+                <summary className="cursor-pointer font-medium text-slate-700">
+                  How to approach this interview
+                </summary>
+                <ul className="mt-2 space-y-1.5">
+                  {INTERVIEW_TYPE_TIPS[interviewType].map((tip, i) => (
+                    <li key={i} className="flex gap-2.5 leading-relaxed">
+                      <span className="text-brand-600" aria-hidden>
+                        -
+                      </span>
+                      <span>{tip}</span>
+                    </li>
+                  ))}
+                </ul>
+              </details>
             </div>
             <div>
               <Select

@@ -76,6 +76,15 @@ describe("Interview setup", () => {
     expect(screen.getByRole("checkbox", { name: /Save my answers/ })).not.toBeChecked();
   });
 
+  it("shows approach tips that follow the chosen interview type", async () => {
+    renderInterview();
+    expect(screen.getByText("How to approach this interview")).toBeInTheDocument();
+    // the general default advises having a few adaptable stories ready
+    expect(screen.getByText(/two or three strong stories/)).toBeInTheDocument();
+    await userEvent.selectOptions(screen.getByLabelText("Interview type"), "competency");
+    expect(screen.getByText(/centre the Action on what you personally did/)).toBeInTheDocument();
+  });
+
   it("starts a sample interview with no setup", async () => {
     mocks.startInterview.mockResolvedValue({
       session_id: 1,

@@ -9,7 +9,7 @@ import {
   type TrendDirection,
 } from "../api";
 import TrendChart, { VerdictBars, type TrendPoint } from "../components/TrendChart";
-import { Badge, Button, Card, CardBody, CardTitle } from "../components/ui";
+import { Badge, Button, Card, CardBody, CardTitle, Loading } from "../components/ui";
 
 // What each metric means and its "good" range, in plain language.
 const META: Record<string, { what: string; tip: string; format: (v: number) => string }> = {
@@ -154,7 +154,7 @@ export default function Progress() {
     }
   }
 
-  if (loading) return <p className="text-sm text-slate-500">Loading your progress...</p>;
+  if (loading) return <Loading label="Loading your progress" />;
   if (error) return <p role="alert" className="text-sm text-red-600">{error}</p>;
   if (!report) return null;
 
@@ -185,6 +185,12 @@ export default function Progress() {
     sessions
       .map((s) => ({ label: formatDate(s.created_at), value: s[ATTR[metric]] as number | null }))
       .filter((p): p is TrendPoint => p.value != null);
+
+  // A gentle weekly practice goal for momentum. Sample runs are already excluded from
+  // the report, so only real interviews count here.
+  const WEEKLY_GOAL = 3;
+  const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+  const thisWeek = sessions.filter((s) => new Date(s.created_at).getTime() >= weekAgo).length;
 
   const anyDelivery = sessions.some((s) => s.has_delivery);
   const anyNonverbal = sessions.some((s) => s.has_nonverbal);
@@ -234,6 +240,33 @@ export default function Progress() {
           </Card>
         ))}
       </div>
+
+      {/* A light weekly goal for momentum */}
+      <Card>
+        <CardBody>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <CardTitle>This week</CardTitle>
+              <p className="mt-1 text-sm text-slate-500">
+                {thisWeek >= WEEKLY_GOAL
+                  ? "You have hit your practice goal this week. Nicely done."
+                  : `${thisWeek} of ${WEEKLY_GOAL} interviews this week. ${
+                      WEEKLY_GOAL - thisWeek
+                    } to go.`}
+              </p>
+            </div>
+            <span className="text-sm font-semibold text-slate-800">
+              {Math.min(thisWeek, WEEKLY_GOAL)}/{WEEKLY_GOAL}
+            </span>
+          </div>
+          <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-slate-100" aria-hidden>
+            <div
+              className="h-full rounded-full bg-brand-500 transition-all duration-500"
+              style={{ width: `${Math.min(thisWeek / WEEKLY_GOAL, 1) * 100}%` }}
+            />
+          </div>
+        </CardBody>
+      </Card>
 
       {GROUPS.map((group) => {
         if (group.needs === "delivery" && !anyDelivery) return null;
