@@ -133,7 +133,7 @@ export default function QuickPractice() {
               <CardTitle>Feedback</CardTitle>
               <Badge color={verdict.color}>{verdict.label}</Badge>
             </div>
-            <p className="text-sm leading-relaxed text-slate-700">{note.comment}</p>
+            <p className="break-words text-sm leading-relaxed text-slate-700">{note.comment}</p>
             {note.model_answer && (
               <div className="rounded-lg border border-green-200 bg-green-50/60 p-3">
                 <div className="flex items-start justify-between gap-3">

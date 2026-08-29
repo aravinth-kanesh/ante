@@ -57,7 +57,7 @@ export default function SavedAnswers() {
                   Remove
                 </Button>
               </div>
-              <p className="text-sm leading-relaxed text-slate-700">{a.answer}</p>
+              <p className="break-words text-sm leading-relaxed text-slate-700">{a.answer}</p>
             </CardBody>
           </Card>
         ))}

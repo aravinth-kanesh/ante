@@ -198,7 +198,7 @@ export default function Results() {
               {exchanges.map((turn, i) =>
                 turn.kind === "question" ? (
                   <div key={i} className="pt-2">
-                    <p className="text-sm font-semibold text-slate-900">
+                    <p className="break-words text-sm font-semibold text-slate-900">
                       <span className="text-brand-700">Interviewer.</span> {turn.content}
                     </p>
                     <button
@@ -211,7 +211,7 @@ export default function Results() {
                   </div>
                 ) : (
                   <div key={i} className="border-l-2 border-slate-200 pl-4">
-                    <p className="text-sm text-slate-700">
+                    <p className="break-words text-sm text-slate-700">
                       <span className="font-semibold text-slate-900">You.</span> {turn.content}
                     </p>
                     <div className="mt-2 flex flex-wrap gap-2">

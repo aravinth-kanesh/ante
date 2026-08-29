@@ -111,7 +111,7 @@ export default function FeedbackView({
                     <Badge color={verdict.color}>{verdict.label}</Badge>
                     <span className="text-sm font-medium text-slate-800">{note.question}</span>
                   </div>
-                  <p className="mt-1.5 text-sm leading-relaxed text-slate-600">{note.comment}</p>
+                  <p className="mt-1.5 break-words text-sm leading-relaxed text-slate-600">{note.comment}</p>
                   {note.model_answer && (
                     <div className="mt-2 rounded-lg border border-green-200 bg-green-50/60 p-3">
                       <div className="flex items-start justify-between gap-3">
@@ -133,7 +133,7 @@ export default function FeedbackView({
                             </button>
                           ))}
                       </div>
-                      <p className="mt-1 text-sm leading-relaxed text-slate-700">{note.model_answer}</p>
+                      <p className="mt-1 break-words text-sm leading-relaxed text-slate-700">{note.model_answer}</p>
                     </div>
                   )}
                 </li>

@@ -171,7 +171,7 @@ export default function Stars() {
                   story[part.key] ? (
                     <div key={part.key} className="flex gap-2">
                       <dt className="w-20 shrink-0 font-medium text-slate-500">{part.label}</dt>
-                      <dd className="text-slate-700">{story[part.key]}</dd>
+                      <dd className="break-words text-slate-700">{story[part.key]}</dd>
                     </div>
                   ) : null,
                 )}

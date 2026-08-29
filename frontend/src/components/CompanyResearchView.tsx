@@ -102,7 +102,7 @@ export default function CompanyResearchView({
                   href={source.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-brand-700 hover:underline"
+                  className="break-words text-brand-700 hover:underline"
                 >
                   {source.title || source.url}
                 </a>
