@@ -67,6 +67,19 @@ beforeEach(() => {
 });
 
 describe("Interview setup", () => {
+  it("passes the chosen difficulty when starting", async () => {
+    mocks.startInterview.mockResolvedValue({
+      session_id: 1,
+      question: "Q1",
+      mode: "voice",
+      duration_target_min: 10,
+    });
+    renderInterview();
+    await userEvent.selectOptions(screen.getByLabelText("Difficulty"), "stretch");
+    await userEvent.click(screen.getByRole("button", { name: "Start interview" }));
+    expect(mocks.startInterview).toHaveBeenCalledWith("voice", "general", "balanced", 10, "", false, "stretch");
+  });
+
   it("offers the five-minute length increments, defaulting to 10", () => {
     renderInterview();
     const select = screen.getByLabelText("Length") as HTMLSelectElement;
@@ -98,7 +111,7 @@ describe("Interview setup", () => {
     });
     renderInterview();
     await userEvent.click(screen.getByRole("button", { name: "Try a sample interview" }));
-    expect(mocks.startInterview).toHaveBeenCalledWith("voice", "general", "balanced", 10, "", true);
+    expect(mocks.startInterview).toHaveBeenCalledWith("voice", "general", "balanced", 10, "", true, "standard");
     expect(await screen.findByText(/sample interview using an example CV/)).toBeInTheDocument();
   });
 
@@ -132,7 +145,7 @@ describe("Interview setup", () => {
     await userEvent.selectOptions(screen.getByLabelText("Length"), "15");
     await userEvent.click(screen.getByRole("button", { name: "Start interview" }));
 
-    expect(mocks.startInterview).toHaveBeenCalledWith("voice", "general", "balanced", 15, "", false);
+    expect(mocks.startInterview).toHaveBeenCalledWith("voice", "general", "balanced", 15, "", false, "standard");
     expect(await screen.findByText(/about 15 min, roughly 6 questions/)).toBeInTheDocument();
     expect(screen.getByText("Question 1")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Stop . get feedback/ })).toBeInTheDocument();

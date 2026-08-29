@@ -15,6 +15,7 @@ import {
   uploadAnswerMedia,
   type ActiveInterview,
   type DeliveryMetrics,
+  type Difficulty,
   type FeedbackReport,
   type Focus,
   type InterviewLength,
@@ -105,6 +106,7 @@ export default function Interview() {
   const [focus, setFocus] = useState<Focus>(requested?.focus ?? "balanced");
   const [category, setCategory] = useState(requested?.category ?? "");
   const [length, setLength] = useState<InterviewLength>(10);
+  const [difficulty, setDifficulty] = useState<Difficulty>("standard");
   const [isSample, setIsSample] = useState(false);
   const [resumable, setResumable] = useState<ActiveInterview | null>(null);
   const [hasGaps, setHasGaps] = useState(false);
@@ -316,6 +318,7 @@ export default function Interview() {
         length,
         sample ? "" : focus === "questions" ? category : "",
         sample,
+        sample ? "standard" : difficulty,
       );
       setSessionId(res.session_id);
       setQuestion(res.question);
@@ -573,6 +576,24 @@ export default function Interview() {
                     {m} minutes
                   </option>
                 ))}
+              </Select>
+            </div>
+            <div>
+              <Select
+                label="Difficulty"
+                value={difficulty}
+                onChange={(e) => setDifficulty(e.target.value as Difficulty)}
+                hint={
+                  difficulty === "gentle"
+                    ? "A supportive interview that helps you say more. Good for building confidence."
+                    : difficulty === "stretch"
+                      ? "A demanding interview that probes harder and presses vague answers. Good once you are warmed up."
+                      : "A realistic interview at a normal level."
+                }
+              >
+                <option value="gentle">Gentle</option>
+                <option value="standard">Standard</option>
+                <option value="stretch">Stretch</option>
               </Select>
             </div>
             {supported ? (

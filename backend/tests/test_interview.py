@@ -563,6 +563,28 @@ def test_finished_interview_is_not_offered_for_resume(client, monkeypatch):
     assert client.get("/api/interview/active", cookies=cookies).json() is None
 
 
+def test_difficulty_guidance_shapes_the_interviewer_prompt():
+    from app.models.session import InterviewSession
+    from app.services.interview import _system
+    from app.services.prompts import DIFFICULTY_GUIDANCE
+
+    assert DIFFICULTY_GUIDANCE["standard"] == ""
+    assert DIFFICULTY_GUIDANCE["gentle"] and DIFFICULTY_GUIDANCE["stretch"]
+    # a stretch interview folds the harder-probing guidance into the system prompt
+    session = InterviewSession(interview_type="general", difficulty="stretch")
+    assert "probe harder" in _system(session)["content"]
+
+
+def test_start_accepts_a_difficulty(client, monkeypatch):
+    mock_llm(monkeypatch)
+    cookies = auth_cookies(client, "difficulty@example.com")
+    save_cv(client, cookies)
+    res = client.post(
+        "/api/interview/start", cookies=cookies, json={"mode": "text", "difficulty": "stretch"}
+    )
+    assert res.status_code == 200 and res.json()["question"]
+
+
 def test_reflection_can_be_saved_and_read_back(client, monkeypatch):
     mock_llm(monkeypatch)
     cookies = auth_cookies(client, "reflect@example.com")

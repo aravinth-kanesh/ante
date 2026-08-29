@@ -5,6 +5,7 @@ from pydantic import BaseModel, Field
 
 Mode = Literal["text", "voice"]
 InterviewType = Literal["general", "behavioural", "competency", "technical", "strengths"]
+Difficulty = Literal["gentle", "standard", "stretch"]
 # What the interview is steered towards: a balanced interview, the candidate's weak
 # competencies from the gap analysis, or their generated likely questions.
 Focus = Literal["balanced", "gaps", "questions"]
@@ -21,6 +22,8 @@ class StartRequest(BaseModel):
     sample: bool = False
     # The candidate's chosen interview length, a soft target in minutes.
     duration_target_min: Literal[5, 10, 15, 20, 25, 30] = 10
+    # How demanding the interviewer should be.
+    difficulty: Difficulty = "standard"
 
 
 class StartResponse(BaseModel):

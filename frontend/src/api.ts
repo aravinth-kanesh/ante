@@ -313,6 +313,7 @@ export type InterviewType = "general" | "behavioural" | "competency" | "technica
 export type Focus = "balanced" | "gaps" | "questions";
 
 export type InterviewLength = 5 | 10 | 15 | 20 | 25 | 30;
+export type Difficulty = "gentle" | "standard" | "stretch";
 
 export async function startInterview(
   mode: InterviewMode = "text",
@@ -321,6 +322,7 @@ export async function startInterview(
   durationTargetMin: InterviewLength = 10,
   category = "",
   sample = false,
+  difficulty: Difficulty = "standard",
 ): Promise<{ session_id: number; question: string; mode: InterviewMode; duration_target_min: number }> {
   return request("/api/interview/start", {
     method: "POST",
@@ -331,6 +333,7 @@ export async function startInterview(
       category,
       duration_target_min: durationTargetMin,
       sample,
+      difficulty,
     }),
   });
 }

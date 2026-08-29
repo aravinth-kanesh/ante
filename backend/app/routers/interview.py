@@ -72,6 +72,7 @@ def start(
     category = data.category if data else ""
     duration_target_min = data.duration_target_min if data else 10
     sample = data.sample if data else False
+    difficulty = data.difficulty if data else "standard"
 
     if sample:
         # A no-setup try of the app: use the built-in sample CV and role, no profile.
@@ -112,6 +113,7 @@ def start(
             focus_text,
             duration_target_min,
             is_sample=sample,
+            difficulty="standard" if sample else difficulty,
         )
     except Exception as exc:
         logger.exception("interview start failed")

@@ -12,7 +12,12 @@ from app.schemas.prepare import PrepResponse
 from app.schemas.preparation import PreparationReport
 from app.services import llm, moderation
 from app.services.dedupe import deduped
-from app.services.prompts import FEEDBACK_PROMPT, INTERVIEW_STYLES, INTERVIEWER_PROMPT
+from app.services.prompts import (
+    DIFFICULTY_GUIDANCE,
+    FEEDBACK_PROMPT,
+    INTERVIEW_STYLES,
+    INTERVIEWER_PROMPT,
+)
 from app.services.text import strip_markdown
 
 
@@ -149,6 +154,7 @@ def focus_brief(
 
 def _system(session: InterviewSession) -> dict:
     style = INTERVIEW_STYLES.get(session.interview_type, INTERVIEW_STYLES["general"])
+    style += DIFFICULTY_GUIDANCE.get(session.difficulty, "")
     content = INTERVIEWER_PROMPT.format(
         style=style,
         focus=session.focus_snapshot or "",
@@ -299,6 +305,7 @@ def start(
     focus_text: str = "",
     duration_target_min: int = 10,
     is_sample: bool = False,
+    difficulty: str = "standard",
 ) -> tuple[InterviewSession, str]:
     session = InterviewSession(
         user_id=user.id,
@@ -313,6 +320,7 @@ def start(
         company_context_snapshot=context,
         duration_target_min=duration_target_min,
         is_sample=is_sample,
+        difficulty=difficulty,
     )
     db.add(session)
     db.commit()
