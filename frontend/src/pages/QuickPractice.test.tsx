@@ -15,9 +15,12 @@ vi.mock("../api", () => ({
 
 import QuickPractice from "./QuickPractice";
 
-function renderPractice() {
+function renderPractice(state?: { question: string }) {
   return render(
-    <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+    <MemoryRouter
+      initialEntries={[{ pathname: "/practice", state }]}
+      future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
+    >
       <QuickPractice />
     </MemoryRouter>,
   );
@@ -59,5 +62,12 @@ describe("QuickPractice", () => {
     await screen.findByText("Tell me about yourself.");
     await userEvent.click(screen.getByRole("button", { name: "Try another question" }));
     expect(mocks.getPracticeQuestion).toHaveBeenLastCalledWith("Tell me about yourself.");
+  });
+
+  it("redoes a specific question handed in from a past interview", async () => {
+    renderPractice({ question: "Tell me about a time you led a team." });
+    // it uses the seeded question without fetching a new one
+    expect(await screen.findByText("Tell me about a time you led a team.")).toBeInTheDocument();
+    expect(mocks.getPracticeQuestion).not.toHaveBeenCalled();
   });
 });

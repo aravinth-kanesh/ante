@@ -147,9 +147,18 @@ export default function Results() {
               <CardTitle>Transcript</CardTitle>
               {exchanges.map((turn, i) =>
                 turn.kind === "question" ? (
-                  <p key={i} className="pt-2 text-sm font-semibold text-slate-900">
-                    <span className="text-brand-700">Interviewer.</span> {turn.content}
-                  </p>
+                  <div key={i} className="pt-2">
+                    <p className="text-sm font-semibold text-slate-900">
+                      <span className="text-brand-700">Interviewer.</span> {turn.content}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => navigate("/practice", { state: { question: turn.content } })}
+                      className="no-print mt-1 text-xs font-medium text-brand-700 hover:underline"
+                    >
+                      Practise this question again
+                    </button>
+                  </div>
                 ) : (
                   <div key={i} className="border-l-2 border-slate-200 pl-4">
                     <p className="text-sm text-slate-700">

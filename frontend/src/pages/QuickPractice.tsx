@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import {
   getPracticeQuestion,
   submitPracticeAnswer,
@@ -18,8 +18,11 @@ const VERDICTS = {
 } as const;
 
 export default function QuickPractice() {
-  const [question, setQuestion] = useState("");
-  const [loadingQuestion, setLoadingQuestion] = useState(true);
+  // A specific question can be handed in (for example "redo this question" from a past
+  // interview); otherwise we fetch one.
+  const seeded = (useLocation().state as { question?: string } | null)?.question ?? "";
+  const [question, setQuestion] = useState(seeded);
+  const [loadingQuestion, setLoadingQuestion] = useState(!seeded);
   const [answer, setAnswer] = useState("");
   const [note, setNote] = useState<AnswerNote | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -41,7 +44,8 @@ export default function QuickPractice() {
   }
 
   useEffect(() => {
-    loadQuestion();
+    if (!seeded) loadQuestion();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function submit() {
