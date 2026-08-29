@@ -48,7 +48,7 @@ function report(sessions: SessionStats[]): ProgressReport {
 
 function renderProgress() {
   return render(
-    <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+    <MemoryRouter>
       <Progress />
     </MemoryRouter>,
   );

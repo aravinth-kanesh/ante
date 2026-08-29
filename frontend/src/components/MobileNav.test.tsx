@@ -12,7 +12,7 @@ const links = [
 
 function renderNav(onLogout = () => {}) {
   return render(
-    <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+    <MemoryRouter>
       <MobileNav links={links} email="a@b.co" onLogout={onLogout} />
     </MemoryRouter>,
   );

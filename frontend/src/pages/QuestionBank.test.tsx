@@ -15,7 +15,7 @@ import QuestionBank from "./QuestionBank";
 
 function renderBank() {
   return render(
-    <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+    <MemoryRouter>
       <QuestionBank />
     </MemoryRouter>,
   );

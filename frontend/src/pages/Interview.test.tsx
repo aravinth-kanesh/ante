@@ -40,7 +40,7 @@ import Interview from "./Interview";
 
 function renderInterview() {
   return render(
-    <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+    <MemoryRouter>
       <Interview />
     </MemoryRouter>,
   );

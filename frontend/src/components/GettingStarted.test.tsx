@@ -6,7 +6,7 @@ import GettingStarted, { type OnboardingSteps } from "./GettingStarted";
 
 function renderWith(steps: OnboardingSteps, onHide = () => {}) {
   return render(
-    <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+    <MemoryRouter>
       <GettingStarted steps={steps} onHide={onHide} />
     </MemoryRouter>,
   );

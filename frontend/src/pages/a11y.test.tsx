@@ -84,7 +84,6 @@ async function axeClean(element: React.ReactNode, initialPath = "/") {
   const { container } = render(
     <MemoryRouter
       initialEntries={[initialPath]}
-      future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
     >
       <AuthProvider>
         <Routes>

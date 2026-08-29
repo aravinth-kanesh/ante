@@ -25,7 +25,7 @@ const saved: SavedAnswer = {
 
 function renderSaved() {
   return render(
-    <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+    <MemoryRouter>
       <SavedAnswers />
     </MemoryRouter>,
   );

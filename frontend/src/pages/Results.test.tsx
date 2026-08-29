@@ -45,7 +45,7 @@ const detail: InterviewDetail = {
 
 function renderResults() {
   return render(
-    <MemoryRouter initialEntries={["/results/1"]} future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+    <MemoryRouter initialEntries={["/results/1"]}>
       <Routes>
         <Route path="/results/:id" element={<Results />} />
       </Routes>

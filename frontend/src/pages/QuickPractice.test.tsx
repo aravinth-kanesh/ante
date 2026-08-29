@@ -19,7 +19,6 @@ function renderPractice(state?: { question: string }) {
   return render(
     <MemoryRouter
       initialEntries={[{ pathname: "/practice", state }]}
-      future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
     >
       <QuickPractice />
     </MemoryRouter>,
