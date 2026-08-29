@@ -30,6 +30,7 @@ from app.routers import (
     profile,
     progress,
     speech,
+    star,
     vision,
 )
 from app.security import ACCESS_COOKIE, CSRF_COOKIE, REFRESH_COOKIE, require_verified_user
@@ -174,6 +175,7 @@ app.include_router(cv.router, prefix="/api", dependencies=verified)
 app.include_router(prepare.router, prefix="/api", dependencies=verified)
 app.include_router(interview.router, prefix="/api", dependencies=verified)
 app.include_router(practice.router, prefix="/api", dependencies=verified)
+app.include_router(star.router, prefix="/api", dependencies=verified)
 app.include_router(media.router, prefix="/api", dependencies=verified)
 app.include_router(progress.router, prefix="/api", dependencies=verified)
 app.include_router(speech.router, prefix="/api", dependencies=verified)

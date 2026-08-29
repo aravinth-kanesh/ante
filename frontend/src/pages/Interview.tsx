@@ -801,6 +801,12 @@ export default function Interview() {
                         numbers where you can.
                       </li>
                     </ul>
+                    <p className="mt-2">
+                      <Link to="/stars" className="font-medium text-brand-700 hover:underline">
+                        Draft and save your STAR stories
+                      </Link>{" "}
+                      to reuse them across interviews.
+                    </p>
                   </details>
                 )}
 

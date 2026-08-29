@@ -531,6 +531,34 @@ export interface InterviewDetail {
   turns: TurnRead[];
 }
 
+export interface StarStory {
+  id: number;
+  title: string;
+  situation: string;
+  task: string;
+  action: string;
+  result: string;
+  updated_at: string;
+}
+
+export type StarStoryInput = Omit<StarStory, "id" | "updated_at">;
+
+export async function listStarStories(): Promise<StarStory[]> {
+  return request("/api/stars");
+}
+
+export async function createStarStory(data: StarStoryInput): Promise<StarStory> {
+  return request("/api/stars", { method: "POST", body: JSON.stringify(data) });
+}
+
+export async function updateStarStory(id: number, data: StarStoryInput): Promise<StarStory> {
+  return request(`/api/stars/${id}`, { method: "PUT", body: JSON.stringify(data) });
+}
+
+export async function deleteStarStory(id: number): Promise<{ ok: boolean }> {
+  return request(`/api/stars/${id}`, { method: "DELETE" });
+}
+
 /** A single question to practise, with no interview setup. */
 export async function getPracticeQuestion(exclude = ""): Promise<{ question: string }> {
   const q = exclude ? `?exclude=${encodeURIComponent(exclude)}` : "";

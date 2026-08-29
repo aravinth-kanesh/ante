@@ -15,6 +15,7 @@ import Prepare from "./pages/Prepare";
 import Privacy from "./pages/Privacy";
 import QuickPractice from "./pages/QuickPractice";
 import ResetPassword from "./pages/ResetPassword";
+import Stars from "./pages/Stars";
 import Settings from "./pages/Settings";
 import Signup from "./pages/Signup";
 import Verify from "./pages/Verify";
@@ -57,6 +58,7 @@ export default function App() {
           <Route path="/prepare" element={<Page><Prepare /></Page>} />
           <Route path="/interview" element={<Page><Interview /></Page>} />
           <Route path="/practice" element={<Page><QuickPractice /></Page>} />
+          <Route path="/stars" element={<Page><Stars /></Page>} />
           <Route path="/progress" element={<Page><Progress /></Page>} />
           <Route path="/results/:id" element={<Page><Results /></Page>} />
           <Route path="/history" element={<Page><History /></Page>} />

@@ -19,6 +19,7 @@ import ResetPassword from "./ResetPassword";
 import Results from "./Results";
 import Settings from "./Settings";
 import Signup from "./Signup";
+import Stars from "./Stars";
 import Verify from "./Verify";
 
 // Well-shaped empty payloads keyed by request path, so each page renders its real
@@ -34,6 +35,7 @@ const ROUTES: Record<string, unknown> = {
   "/api/speech/voices": { available: false, voices: [] },
   "/api/interview": [],
   "/api/practice/question": { question: "Tell me about yourself." },
+  "/api/stars": [],
   "/api/progress": {
     totals: { interviews: 0, questions_answered: 0, minutes_practised: 0 },
     sessions: [],
@@ -111,5 +113,6 @@ describe("page accessibility (axe)", () => {
   it("Settings has no violations", () => axeClean(<Settings />));
   it("Interview has no violations", () => axeClean(<Interview />));
   it("QuickPractice has no violations", () => axeClean(<QuickPractice />));
+  it("Stars has no violations", () => axeClean(<Stars />));
   it("Results has no violations", () => axeClean(<Results />, "/results/1"));
 });
