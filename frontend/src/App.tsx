@@ -1,30 +1,39 @@
-import { type ReactNode } from "react";
+import { lazy, Suspense, type ReactNode } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { AuthProvider } from "./auth/AuthContext";
 import Layout from "./components/Layout";
 import ProtectedRoute from "./components/ProtectedRoute";
 import RouteAnnouncer from "./components/RouteAnnouncer";
+import { Loading } from "./components/ui";
 import Cvs from "./pages/Cvs";
 import Dashboard from "./pages/Dashboard";
 import Help from "./pages/Help";
 import History from "./pages/History";
-import Interview from "./pages/Interview";
 import ForgotPassword from "./pages/ForgotPassword";
 import Login from "./pages/Login";
 import Prepare from "./pages/Prepare";
 import Privacy from "./pages/Privacy";
-import Progress from "./pages/Progress";
 import ResetPassword from "./pages/ResetPassword";
-import Results from "./pages/Results";
 import Settings from "./pages/Settings";
 import Signup from "./pages/Signup";
 import Verify from "./pages/Verify";
 
-// A protected page wrapped in the app shell (nav + container).
+// The heaviest routes (in-browser vision and recording, the replay player, the trend
+// charts) are split into their own chunks so the first load stays lean on campus wifi.
+const Interview = lazy(() => import("./pages/Interview"));
+const Results = lazy(() => import("./pages/Results"));
+const Progress = lazy(() => import("./pages/Progress"));
+
+// A protected page wrapped in the app shell (nav + container). Lazy content suspends
+// inside the layout, so the nav stays put while a chunk loads.
 function Page({ children }: { children: ReactNode }) {
   return (
     <ProtectedRoute>
-      <Layout>{children}</Layout>
+      <Layout>
+        <Suspense fallback={<div className="flex justify-center py-16"><Loading /></div>}>
+          {children}
+        </Suspense>
+      </Layout>
     </ProtectedRoute>
   );
 }
