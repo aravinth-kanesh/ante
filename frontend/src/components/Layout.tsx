@@ -69,6 +69,19 @@ export default function Layout({ children }: { children: ReactNode }) {
       <main id="main" tabIndex={-1} className="mx-auto max-w-5xl px-4 py-8 focus:outline-none">
         {children}
       </main>
+      <footer className="no-print mx-auto max-w-5xl px-4 pb-10">
+        <nav
+          aria-label="Footer"
+          className="flex flex-wrap items-center gap-x-5 gap-y-1 border-t border-slate-200 pt-5 text-sm text-slate-500"
+        >
+          <Link to="/help" className="hover:text-brand-700 hover:underline">
+            Help
+          </Link>
+          <Link to="/privacy" className="hover:text-brand-700 hover:underline">
+            Privacy
+          </Link>
+        </nav>
+      </footer>
     </div>
   );
 }

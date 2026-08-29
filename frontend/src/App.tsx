@@ -6,6 +6,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import RouteAnnouncer from "./components/RouteAnnouncer";
 import Cvs from "./pages/Cvs";
 import Dashboard from "./pages/Dashboard";
+import Help from "./pages/Help";
 import History from "./pages/History";
 import Interview from "./pages/Interview";
 import ForgotPassword from "./pages/ForgotPassword";
@@ -40,6 +41,7 @@ export default function App() {
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/privacy" element={<Privacy />} />
+          <Route path="/help" element={<Help />} />
           <Route path="/" element={<Page><Dashboard /></Page>} />
           <Route path="/cvs" element={<Page><Cvs /></Page>} />
           <Route path="/prepare" element={<Page><Prepare /></Page>} />

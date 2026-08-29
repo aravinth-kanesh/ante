@@ -7,6 +7,7 @@ import { AuthProvider } from "../auth/AuthContext";
 import Cvs from "./Cvs";
 import Dashboard from "./Dashboard";
 import ForgotPassword from "./ForgotPassword";
+import Help from "./Help";
 import History from "./History";
 import Interview from "./Interview";
 import Login from "./Login";
@@ -98,6 +99,7 @@ describe("page accessibility (axe)", () => {
   it("ResetPassword has no violations", () => axeClean(<ResetPassword />, "/reset?token=x"));
   it("Verify has no violations", () => axeClean(<Verify />, "/verify?token=x"));
   it("Privacy has no violations", () => axeClean(<Privacy />));
+  it("Help has no violations", () => axeClean(<Help />));
   it("Dashboard has no violations", () => axeClean(<Dashboard />));
   it("Prepare has no violations", () => axeClean(<Prepare />));
   it("Progress has no violations", () => axeClean(<Progress />));
