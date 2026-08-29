@@ -14,6 +14,7 @@ import Login from "./Login";
 import Prepare from "./Prepare";
 import Privacy from "./Privacy";
 import Progress from "./Progress";
+import QuestionBank from "./QuestionBank";
 import QuickPractice from "./QuickPractice";
 import ResetPassword from "./ResetPassword";
 import Results from "./Results";
@@ -113,6 +114,7 @@ describe("page accessibility (axe)", () => {
   it("Settings has no violations", () => axeClean(<Settings />));
   it("Interview has no violations", () => axeClean(<Interview />));
   it("QuickPractice has no violations", () => axeClean(<QuickPractice />));
+  it("QuestionBank has no violations", () => axeClean(<QuestionBank />));
   it("Stars has no violations", () => axeClean(<Stars />));
   it("Results has no violations", () => axeClean(<Results />, "/results/1"));
 });

@@ -69,7 +69,11 @@ export default function QuickPractice() {
         <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Quick practice</h1>
         <p className="mt-1 text-sm text-slate-500">
           One question, instant feedback, no setup. A good way to practise a single answer between
-          lectures. This does not count towards your progress.
+          lectures. This does not count towards your progress. You can also{" "}
+          <Link to="/bank" className="font-medium text-brand-700 hover:underline">
+            browse the question bank
+          </Link>
+          .
         </p>
       </div>
 
