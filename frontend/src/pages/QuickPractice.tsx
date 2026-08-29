@@ -6,7 +6,7 @@ import {
   submitPracticeAnswer,
   type AnswerNote,
 } from "../api";
-import { Badge, Button, Card, CardBody, CardTitle, Loading, TextArea } from "../components/ui";
+import { Badge, Button, Card, CardBody, CardTitle, ErrorNote, Loading, TextArea } from "../components/ui";
 
 function message(err: unknown) {
   return err instanceof Error ? err.message : String(err);
@@ -81,11 +81,7 @@ export default function QuickPractice() {
         </p>
       </div>
 
-      {error && (
-        <div role="alert" className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-          {error}
-        </div>
-      )}
+      {error && <ErrorNote>{error}</ErrorNote>}
 
       <Card>
         <CardBody className="space-y-4">

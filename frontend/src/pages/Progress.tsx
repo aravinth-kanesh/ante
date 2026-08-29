@@ -9,7 +9,7 @@ import {
   type TrendDirection,
 } from "../api";
 import TrendChart, { VerdictBars, type TrendPoint } from "../components/TrendChart";
-import { Badge, Button, Card, CardBody, CardTitle, Loading } from "../components/ui";
+import { Badge, Button, Card, CardBody, CardTitle, ErrorNote, Loading } from "../components/ui";
 
 // What each metric means and its "good" range, in plain language.
 const META: Record<string, { what: string; tip: string; format: (v: number) => string }> = {
@@ -155,7 +155,7 @@ export default function Progress() {
   }
 
   if (loading) return <Loading label="Loading your progress" />;
-  if (error) return <p role="alert" className="text-sm text-red-600">{error}</p>;
+  if (error) return <ErrorNote>{error}</ErrorNote>;
   if (!report) return null;
 
   if (report.totals.interviews === 0) {

@@ -10,7 +10,7 @@ import {
   uploadCvFile,
   type Cv,
 } from "../api";
-import { Badge, Button, Card, CardBody, CardTitle, Input, Loading, TextArea } from "../components/ui";
+import { Badge, Button, Card, CardBody, CardTitle, ErrorNote, Input, Loading, TextArea } from "../components/ui";
 
 function message(err: unknown) {
   return err instanceof Error ? err.message : String(err);
@@ -139,7 +139,7 @@ export default function Cvs() {
         </p>
       </div>
 
-      {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
+      {error && <ErrorNote>{error}</ErrorNote>}
 
       {/* Add a CV */}
       <Card>

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { getProgress, type SessionStats } from "../api";
-import { Badge, Card, CardBody, CardTitle, Loading, Select } from "../components/ui";
+import { Badge, Card, CardBody, CardTitle, ErrorNote, Loading, Select } from "../components/ui";
 
 function message(err: unknown) {
   return err instanceof Error ? err.message : String(err);
@@ -69,7 +69,7 @@ export default function Compare() {
         </Link>
       </div>
 
-      {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
+      {error && <ErrorNote>{error}</ErrorNote>}
       {!error && !sessions && <Loading label="Loading your interviews" />}
 
       {sessions && sessions.length < 2 && (

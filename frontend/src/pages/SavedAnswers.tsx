@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { deleteSavedAnswer, listSavedAnswers, type SavedAnswer } from "../api";
-import { Button, Card, CardBody, Loading } from "../components/ui";
+import { Button, Card, CardBody, ErrorNote, Loading } from "../components/ui";
 
 function message(err: unknown) {
   return err instanceof Error ? err.message : String(err);
@@ -37,11 +37,7 @@ export default function SavedAnswers() {
         </p>
       </div>
 
-      {error && (
-        <div role="alert" className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-          {error}
-        </div>
-      )}
+      {error && <ErrorNote>{error}</ErrorNote>}
 
       {!answers && <Loading label="Loading your saved answers" />}
       {answers && answers.length === 0 && (

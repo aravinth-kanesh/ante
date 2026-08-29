@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { deleteInterview, listSessions, type SessionSummary } from "../api";
-import { Badge, Button, Card, Input, Loading, cn } from "../components/ui";
+import { Badge, Button, Card, cn, ErrorNote, Input, Loading } from "../components/ui";
 
 function message(err: unknown) {
   return err instanceof Error ? err.message : String(err);
@@ -106,7 +106,7 @@ export default function History() {
         )}
       </div>
 
-      {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
+      {error && <ErrorNote>{error}</ErrorNote>}
 
       {sessions && sessions.length > 0 && (
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">

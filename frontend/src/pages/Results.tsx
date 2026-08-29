@@ -11,18 +11,7 @@ import {
 } from "../api";
 import AnswerTimeline from "../components/AnswerTimeline";
 import FeedbackView from "../components/FeedbackView";
-import {
-  Badge,
-  Button,
-  Card,
-  CardBody,
-  CardTitle,
-  cn,
-  Loading,
-  MicIcon,
-  TextArea,
-  VideoIcon,
-} from "../components/ui";
+import { Badge, Button, Card, CardBody, CardTitle, cn, ErrorNote, Loading, MicIcon, TextArea, VideoIcon } from "../components/ui";
 import { deliverySummary, nonverbalSummary } from "../format";
 
 function message(err: unknown) {
@@ -198,7 +187,7 @@ export default function Results() {
         </div>
       </div>
 
-      {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
+      {error && <ErrorNote>{error}</ErrorNote>}
       {!error && !detail && <Loading label="Loading your results" />}
 
       {detail && (
