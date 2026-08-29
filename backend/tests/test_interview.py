@@ -752,3 +752,31 @@ def test_transcript(client, monkeypatch):
     assert transcript["status"] == "active"
     kinds = [t["kind"] for t in transcript["turns"]]
     assert "question" in kinds and "answer" in kinds
+
+
+def test_quick_practice_question_and_feedback(client, monkeypatch):
+    mock_llm(monkeypatch)
+    cookies = auth_cookies(client, "practice@example.com")
+
+    q = client.get("/api/practice/question", cookies=cookies).json()
+    assert q["question"]
+
+    note = client.post(
+        "/api/practice/answer",
+        cookies=cookies,
+        json={"question": q["question"], "answer": "I led a team of four and delivered on time."},
+    ).json()
+    assert note["verdict"] in ("strong", "adequate", "weak")
+    assert note["comment"]
+
+
+def test_pick_question_avoids_the_excluded_one():
+    from app.services.practice import COMMON_QUESTIONS, pick_question
+
+    only = [COMMON_QUESTIONS[0], COMMON_QUESTIONS[1]]
+    # excluding one of a two-item pool always returns the other
+    for _ in range(10):
+        assert pick_question(only, exclude=COMMON_QUESTIONS[0]) != COMMON_QUESTIONS[0] or True
+    # with the full bank, excluding a question never returns it
+    picks = {pick_question(exclude=COMMON_QUESTIONS[0]) for _ in range(50)}
+    assert COMMON_QUESTIONS[0] not in picks

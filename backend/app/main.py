@@ -18,7 +18,20 @@ from app.ratelimit import limiter
 from app.services import session_media
 from fastapi import Depends
 
-from app.routers import auth, chat, cv, health, interview, media, prepare, profile, progress, speech, vision
+from app.routers import (
+    auth,
+    chat,
+    cv,
+    health,
+    interview,
+    media,
+    practice,
+    prepare,
+    profile,
+    progress,
+    speech,
+    vision,
+)
 from app.security import ACCESS_COOKIE, CSRF_COOKIE, REFRESH_COOKIE, require_verified_user
 
 SAFE_METHODS = {"GET", "HEAD", "OPTIONS", "TRACE"}
@@ -160,6 +173,7 @@ app.include_router(profile.router, prefix="/api", dependencies=verified)
 app.include_router(cv.router, prefix="/api", dependencies=verified)
 app.include_router(prepare.router, prefix="/api", dependencies=verified)
 app.include_router(interview.router, prefix="/api", dependencies=verified)
+app.include_router(practice.router, prefix="/api", dependencies=verified)
 app.include_router(media.router, prefix="/api", dependencies=verified)
 app.include_router(progress.router, prefix="/api", dependencies=verified)
 app.include_router(speech.router, prefix="/api", dependencies=verified)

@@ -654,7 +654,11 @@ export default function Interview() {
             </div>
             <p className="text-xs text-slate-500">
               New here? "Try a sample interview" uses an example CV and role, so you can see how it
-              works with no setup.
+              works with no setup. Short on time?{" "}
+              <Link to="/practice" className="font-medium text-brand-700 hover:underline">
+                Practise a single question
+              </Link>
+              .
             </p>
           </CardBody>
         </Card>

@@ -14,6 +14,7 @@ import Login from "./Login";
 import Prepare from "./Prepare";
 import Privacy from "./Privacy";
 import Progress from "./Progress";
+import QuickPractice from "./QuickPractice";
 import ResetPassword from "./ResetPassword";
 import Results from "./Results";
 import Settings from "./Settings";
@@ -32,6 +33,7 @@ const ROUTES: Record<string, unknown> = {
   "/api/prepare/plan": { competencies: [], plan: [] },
   "/api/speech/voices": { available: false, voices: [] },
   "/api/interview": [],
+  "/api/practice/question": { question: "Tell me about yourself." },
   "/api/progress": {
     totals: { interviews: 0, questions_answered: 0, minutes_practised: 0 },
     sessions: [],
@@ -108,5 +110,6 @@ describe("page accessibility (axe)", () => {
   it("Cvs has no violations", () => axeClean(<Cvs />));
   it("Settings has no violations", () => axeClean(<Settings />));
   it("Interview has no violations", () => axeClean(<Interview />));
+  it("QuickPractice has no violations", () => axeClean(<QuickPractice />));
   it("Results has no violations", () => axeClean(<Results />, "/results/1"));
 });

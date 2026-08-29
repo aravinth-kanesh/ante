@@ -13,6 +13,7 @@ import ForgotPassword from "./pages/ForgotPassword";
 import Login from "./pages/Login";
 import Prepare from "./pages/Prepare";
 import Privacy from "./pages/Privacy";
+import QuickPractice from "./pages/QuickPractice";
 import ResetPassword from "./pages/ResetPassword";
 import Settings from "./pages/Settings";
 import Signup from "./pages/Signup";
@@ -55,6 +56,7 @@ export default function App() {
           <Route path="/cvs" element={<Page><Cvs /></Page>} />
           <Route path="/prepare" element={<Page><Prepare /></Page>} />
           <Route path="/interview" element={<Page><Interview /></Page>} />
+          <Route path="/practice" element={<Page><QuickPractice /></Page>} />
           <Route path="/progress" element={<Page><Progress /></Page>} />
           <Route path="/results/:id" element={<Page><Results /></Page>} />
           <Route path="/history" element={<Page><History /></Page>} />

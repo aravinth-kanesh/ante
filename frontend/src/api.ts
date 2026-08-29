@@ -531,6 +531,20 @@ export interface InterviewDetail {
   turns: TurnRead[];
 }
 
+/** A single question to practise, with no interview setup. */
+export async function getPracticeQuestion(exclude = ""): Promise<{ question: string }> {
+  const q = exclude ? `?exclude=${encodeURIComponent(exclude)}` : "";
+  return request(`/api/practice/question${q}`);
+}
+
+/** Instant feedback on one practice answer, returned as a single answer note. */
+export async function submitPracticeAnswer(question: string, answer: string): Promise<AnswerNote> {
+  return request("/api/practice/answer", {
+    method: "POST",
+    body: JSON.stringify({ question, answer }),
+  });
+}
+
 /** Save the student's own reflection note on a past interview. */
 export async function saveReflection(sessionId: number, text: string): Promise<{ ok: boolean }> {
   return request(`/api/interview/${sessionId}/reflection`, {
