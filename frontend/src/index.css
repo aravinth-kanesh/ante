@@ -1,5 +1,72 @@
 @import "tailwindcss";
 
+/* Enable dark-mode utilities keyed to the data-theme attribute the shell sets. */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+/* Dark theme. Tailwind v4 compiles every colour utility to var(--color-*), so remapping
+   the palette here reskins the whole app without touching a single component. The neutral
+   (slate) scale is inverted so light backgrounds become dark and dark text becomes light;
+   the saturated brand/semantic colours are kept for buttons and only their tints and text
+   roles are adjusted for a dark ground. */
+:root[data-theme="dark"] {
+  --color-white: #10151f; /* card and input surfaces */
+  --color-slate-50: #0a0e16; /* page background */
+  --color-slate-100: #171e2b; /* raised areas, hover, badges */
+  --color-slate-200: #242e3d; /* borders and dividers */
+  --color-slate-300: #313c4d; /* input borders */
+  --color-slate-400: #6b7a90; /* placeholder, faint text */
+  --color-slate-500: #97a4b6; /* muted text */
+  --color-slate-600: #aebaca; /* secondary text */
+  --color-slate-700: #c8d2de; /* body text */
+  --color-slate-800: #dfe6ef; /* strong text */
+  --color-slate-900: #f1f5fa; /* headings */
+
+  --color-brand-50: #191f38; /* tinted banners */
+  --color-brand-100: #202a4d;
+  --color-brand-200: #2c3968; /* tinted borders */
+
+  --color-green-50: #0d2a1e;
+  --color-green-100: #123726;
+  --color-green-200: #1b4a34;
+  --color-amber-50: #2a2410;
+  --color-amber-100: #37300f;
+  --color-amber-200: #4b4018;
+  --color-red-50: #2b1618;
+  --color-red-100: #3a1b1e;
+  --color-red-200: #4e2328;
+
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.35), 0 4px 14px rgb(0 0 0 / 0.45);
+  --shadow-lift: 0 10px 34px rgb(0 0 0 / 0.55);
+}
+
+/* Text roles that sit on a coloured or dark ground: keep button labels white, and lift
+   the accent and semantic text so it stays legible where the token itself is dark. */
+:root[data-theme="dark"] .text-white {
+  color: #ffffff;
+}
+:root[data-theme="dark"] .text-brand-600 {
+  color: #818cf8;
+}
+:root[data-theme="dark"] .text-brand-700 {
+  color: #a5b4fc;
+}
+:root[data-theme="dark"] .text-brand-800 {
+  color: #c7d2fe;
+}
+:root[data-theme="dark"] .text-green-600,
+:root[data-theme="dark"] .text-green-700 {
+  color: #4ade80;
+}
+:root[data-theme="dark"] .text-amber-600,
+:root[data-theme="dark"] .text-amber-700,
+:root[data-theme="dark"] .text-amber-800 {
+  color: #fbbf24;
+}
+:root[data-theme="dark"] .text-red-600,
+:root[data-theme="dark"] .text-red-700 {
+  color: #f87171;
+}
+
 /* Modern SaaS design tokens: indigo brand on slate neutrals, Inter type. */
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;

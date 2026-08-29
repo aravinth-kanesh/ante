@@ -74,10 +74,10 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
         <Card className="overflow-hidden transition-shadow hover:shadow-lift">
           <Link to="/prepare" className="block h-full">
-            <div className="flex h-full flex-col justify-between gap-4 bg-gradient-to-br from-slate-700 to-slate-900 p-6 text-white">
+            <div className="flex h-full flex-col justify-between gap-4 bg-gradient-to-br from-slate-700 to-slate-900 p-6 text-white dark:from-[#1b2334] dark:to-[#0b1018]">
               <div>
                 <h2 className="text-xl font-semibold">Prepare</h2>
-                <p className="mt-1 text-sm text-slate-300">
+                <p className="mt-1 text-sm text-slate-300 dark:text-[#aab7c8]">
                   Set your target role, research the company, see where you fit, and get a plan and
                   likely questions.
                 </p>
@@ -92,7 +92,7 @@ export default function Dashboard() {
             <div className="flex h-full flex-col justify-between gap-4 bg-gradient-to-br from-brand-600 to-brand-800 p-6 text-white">
               <div>
                 <h2 className="text-xl font-semibold">Mock interview</h2>
-                <p className="mt-1 text-sm text-brand-100">
+                <p className="mt-1 text-sm text-brand-100 dark:text-[#c7d2fe]">
                   An adaptive interview with spoken questions and feedback on your answers and
                   delivery.
                 </p>

@@ -3,6 +3,7 @@ import { Link, NavLink } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 import Logo from "./Logo";
 import MobileNav from "./MobileNav";
+import ThemeToggle from "./ThemeToggle";
 import { Button, cn } from "./ui";
 
 const NAV_LINKS = [
@@ -55,7 +56,8 @@ export default function Layout({ children }: { children: ReactNode }) {
               </NavItem>
             ))}
           </nav>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
             <div className="hidden items-center gap-3 sm:flex">
               <span className="max-w-[12rem] truncate text-sm text-slate-500">{user?.email}</span>
               <Button variant="secondary" size="sm" onClick={logout}>

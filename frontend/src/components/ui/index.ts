@@ -16,5 +16,7 @@ export {
   MenuIcon,
   CloseIcon,
   CheckIcon,
+  SunIcon,
+  MoonIcon,
 } from "./icons";
 export { cn } from "./cn";
