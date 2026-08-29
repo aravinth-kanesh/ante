@@ -1,9 +1,11 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+
+from app.services.cv_parse import MAX_TEXT_CHARS
 
 
 class ProfileUpdate(BaseModel):
-    cv_text: str | None = None  # None leaves the active CV untouched
-    jd_text: str = ""
+    cv_text: str | None = Field(default=None, max_length=MAX_TEXT_CHARS)  # None leaves the active CV untouched
+    jd_text: str = Field(default="", max_length=MAX_TEXT_CHARS)
 
 
 class ProfileRead(BaseModel):

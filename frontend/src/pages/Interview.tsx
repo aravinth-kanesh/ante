@@ -6,12 +6,14 @@ import {
   answerMediaBundleUrl,
   deleteAnswerMedia,
   finishInterview,
+  getActiveInterview,
   listAnswerMedia,
   getPreparation,
   getPrepQuestions,
   startInterview,
   transcribeAudio,
   uploadAnswerMedia,
+  type ActiveInterview,
   type DeliveryMetrics,
   type FeedbackReport,
   type Focus,
@@ -100,6 +102,7 @@ export default function Interview() {
   const [category, setCategory] = useState(requested?.category ?? "");
   const [length, setLength] = useState<InterviewLength>(10);
   const [isSample, setIsSample] = useState(false);
+  const [resumable, setResumable] = useState<ActiveInterview | null>(null);
   const [hasGaps, setHasGaps] = useState(false);
   const [hasQuestions, setHasQuestions] = useState(false);
   const [voiceMode, setVoiceMode] = useState(supported);
@@ -128,7 +131,28 @@ export default function Interview() {
     getPrepQuestions()
       .then((groups) => setHasQuestions(groups.length > 0))
       .catch(() => {});
+    // Offer to pick up an interview the student started but never finished.
+    getActiveInterview()
+      .then((a) => a && setResumable(a))
+      .catch(() => {});
   }, []);
+
+  // Rehydrate an unfinished interview so a refresh or closed tab does not strand it.
+  function resume(a: ActiveInterview) {
+    setResumable(null);
+    setError("");
+    setFeedback(null);
+    setIsSample(a.is_sample);
+    setVoiceMode(a.mode === "voice" && supported);
+    setInterviewType(a.interview_type);
+    setLength(a.duration_target_min as InterviewLength);
+    setHistory(a.history);
+    setAnswer("");
+    setMetrics(null);
+    setNonverbal(null);
+    setSessionId(a.session_id);
+    setQuestion(a.question);
+  }
 
   // If the chosen focus has no data (for example arriving from a link before
   // generating it), fall back to a balanced interview.
@@ -286,9 +310,11 @@ export default function Interview() {
     stopCapture();
     setLoading(true);
     setError("");
+    const submittedDraftKey = draftKey; // clear this question's saved draft once it is in
     try {
       const answerIndex = history.length + 1; // this answer's number, 1-based
       const res = await answerInterview(sessionId, answer, metrics, nonverbal);
+      if (submittedDraftKey) sessionStorage.removeItem(submittedDraftKey);
       setHistory((h) => [...h, { question, answer }]);
       setAnswer("");
       setMetrics(null);
@@ -363,6 +389,25 @@ export default function Interview() {
   // noise for a technical or strengths interview, so it is not shown there.
   const showStarHint = ["general", "behavioural", "competency"].includes(interviewType);
 
+  // Keep the in-progress answer in sessionStorage, keyed to this question, so a refresh
+  // does not lose what the student has typed (it pairs with resuming the interview).
+  const draftKey =
+    sessionId !== null && question !== null ? `ante-draft:${sessionId}:${history.length}` : null;
+
+  // Restore a saved draft when arriving at a question (after a resume or a refresh).
+  useEffect(() => {
+    if (!draftKey) return;
+    const saved = sessionStorage.getItem(draftKey);
+    if (saved) setAnswer(saved);
+    // Only re-run when the question identity changes, not on every keystroke.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draftKey]);
+
+  // Persist the current answer as it is typed or transcribed.
+  useEffect(() => {
+    if (draftKey) sessionStorage.setItem(draftKey, answer);
+  }, [draftKey, answer]);
+
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       <div>
@@ -392,6 +437,34 @@ export default function Interview() {
             </>
           )}
         </div>
+      )}
+
+      {/* Resume an unfinished interview */}
+      {resumable && sessionId === null && !feedback && (
+        <Card className="border-brand-200 bg-brand-50/50">
+          <CardBody className="space-y-3">
+            <CardTitle>Pick up where you left off</CardTitle>
+            <p className="text-sm text-slate-600">
+              You have an interview in progress
+              {resumable.history.length > 0
+                ? `, with ${resumable.history.length} question${
+                    resumable.history.length === 1 ? "" : "s"
+                  } answered`
+                : ""}
+              . Resume it, or start a new one below.
+            </p>
+            <div className="flex flex-wrap items-center gap-3">
+              <Button onClick={() => resume(resumable)}>Resume interview</Button>
+              <button
+                type="button"
+                onClick={() => setResumable(null)}
+                className="text-sm font-medium text-brand-700 hover:underline"
+              >
+                Not now
+              </button>
+            </div>
+          </CardBody>
+        </Card>
       )}
 
       {/* Setup / start */}

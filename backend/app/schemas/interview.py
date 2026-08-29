@@ -31,6 +31,25 @@ class StartResponse(BaseModel):
     duration_target_min: int
 
 
+class ActiveExchange(BaseModel):
+    question: str
+    answer: str
+
+
+class ActiveInterview(BaseModel):
+    """Enough to rehydrate an interview left unfinished, so a refresh or closed tab does
+    not strand a student mid-practice."""
+
+    session_id: int
+    mode: Mode
+    interview_type: InterviewType
+    duration_target_min: int
+    is_sample: bool = False
+    # the current unanswered question, or null if the interviewer has finished asking
+    question: str | None = None
+    history: list[ActiveExchange] = []
+
+
 class PauseEvent(BaseModel):
     """A silent gap in an answer, in seconds from the start of the recording."""
 

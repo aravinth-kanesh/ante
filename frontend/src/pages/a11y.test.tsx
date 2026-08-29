@@ -49,6 +49,7 @@ function jsonResponse(body: unknown): Response {
 
 const fetchStub = vi.fn(async (input: unknown) => {
   const path = String(input).split("?")[0];
+  if (path === "/api/interview/active") return jsonResponse(null); // nothing to resume
   if (/^\/api\/interview\/\d+$/.test(path)) {
     return jsonResponse({
       status: "finished",

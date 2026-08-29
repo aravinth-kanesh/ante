@@ -8,6 +8,8 @@ from app.models.user import User
 from app.ratelimit import limiter
 from app.routers.profile import _get_or_create, run_research
 from app.schemas.interview import (
+    ActiveExchange,
+    ActiveInterview,
     AnswerRequest,
     AnswerResponse,
     DeliveryMetrics,
@@ -115,6 +117,44 @@ def start(
         mode=session.mode,
         interview_type=session.interview_type,
         duration_target_min=session.duration_target_min,
+    )
+
+
+@router.get("/active", response_model=ActiveInterview | None)
+def active(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> ActiveInterview | None:
+    # The most recent interview the student started but never finished, so the page can
+    # offer to pick it up where they left off. Returns null when there is nothing to resume.
+    session = (
+        db.query(InterviewSession)
+        .filter(InterviewSession.user_id == current_user.id, InterviewSession.status == "active")
+        .order_by(InterviewSession.created_at.desc(), InterviewSession.id.desc())
+        .first()
+    )
+    if session is None:
+        return None
+
+    # Pair each question with the answer that followed it; a trailing question with no
+    # answer is the one the student is currently on.
+    history: list[ActiveExchange] = []
+    pending: str | None = None
+    for turn in session.turns:
+        if turn.kind == "question":
+            pending = turn.content
+        elif turn.kind == "answer" and pending is not None:
+            history.append(ActiveExchange(question=pending, answer=turn.content))
+            pending = None
+
+    return ActiveInterview(
+        session_id=session.id,
+        mode=session.mode,
+        interview_type=session.interview_type,
+        duration_target_min=session.duration_target_min,
+        is_sample=session.is_sample,
+        question=pending,
+        history=history,
     )
 
 

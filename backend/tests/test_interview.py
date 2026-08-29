@@ -518,6 +518,44 @@ def test_sample_interview_starts_without_a_cv(client, monkeypatch):
     assert listing[0]["is_sample"] is True
 
 
+def test_active_interview_can_be_resumed(client, monkeypatch):
+    mock_llm(monkeypatch)
+    cookies = auth_cookies(client, "resume@example.com")
+    save_cv(client, cookies)
+    start = client.post("/api/interview/start", cookies=cookies, json={"mode": "text"}).json()
+    sid = start["session_id"]
+    client.post(f"/api/interview/{sid}/answer", cookies=cookies, json={"answer": "My first answer."})
+
+    active = client.get("/api/interview/active", cookies=cookies).json()
+    assert active["session_id"] == sid
+    assert active["question"]  # the next, unanswered question is waiting
+    assert active["history"] == [{"question": start["question"], "answer": "My first answer."}]
+
+
+def test_no_active_interview_returns_null(client, monkeypatch):
+    mock_llm(monkeypatch)
+    cookies = auth_cookies(client, "noactive@example.com")
+    assert client.get("/api/interview/active", cookies=cookies).json() is None
+
+
+def test_finished_interview_is_not_offered_for_resume(client, monkeypatch):
+    mock_llm(monkeypatch)
+    cookies = auth_cookies(client, "finished@example.com")
+    save_cv(client, cookies)
+    sid = client.post("/api/interview/start", cookies=cookies, json={"mode": "text"}).json()["session_id"]
+    client.post(f"/api/interview/{sid}/answer", cookies=cookies, json={"answer": "An answer."})
+    client.post(f"/api/interview/{sid}/finish", cookies=cookies)
+    assert client.get("/api/interview/active", cookies=cookies).json() is None
+
+
+def test_cv_text_over_the_cap_is_rejected(client):
+    from app.services.cv_parse import MAX_TEXT_CHARS
+
+    cookies = auth_cookies(client, "bigcv@example.com")
+    res = client.post("/api/cv", cookies=cookies, json={"label": "Huge", "text": "x" * (MAX_TEXT_CHARS + 1)})
+    assert res.status_code == 422
+
+
 def test_sample_interview_is_excluded_from_progress(client, monkeypatch):
     # A sample run should not skew a student's real progress trends.
     mock_llm(monkeypatch)

@@ -1,6 +1,8 @@
 from datetime import datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+
+from app.services.cv_parse import MAX_TEXT_CHARS
 
 
 class CVSummary(BaseModel):
@@ -17,9 +19,9 @@ class CVRead(CVSummary):
 
 class CVCreate(BaseModel):
     label: str = "My CV"
-    text: str
+    text: str = Field(max_length=MAX_TEXT_CHARS)
 
 
 class CVUpdate(BaseModel):
     label: str | None = None
-    text: str | None = None
+    text: str | None = Field(default=None, max_length=MAX_TEXT_CHARS)

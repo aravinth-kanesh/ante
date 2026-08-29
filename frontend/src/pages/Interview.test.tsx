@@ -15,6 +15,7 @@ const mocks = vi.hoisted(() => ({
   uploadAnswerMedia: vi.fn(),
   listAnswerMedia: vi.fn(),
   deleteAnswerMedia: vi.fn(),
+  getActiveInterview: vi.fn(),
   startCapture: vi.fn(),
 }));
 
@@ -26,6 +27,7 @@ vi.mock("../api", () => ({
   analyseNonverbal: mocks.analyseNonverbal,
   getPreparation: vi.fn().mockResolvedValue({ competencies: [] }),
   getPrepQuestions: vi.fn().mockResolvedValue([]),
+  getActiveInterview: mocks.getActiveInterview,
   uploadAnswerMedia: mocks.uploadAnswerMedia,
   listAnswerMedia: mocks.listAnswerMedia,
   deleteAnswerMedia: mocks.deleteAnswerMedia,
@@ -60,6 +62,8 @@ const emptyMetrics = {
 beforeEach(() => {
   for (const m of Object.values(mocks)) m.mockReset();
   mocks.listAnswerMedia.mockResolvedValue([]);
+  mocks.getActiveInterview.mockResolvedValue(null);
+  sessionStorage.clear();
 });
 
 describe("Interview setup", () => {
@@ -96,6 +100,24 @@ describe("Interview setup", () => {
     await userEvent.click(screen.getByRole("button", { name: "Try a sample interview" }));
     expect(mocks.startInterview).toHaveBeenCalledWith("voice", "general", "balanced", 10, "", true);
     expect(await screen.findByText(/sample interview using an example CV/)).toBeInTheDocument();
+  });
+
+  it("offers to resume an unfinished interview and rehydrates it", async () => {
+    mocks.getActiveInterview.mockResolvedValue({
+      session_id: 7,
+      mode: "text",
+      interview_type: "general",
+      duration_target_min: 10,
+      is_sample: false,
+      question: "Where do you see yourself in five years?",
+      history: [{ question: "Tell me about yourself.", answer: "I am a final-year student." }],
+    });
+    renderInterview();
+    await userEvent.click(await screen.findByRole("button", { name: "Resume interview" }));
+    // the current question and the already-answered exchange are both restored
+    expect(await screen.findByText("Where do you see yourself in five years?")).toBeInTheDocument();
+    expect(screen.getByText("Tell me about yourself.")).toBeInTheDocument();
+    expect(mocks.startInterview).not.toHaveBeenCalled();
   });
 
   it("starts the interview with the chosen length and shows the pacing indicator", async () => {

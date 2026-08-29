@@ -531,6 +531,21 @@ export async function listSessions(): Promise<SessionSummary[]> {
   return request("/api/interview");
 }
 
+export interface ActiveInterview {
+  session_id: number;
+  mode: InterviewMode;
+  interview_type: InterviewType;
+  duration_target_min: number;
+  is_sample: boolean;
+  question: string | null; // the current unanswered question, or null if asking has finished
+  history: { question: string; answer: string }[];
+}
+
+/** The most recent interview left unfinished, so the page can offer to resume it. */
+export async function getActiveInterview(): Promise<ActiveInterview | null> {
+  return request("/api/interview/active");
+}
+
 export async function getInterview(sessionId: number): Promise<InterviewDetail> {
   return request(`/api/interview/${sessionId}`);
 }

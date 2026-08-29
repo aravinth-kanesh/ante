@@ -6,6 +6,11 @@ from pypdf import PdfReader
 
 SUPPORTED = (".pdf", ".docx", ".txt")
 
+# An upper bound on stored CV and job-description text. A real CV is a few thousand
+# characters; this leaves generous headroom while keeping a pasted or extracted wall of
+# text from flowing into the model prompt unbounded (a cost and context-window risk).
+MAX_TEXT_CHARS = 50_000
+
 
 def extract_text(filename: str, data: bytes) -> str:
     name = filename.lower()
@@ -32,4 +37,4 @@ def extract_text(filename: str, data: bytes) -> str:
     # collapse runs of blank lines and trailing spaces
     text = re.sub(r"[ \t]+\n", "\n", text)
     text = re.sub(r"\n{3,}", "\n\n", text)
-    return text.strip()
+    return text.strip()[:MAX_TEXT_CHARS]
