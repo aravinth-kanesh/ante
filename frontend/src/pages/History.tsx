@@ -88,12 +88,22 @@ export default function History() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Interview history</h1>
-        <p className="mt-1 text-sm text-slate-500">
-          Review your past mock interviews and feedback. Deleting one permanently removes that
-          interview and its data.
-        </p>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Interview history</h1>
+          <p className="mt-1 text-sm text-slate-500">
+            Review your past mock interviews and feedback. Deleting one permanently removes that
+            interview and its data.
+          </p>
+        </div>
+        {sessions && sessions.length >= 2 && (
+          <Link
+            to="/compare"
+            className="shrink-0 text-sm font-medium text-brand-700 hover:underline"
+          >
+            Compare interviews
+          </Link>
+        )}
       </div>
 
       {error && <p role="alert" className="text-sm text-red-600">{error}</p>}

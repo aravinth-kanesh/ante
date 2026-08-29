@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { AuthProvider } from "../auth/AuthContext";
 
+import Compare from "./Compare";
 import Cvs from "./Cvs";
 import Dashboard from "./Dashboard";
 import ForgotPassword from "./ForgotPassword";
@@ -110,6 +111,7 @@ describe("page accessibility (axe)", () => {
   it("Prepare has no violations", () => axeClean(<Prepare />));
   it("Progress has no violations", () => axeClean(<Progress />));
   it("History has no violations", () => axeClean(<History />));
+  it("Compare has no violations", () => axeClean(<Compare />));
   it("Cvs has no violations", () => axeClean(<Cvs />));
   it("Settings has no violations", () => axeClean(<Settings />));
   it("Interview has no violations", () => axeClean(<Interview />));

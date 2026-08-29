@@ -5,6 +5,7 @@ import Layout from "./components/Layout";
 import ProtectedRoute from "./components/ProtectedRoute";
 import RouteAnnouncer from "./components/RouteAnnouncer";
 import { Loading } from "./components/ui";
+import Compare from "./pages/Compare";
 import Cvs from "./pages/Cvs";
 import Dashboard from "./pages/Dashboard";
 import Help from "./pages/Help";
@@ -64,6 +65,7 @@ export default function App() {
           <Route path="/progress" element={<Page><Progress /></Page>} />
           <Route path="/results/:id" element={<Page><Results /></Page>} />
           <Route path="/history" element={<Page><History /></Page>} />
+          <Route path="/compare" element={<Page><Compare /></Page>} />
           <Route path="/settings" element={<Page><Settings /></Page>} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
