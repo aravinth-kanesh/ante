@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 
@@ -26,6 +28,7 @@ from app.security import get_current_user
 from app.services import interview, samples, session_media
 
 router = APIRouter(prefix="/interview", tags=["interview"])
+logger = logging.getLogger(__name__)
 
 
 def _owned(db: Session, session_id: int, user: User) -> InterviewSession:
@@ -110,7 +113,11 @@ def start(
             is_sample=sample,
         )
     except Exception as exc:
-        raise HTTPException(status_code=502, detail=f"Could not start interview: {exc}") from exc
+        logger.exception("interview start failed")
+        raise HTTPException(
+            status_code=502,
+            detail="The interviewer could not start just now. Please try again in a moment.",
+        ) from exc
     return StartResponse(
         session_id=session.id,
         question=question,
@@ -179,7 +186,11 @@ def answer(
     try:
         question = interview.answer(db, session, data.answer, metrics_json, nonverbal_json)
     except Exception as exc:
-        raise HTTPException(status_code=502, detail=f"Interview error: {exc}") from exc
+        logger.exception("interview answer failed")
+        raise HTTPException(
+            status_code=502,
+            detail="The interview hit a problem. Please try again in a moment.",
+        ) from exc
     return AnswerResponse(question=question, done=question is None)
 
 
@@ -195,7 +206,11 @@ def finish(
     try:
         report = interview.finish(db, session)
     except Exception as exc:
-        raise HTTPException(status_code=502, detail=f"Could not generate feedback: {exc}") from exc
+        logger.exception("feedback generation failed")
+        raise HTTPException(
+            status_code=502,
+            detail="Your feedback could not be generated just now. Please try again in a moment.",
+        ) from exc
     return FeedbackResponse(feedback=report)
 
 
@@ -213,7 +228,11 @@ def regenerate_feedback(
     try:
         report = interview.regenerate_feedback(db, session)
     except Exception as exc:
-        raise HTTPException(status_code=502, detail=f"Could not generate feedback: {exc}") from exc
+        logger.exception("feedback generation failed")
+        raise HTTPException(
+            status_code=502,
+            detail="Your feedback could not be generated just now. Please try again in a moment.",
+        ) from exc
     return FeedbackResponse(feedback=report)
 
 

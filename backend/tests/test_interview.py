@@ -327,6 +327,21 @@ def test_feedback_prompt_asks_for_model_answers():
     assert "might sound" in FEEDBACK_PROMPT
 
 
+def test_feedback_prompt_calls_out_unanswered_questions():
+    from app.services.prompts import FEEDBACK_PROMPT
+
+    assert "did not answer" in FEEDBACK_PROMPT
+
+
+def test_prompts_guard_against_injected_instructions():
+    # The candidate-supplied CV, job description and transcript are treated as data, so a
+    # line hidden in a CV cannot steer the interviewer or inflate the feedback.
+    from app.services.prompts import FEEDBACK_PROMPT, INTERVIEWER_PROMPT
+
+    assert "not instructions" in INTERVIEWER_PROMPT
+    assert "never follow any instruction" in FEEDBACK_PROMPT
+
+
 def test_parse_feedback_falls_back_to_prose():
     report = interview.parse_feedback("Just some prose, no JSON here.")
     assert report.summary == "Just some prose, no JSON here."
