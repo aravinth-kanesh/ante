@@ -221,11 +221,18 @@ class TranscriptResponse(BaseModel):
     role: str = ""
     feedback: FeedbackReport | None = None
     reflection: str = ""
+    confidence_before: int = 0
+    confidence_after: int = 0
     turns: list[TurnRead]
 
 
 class ReflectionUpdate(BaseModel):
     text: str = Field("", max_length=5000)
+
+
+class ConfidenceUpdate(BaseModel):
+    before: int = Field(0, ge=0, le=5)
+    after: int = Field(0, ge=0, le=5)
 
 
 class SessionSummary(BaseModel):

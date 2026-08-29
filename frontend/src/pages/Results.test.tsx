@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -8,12 +8,14 @@ const mocks = vi.hoisted(() => ({
   getInterview: vi.fn(),
   regenerateFeedback: vi.fn(),
   saveReflection: vi.fn(),
+  saveConfidence: vi.fn(),
 }));
 
 vi.mock("../api", () => ({
   getInterview: mocks.getInterview,
   regenerateFeedback: mocks.regenerateFeedback,
   saveReflection: mocks.saveReflection,
+  saveConfidence: mocks.saveConfidence,
 }));
 
 import Results from "./Results";
@@ -33,6 +35,8 @@ const detail: InterviewDetail = {
     delivery: "Steady pace, few fillers.",
   },
   reflection: "",
+  confidence_before: 0,
+  confidence_after: 0,
   turns: [
     { role: "assistant", kind: "question", content: "Tell me about yourself.", metrics: null, nonverbal: null },
     { role: "user", kind: "answer", content: "I am a final-year student.", metrics: null, nonverbal: null },
@@ -97,6 +101,20 @@ describe("Results", () => {
     await userEvent.click(screen.getByRole("button", { name: "Save reflection" }));
     expect(mocks.saveReflection).toHaveBeenCalledWith(1, "Give a specific example next time.");
     expect(await screen.findByText("Saved")).toBeInTheDocument();
+  });
+
+  it("saves a before/after confidence rating", async () => {
+    mocks.getInterview.mockResolvedValue(detail);
+    mocks.saveConfidence.mockResolvedValue({ ok: true });
+    renderResults();
+
+    const before = within(await screen.findByRole("group", { name: "Before this interview" }));
+    await userEvent.click(before.getByRole("button", { name: "2" }));
+    const after = within(screen.getByRole("group", { name: "After it" }));
+    await userEvent.click(after.getByRole("button", { name: "4" }));
+    await userEvent.click(screen.getByRole("button", { name: "Save" }));
+
+    expect(mocks.saveConfidence).toHaveBeenCalledWith(1, 2, 4);
   });
 
   it("congratulates a strong interview instead of flagging gaps", async () => {

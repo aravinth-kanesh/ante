@@ -194,6 +194,14 @@ export default function Progress() {
 
   const anyDelivery = sessions.some((s) => s.has_delivery);
   const anyNonverbal = sessions.some((s) => s.has_nonverbal);
+
+  // Self-rated confidence, averaged across the interviews the student rated.
+  const avgOf = (get: (s: SessionStats) => number | null): number | null => {
+    const vals = sessions.map(get).filter((v): v is number => v != null);
+    return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
+  };
+  const avgConfidenceBefore = avgOf((s) => s.confidence_before);
+  const avgConfidenceAfter = avgOf((s) => s.confidence_after);
   const anyVerdicts = sessions.some(
     (s) => s.verdicts.strong + s.verdicts.adequate + s.verdicts.weak > 0,
   );
@@ -267,6 +275,44 @@ export default function Progress() {
           </div>
         </CardBody>
       </Card>
+
+      {avgConfidenceAfter != null && (
+        <Card>
+          <CardBody>
+            <CardTitle>Confidence</CardTitle>
+            <p className="mt-1 text-sm text-slate-500">
+              How confident you have felt, self-rated out of 5. Nerves usually settle with practice.
+            </p>
+            <div className="mt-4 flex flex-wrap items-end gap-8">
+              {avgConfidenceBefore != null && (
+                <div>
+                  <p className="text-2xl font-semibold text-slate-900">
+                    {avgConfidenceBefore.toFixed(1)}
+                  </p>
+                  <p className="mt-1 text-xs text-slate-500">before, on average</p>
+                </div>
+              )}
+              <div>
+                <p className="text-2xl font-semibold text-slate-900">
+                  {avgConfidenceAfter.toFixed(1)}
+                </p>
+                <p className="mt-1 text-xs text-slate-500">after, on average</p>
+              </div>
+              {avgConfidenceBefore != null && (
+                <DirectionBadge
+                  direction={
+                    avgConfidenceAfter > avgConfidenceBefore + 0.1
+                      ? "improved"
+                      : avgConfidenceAfter < avgConfidenceBefore - 0.1
+                        ? "slipped"
+                        : "steady"
+                  }
+                />
+              )}
+            </div>
+          </CardBody>
+        </Card>
+      )}
 
       {GROUPS.map((group) => {
         if (group.needs === "delivery" && !anyDelivery) return null;

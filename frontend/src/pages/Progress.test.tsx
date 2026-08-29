@@ -31,6 +31,8 @@ function session(daysAgo: number): SessionStats {
     head_steadiness: null,
     has_delivery: false,
     has_nonverbal: false,
+  confidence_before: null,
+  confidence_after: null,
   };
 }
 

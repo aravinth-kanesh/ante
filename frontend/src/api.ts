@@ -528,6 +528,8 @@ export interface InterviewDetail {
   role: string;
   feedback: FeedbackReport | null;
   reflection: string;
+  confidence_before: number;
+  confidence_after: number;
   turns: TurnRead[];
 }
 
@@ -581,6 +583,18 @@ export async function saveReflection(sessionId: number, text: string): Promise<{
   });
 }
 
+/** Save the student's before/after confidence rating (1 to 5; 0 to leave unset). */
+export async function saveConfidence(
+  sessionId: number,
+  before: number,
+  after: number,
+): Promise<{ ok: boolean }> {
+  return request(`/api/interview/${sessionId}/confidence`, {
+    method: "PUT",
+    body: JSON.stringify({ before, after }),
+  });
+}
+
 export async function listSessions(): Promise<SessionSummary[]> {
   return request("/api/interview");
 }
@@ -629,6 +643,8 @@ export interface SessionStats {
   head_steadiness: number | null;
   has_delivery: boolean;
   has_nonverbal: boolean;
+  confidence_before: number | null;
+  confidence_after: number | null;
 }
 
 export type TrendDirection = "improved" | "steady" | "slipped" | "na";

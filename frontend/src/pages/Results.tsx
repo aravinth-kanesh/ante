@@ -1,6 +1,12 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { getInterview, regenerateFeedback, saveReflection, type InterviewDetail } from "../api";
+import {
+  getInterview,
+  regenerateFeedback,
+  saveConfidence,
+  saveReflection,
+  type InterviewDetail,
+} from "../api";
 import AnswerTimeline from "../components/AnswerTimeline";
 import FeedbackView from "../components/FeedbackView";
 import {
@@ -9,6 +15,7 @@ import {
   Card,
   CardBody,
   CardTitle,
+  cn,
   Loading,
   MicIcon,
   TextArea,
@@ -18,6 +25,40 @@ import { deliverySummary, nonverbalSummary } from "../format";
 
 function message(err: unknown) {
   return err instanceof Error ? err.message : String(err);
+}
+
+function Rating({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: number;
+  onChange: (v: number) => void;
+}) {
+  return (
+    <div>
+      <p className="text-sm font-medium text-slate-700">{label}</p>
+      <div className="mt-1.5 flex gap-1.5" role="group" aria-label={label}>
+        {[1, 2, 3, 4, 5].map((n) => (
+          <button
+            key={n}
+            type="button"
+            onClick={() => onChange(n)}
+            aria-pressed={value === n}
+            className={cn(
+              "h-9 w-9 rounded-lg border text-sm font-medium transition-colors",
+              value === n
+                ? "border-brand-600 bg-brand-600 text-white"
+                : "border-slate-300 text-slate-600 hover:bg-slate-50",
+            )}
+          >
+            {n}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 const TYPE_LABELS: Record<string, string> = {
@@ -47,6 +88,9 @@ export default function Results() {
   const [reflection, setReflection] = useState("");
   const [savedReflection, setSavedReflection] = useState("");
   const [savingReflection, setSavingReflection] = useState(false);
+  const [conf, setConf] = useState({ before: 0, after: 0 });
+  const [savedConf, setSavedConf] = useState({ before: 0, after: 0 });
+  const [savingConf, setSavingConf] = useState(false);
 
   useEffect(() => {
     const sessionId = Number(id);
@@ -59,9 +103,24 @@ export default function Results() {
         setDetail(d);
         setReflection(d.reflection);
         setSavedReflection(d.reflection);
+        setConf({ before: d.confidence_before, after: d.confidence_after });
+        setSavedConf({ before: d.confidence_before, after: d.confidence_after });
       })
       .catch((err) => setError(message(err)));
   }, [id]);
+
+  async function storeConfidence() {
+    setSavingConf(true);
+    setError("");
+    try {
+      await saveConfidence(Number(id), conf.before, conf.after);
+      setSavedConf(conf);
+    } catch (err) {
+      setError(message(err));
+    } finally {
+      setSavingConf(false);
+    }
+  }
 
   async function storeReflection() {
     const sessionId = Number(id);
@@ -248,6 +307,43 @@ export default function Results() {
                     </span>
                   )}
                 </div>
+              </div>
+            </CardBody>
+          </Card>
+
+          <Card className="no-print">
+            <CardBody className="space-y-4">
+              <CardTitle>Confidence check-in</CardTitle>
+              <p className="text-sm text-slate-500">
+                Rate how confident you felt, to watch your nerves settle as you practise. 1 is very
+                nervous, 5 is very confident.
+              </p>
+              <Rating
+                label="Before this interview"
+                value={conf.before}
+                onChange={(v) => setConf((c) => ({ ...c, before: v }))}
+              />
+              <Rating
+                label="After it"
+                value={conf.after}
+                onChange={(v) => setConf((c) => ({ ...c, after: v }))}
+              />
+              <div className="flex items-center gap-3">
+                <Button
+                  size="sm"
+                  onClick={storeConfidence}
+                  loading={savingConf}
+                  disabled={conf.before === savedConf.before && conf.after === savedConf.after}
+                >
+                  Save
+                </Button>
+                {conf.before === savedConf.before &&
+                  conf.after === savedConf.after &&
+                  (savedConf.before > 0 || savedConf.after > 0) && (
+                    <span role="status" className="text-sm text-green-600">
+                      Saved
+                    </span>
+                  )}
               </div>
             </CardBody>
           </Card>

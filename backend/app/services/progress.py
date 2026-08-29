@@ -169,6 +169,8 @@ def session_stats(session: InterviewSession) -> SessionStats:
         head_steadiness=steady,
         has_delivery=bool(deliveries),
         has_nonverbal=bool(nonverbals),
+        confidence_before=session.confidence_before or None,
+        confidence_after=session.confidence_after or None,
     )
 
 

@@ -23,6 +23,8 @@ function session(id: number, strongRate: number, fillers: number): SessionStats 
     head_steadiness: null,
     has_delivery: true,
     has_nonverbal: false,
+  confidence_before: null,
+  confidence_after: null,
   };
 }
 

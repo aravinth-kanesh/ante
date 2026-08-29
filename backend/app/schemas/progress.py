@@ -36,6 +36,9 @@ class SessionStats(BaseModel):
     head_steadiness: int | None = None
     has_delivery: bool = False
     has_nonverbal: bool = False
+    # Self-rated confidence, 1 to 5; None when the student did not rate it.
+    confidence_before: int | None = None
+    confidence_after: int | None = None
 
 
 class MetricDelta(BaseModel):

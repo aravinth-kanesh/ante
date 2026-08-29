@@ -35,6 +35,9 @@ class InterviewSession(Base):
     reflection: Mapped[str] = mapped_column(Text, default="")
     # How demanding the interviewer should be: gentle | standard | stretch.
     difficulty: Mapped[str] = mapped_column(String, default="standard")
+    # The student's self-rated confidence, 1 to 5, before and after; 0 means not rated.
+    confidence_before: Mapped[int] = mapped_column(default=0)
+    confidence_after: Mapped[int] = mapped_column(default=0)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
 
     user: Mapped[User] = relationship()

@@ -17,6 +17,7 @@ from app.schemas.interview import (
     DeliveryMetrics,
     FeedbackReport,
     FeedbackResponse,
+    ConfidenceUpdate,
     NonverbalMetrics,
     ReflectionUpdate,
     SessionSummary,
@@ -320,8 +321,26 @@ def transcript(
         role=session.role,
         feedback=feedback,
         reflection=session.reflection,
+        confidence_before=session.confidence_before,
+        confidence_after=session.confidence_after,
         turns=[_turn_read(t) for t in session.turns],
     )
+
+
+@router.put("/{session_id}/confidence")
+def save_confidence(
+    session_id: int,
+    data: ConfidenceUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> dict:
+    # The student's own before/after confidence, 1 to 5, so they can watch nerves settle
+    # as they practise. Zero leaves a rating unset.
+    session = _owned(db, session_id, current_user)
+    session.confidence_before = data.before
+    session.confidence_after = data.after
+    db.commit()
+    return {"ok": True}
 
 
 @router.put("/{session_id}/reflection")

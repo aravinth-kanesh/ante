@@ -780,3 +780,23 @@ def test_pick_question_avoids_the_excluded_one():
     # with the full bank, excluding a question never returns it
     picks = {pick_question(exclude=COMMON_QUESTIONS[0]) for _ in range(50)}
     assert COMMON_QUESTIONS[0] not in picks
+
+
+def test_confidence_before_and_after_are_saved(client, monkeypatch):
+    mock_llm(monkeypatch)
+    cookies = auth_cookies(client, "confidence@example.com")
+    save_cv(client, cookies)
+    sid = client.post("/api/interview/start", cookies=cookies, json={"mode": "text"}).json()["session_id"]
+
+    res = client.put(f"/api/interview/{sid}/confidence", cookies=cookies, json={"before": 2, "after": 4})
+    assert res.status_code == 200
+    detail = client.get(f"/api/interview/{sid}", cookies=cookies).json()
+    assert detail["confidence_before"] == 2 and detail["confidence_after"] == 4
+
+
+def test_confidence_out_of_range_is_rejected(client, monkeypatch):
+    mock_llm(monkeypatch)
+    cookies = auth_cookies(client, "confrange@example.com")
+    save_cv(client, cookies)
+    sid = client.post("/api/interview/start", cookies=cookies, json={"mode": "text"}).json()["session_id"]
+    assert client.put(f"/api/interview/{sid}/confidence", cookies=cookies, json={"before": 9, "after": 1}).status_code == 422

@@ -67,6 +67,8 @@ const fetchStub = vi.fn(async (input: unknown) => {
       role: "Analyst",
       feedback: null,
       reflection: "",
+      confidence_before: 0,
+      confidence_after: 0,
       turns: [],
     });
   }
