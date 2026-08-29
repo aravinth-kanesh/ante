@@ -83,6 +83,21 @@ describe("request()", () => {
     fetchMock.mockResolvedValueOnce(new Response(null, { status: 204 }));
     await expect(authLogout()).resolves.toBeUndefined();
   });
+
+  it("turns a network failure into a plain, actionable message", async () => {
+    fetchMock.mockRejectedValueOnce(new TypeError("Failed to fetch"));
+    await expect(getProfile()).rejects.toThrow(/Cannot reach the server/);
+  });
+
+  it("gives a calm message when rate limited", async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse({ detail: "Rate limit exceeded: 20 per 1 minute" }, 429));
+    await expect(getProfile()).rejects.toThrow(/too fast/);
+  });
+
+  it("hides a bare server error behind a friendly message", async () => {
+    fetchMock.mockResolvedValueOnce(new Response(null, { status: 502 }));
+    await expect(getProfile()).rejects.toThrow(/something went wrong on our side/i);
+  });
 });
 
 describe("startInterview", () => {

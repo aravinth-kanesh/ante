@@ -46,27 +46,42 @@ function buildHeaders(options: RequestInit): Record<string, string> {
 }
 
 async function request(path: string, options: RequestInit = {}, allowRefresh = true): Promise<any> {
-  const res = await fetch(path, {
-    ...options,
-    headers: buildHeaders(options),
-    credentials: "include", // send and receive the httpOnly auth cookies
-  });
+  let res: Response;
+  try {
+    res = await fetch(path, {
+      ...options,
+      headers: buildHeaders(options),
+      credentials: "include", // send and receive the httpOnly auth cookies
+    });
+  } catch {
+    // fetch only rejects on a network-level failure (offline, server unreachable), so
+    // turn it into a message a student can act on rather than a raw "Failed to fetch".
+    throw new Error("Cannot reach the server. Please check your connection and try again.");
+  }
   // The access token is short-lived; on expiry, refresh once and replay the request.
   if (res.status === 401 && allowRefresh && !NO_REFRESH.includes(path)) {
     const refreshed = await fetch("/api/auth/refresh", {
       method: "POST",
       credentials: "include",
       headers: buildHeaders({ method: "POST" }),
-    });
-    if (refreshed.ok) return request(path, options, false);
+    }).catch(() => null);
+    if (refreshed && refreshed.ok) return request(path, options, false);
   }
   if (!res.ok) {
+    // Rate limiting returns a terse machine message; give a calm, plain one instead.
+    if (res.status === 429) {
+      throw new Error("You are going a little too fast. Please wait a few seconds and try again.");
+    }
     let detail = res.statusText;
     try {
       const body = await res.json();
       if (typeof body.detail === "string") detail = body.detail;
     } catch {
       // response had no JSON body
+    }
+    // A server error with no useful detail should not surface as a bare status line.
+    if (detail === res.statusText && res.status >= 500) {
+      detail = "Something went wrong on our side. Please try again in a moment.";
     }
     throw new Error(detail);
   }
