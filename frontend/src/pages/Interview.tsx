@@ -50,6 +50,10 @@ function message(err: unknown) {
   return err instanceof Error ? err.message : String(err);
 }
 
+function formatClock(seconds: number): string {
+  return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
+}
+
 const INTERVIEW_TYPE_HINTS: Record<InterviewType, string> = {
   general: "A realistic blend: an opener, then behavioural, competency and role-specific questions.",
   behavioural: "Questions about you, your motivation and your fit, like why this role and company.",
@@ -116,6 +120,7 @@ export default function Interview() {
   // A local object URL for reviewing the just-recorded answer before submitting it.
   const [review, setReview] = useState<{ url: string; hasVideo: boolean } | null>(null);
   const [recording, setRecording] = useState(false);
+  const [recordSecs, setRecordSecs] = useState(0);
   const [starting, setStarting] = useState(false);
   const [analysing, setAnalysing] = useState(false);
   const [speaking, setSpeaking] = useState(false);
@@ -187,6 +192,15 @@ export default function Interview() {
       captureRef.current?.cancel();
     };
   }, []);
+
+  // A gentle running clock while recording, so a student can feel the length of their
+  // answer and learn to keep it focused (no hard cut-off; the interview never stops them).
+  useEffect(() => {
+    if (!recording) return;
+    setRecordSecs(0);
+    const id = setInterval(() => setRecordSecs((s) => s + 1), 1000);
+    return () => clearInterval(id);
+  }, [recording]);
 
   // Start the live preview once it is on screen. Safari on macOS will not begin
   // playing a video element that was still hidden when play() was first called, so
@@ -393,6 +407,8 @@ export default function Interview() {
   // does not lose what the student has typed (it pairs with resuming the interview).
   const draftKey =
     sessionId !== null && question !== null ? `ante-draft:${sessionId}:${history.length}` : null;
+
+  const wordCount = answer.trim() ? answer.trim().split(/\s+/).length : 0;
 
   // Restore a saved draft when arriving at a question (after a resume or a refresh).
   useEffect(() => {
@@ -717,6 +733,13 @@ export default function Interview() {
                   placeholder={voiceMode ? "Speak your answer, or type it here..." : "Your answer..."}
                 />
 
+                {wordCount > 0 && (
+                  <p className="-mt-1 text-xs text-slate-400">
+                    {wordCount} {wordCount === 1 ? "word" : "words"}
+                    {wordCount < 30 && " · a fuller answer with a specific example usually lands better"}
+                  </p>
+                )}
+
                 {showStarHint && (
                   <details className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">
                     <summary className="cursor-pointer font-medium text-slate-700">
@@ -771,9 +794,14 @@ export default function Interview() {
                 )}
 
                 {recording && (
-                  <p className="text-sm text-slate-500">
+                  <p className="text-sm text-slate-500" aria-live="off">
                     <span className="mr-1.5 inline-block h-2 w-2 animate-pulse rounded-full bg-red-500 align-middle" />
-                    Recording... press Stop when you have finished your answer.
+                    Recording <span className="tabular-nums font-medium text-slate-700">{formatClock(recordSecs)}</span>. Press Stop when you have finished.
+                    {recordSecs >= 120 && (
+                      <span className="mt-1 block text-xs text-amber-600">
+                        Past two minutes. A focused answer is usually one to two minutes.
+                      </span>
+                    )}
                   </p>
                 )}
 

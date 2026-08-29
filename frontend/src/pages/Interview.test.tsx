@@ -152,6 +152,20 @@ describe("Interview answering", () => {
     expect(await screen.findByText("Structure your answer (STAR)")).toBeInTheDocument();
   });
 
+  it("shows a live word count for the answer", async () => {
+    mocks.startInterview.mockResolvedValue({
+      session_id: 1,
+      question: "Q1",
+      mode: "voice",
+      duration_target_min: 10,
+    });
+    renderInterview();
+    await userEvent.click(screen.getByRole("button", { name: "Start interview" }));
+    const box = await screen.findByLabelText("Your answer");
+    await userEvent.type(box, "one two three");
+    expect(screen.getByText(/3 words/)).toBeInTheDocument();
+  });
+
   it("submits a typed answer with ctrl+enter", async () => {
     mocks.startInterview.mockResolvedValue({
       session_id: 1,
