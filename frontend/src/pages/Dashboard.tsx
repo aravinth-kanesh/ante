@@ -1,6 +1,14 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { getHealth, getPreparation, getProfile, listCvs, listSessions, type Cv } from "../api";
+import {
+  getHealth,
+  getPreparation,
+  getProfile,
+  listCvs,
+  listSessions,
+  type Cv,
+  type SessionSummary,
+} from "../api";
 import { useAuth } from "../auth/AuthContext";
 import GettingStarted from "../components/GettingStarted";
 import Logo from "../components/Logo";
@@ -17,6 +25,7 @@ export default function Dashboard() {
   const [jd, setJd] = useState("");
   const [planDone, setPlanDone] = useState(false);
   const [interviewDone, setInterviewDone] = useState(false);
+  const [sessions, setSessions] = useState<SessionSummary[]>([]);
   const [hidden, setHidden] = useState(() => localStorage.getItem(HIDE_KEY) === "1");
 
   const trimmedJd = jd.trim();
@@ -39,9 +48,20 @@ export default function Dashboard() {
       .then((r) => setPlanDone(r.competencies.length > 0))
       .catch(() => {});
     listSessions()
-      .then((s) => setInterviewDone(s.length > 0))
+      .then((s) => {
+        setInterviewDone(s.length > 0);
+        setSessions(s);
+      })
       .catch(() => {});
   }, []);
+
+  // A gentle nudge to keep practising: the most recent real interview (samples excluded),
+  // newest first, and how long ago it was.
+  const lastReal = sessions.find((s) => !s.is_sample);
+  const daysSinceLast = lastReal
+    ? Math.floor((Date.now() - new Date(lastReal.created_at).getTime()) / 86_400_000)
+    : null;
+  const showNudge = daysSinceLast != null && daysSinceLast >= 5;
 
   const steps = {
     cv: activeCv !== null,
@@ -69,6 +89,17 @@ export default function Dashboard() {
       </div>
 
       {!allDone && !hidden && <GettingStarted steps={steps} onHide={hideGettingStarted} />}
+
+      {showNudge && (
+        <div className="rounded-lg border border-brand-200 bg-brand-50 px-4 py-3 text-sm text-brand-800">
+          It has been {daysSinceLast} days since your last mock interview. A short one keeps you
+          sharp.{" "}
+          <Link to="/interview" className="font-medium underline">
+            Start one
+          </Link>
+          .
+        </div>
+      )}
 
       {/* Two paths: prepare, then interview */}
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
