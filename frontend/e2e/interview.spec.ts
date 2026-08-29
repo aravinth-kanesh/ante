@@ -39,3 +39,34 @@ test("sign up, add a CV, complete a typed interview and see progress", async ({ 
   await page.getByRole("button", { name: /Summarise my progress/ }).click();
   await expect(page.getByText(/making steady progress/)).toBeVisible();
 });
+
+// The sample interview needs no setup, so a first-time visitor can see the whole loop,
+// and the results page carries the reflection box and the save-as-pdf action.
+test("a sample interview runs with no setup and the report can be reflected on", async ({ page }) => {
+  const email = `e2e-sample+${Date.now()}@example.com`;
+
+  await page.goto("/signup");
+  await page.getByLabel("Email").fill(email);
+  await page.getByLabel("Password", { exact: true }).fill("Str0ng-e2e-pass");
+  await page.getByLabel("Confirm password").fill("Str0ng-e2e-pass");
+  await page.getByRole("checkbox").check();
+  await page.getByRole("button", { name: "Sign up" }).click();
+  await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
+
+  // Start a sample interview straight away, with no CV or job description
+  await page.goto("/interview");
+  await page.getByRole("button", { name: "Try a sample interview" }).click();
+  await expect(page.getByText(/sample interview using an example CV/)).toBeVisible();
+  await expect(page.getByText(/Question 1/)).toBeVisible();
+
+  await page.getByLabel("Your answer").fill("At Northwind I would draw on my final-year team project.");
+  await page.getByRole("button", { name: /Stop . get feedback/ }).click();
+  await expect(page.getByRole("heading", { name: "Feedback" })).toBeVisible();
+
+  // The full results page offers a reflection note and a save-as-pdf action
+  await page.getByRole("link", { name: "View full results" }).click();
+  await expect(page.getByRole("button", { name: "Save as PDF" })).toBeVisible();
+  await page.getByLabel("Your reflection").fill("Next time I will lead with a specific result.");
+  await page.getByRole("button", { name: "Save reflection" }).click();
+  await expect(page.getByText("Saved")).toBeVisible();
+});
