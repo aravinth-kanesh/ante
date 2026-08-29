@@ -127,6 +127,7 @@ export default function Interview() {
   const captureRef = useRef<Capture | null>(null);
   const replayRef = useRef<Replay | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const questionRef = useRef<HTMLParagraphElement | null>(null);
 
   // Which focus options have data to draw on (from the Prepare page).
   useEffect(() => {
@@ -173,6 +174,12 @@ export default function Interview() {
       speakText(question, { onEnd: () => setSpeaking(false) });
     }
   }, [question, voiceMode]);
+
+  // Move keyboard focus to each new question so screen-reader and keyboard users are
+  // carried to what changed rather than left on the button they just pressed.
+  useEffect(() => {
+    if (question && sessionId !== null) questionRef.current?.focus();
+  }, [question, sessionId]);
 
   function replayQuestion() {
     if (!question) return;
@@ -699,7 +706,13 @@ export default function Interview() {
 
                 <div aria-live="polite">
                   <p className="sr-only">Interviewer question {history.length + 1}:</p>
-                  <p className="text-lg font-medium text-slate-900">{question}</p>
+                  <p
+                    ref={questionRef}
+                    tabIndex={-1}
+                    className="text-lg font-medium text-slate-900 focus:outline-none"
+                  >
+                    {question}
+                  </p>
                 </div>
 
                 {cameraOn && (

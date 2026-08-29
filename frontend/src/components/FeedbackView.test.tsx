@@ -1,4 +1,5 @@
 import { render, screen } from "@testing-library/react";
+import { axe } from "jest-axe";
 import { describe, expect, it } from "vitest";
 import { type AnswerNote, type FeedbackReport } from "../api";
 import FeedbackView from "./FeedbackView";
@@ -55,5 +56,17 @@ describe("FeedbackView", () => {
     const weak: AnswerNote = { question: "Q", verdict: "weak", comment: "c", model_answer: "" };
     render(<FeedbackView report={report([weak, weak])} />);
     expect(screen.getByText("Needs more work")).toBeInTheDocument();
+  });
+
+  it("has no accessibility violations", async () => {
+    const r = report([
+      { question: "About you", verdict: "weak", comment: "Too vague.", model_answer: "In my project I led four people." },
+      { question: "A strength", verdict: "strong", comment: "Great.", model_answer: "" },
+    ]);
+    r.strengths = ["Clear examples"];
+    r.improvements = ["Quantify outcomes"];
+    r.delivery = "Steady pace.";
+    const { container } = render(<FeedbackView report={r} />);
+    expect((await axe(container)).violations).toEqual([]);
   });
 });

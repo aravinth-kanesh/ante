@@ -1,4 +1,5 @@
 import { render, screen } from "@testing-library/react";
+import { axe } from "jest-axe";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ProgressReport, SessionStats } from "../api";
@@ -68,5 +69,12 @@ describe("Progress weekly goal", () => {
     mocks.getProgress.mockResolvedValue(report([session(0), session(1), session(2), session(10)]));
     renderProgress();
     expect(await screen.findByText(/hit your practice goal this week/)).toBeInTheDocument();
+  });
+
+  it("has no accessibility violations with data", async () => {
+    mocks.getProgress.mockResolvedValue(report([session(0), session(1)]));
+    const { container } = renderProgress();
+    await screen.findByText("This week");
+    expect((await axe(container)).violations).toEqual([]);
   });
 });
