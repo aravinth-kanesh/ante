@@ -1,6 +1,7 @@
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { axe } from "jest-axe";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { type AnswerNote, type FeedbackReport } from "../api";
 import FeedbackView from "./FeedbackView";
 
@@ -56,6 +57,23 @@ describe("FeedbackView", () => {
     const weak: AnswerNote = { question: "Q", verdict: "weak", comment: "c", model_answer: "" };
     render(<FeedbackView report={report([weak, weak])} />);
     expect(screen.getByText("Needs more work")).toBeInTheDocument();
+  });
+
+  it("bookmarks a model answer when a handler is given", async () => {
+    const onBookmark = vi.fn();
+    render(
+      <FeedbackView
+        report={report([
+          { question: "About you", verdict: "weak", comment: "Vague.", model_answer: "In my project I led four people." },
+        ])}
+        onBookmark={onBookmark}
+      />,
+    );
+    await userEvent.click(screen.getByRole("button", { name: "Save answer" }));
+    expect(onBookmark).toHaveBeenCalledWith(
+      expect.objectContaining({ question: "About you", model_answer: "In my project I led four people." }),
+    );
+    expect(screen.getByText("Saved")).toBeInTheDocument();
   });
 
   it("has no accessibility violations", async () => {

@@ -1,4 +1,5 @@
-import { type FeedbackReport } from "../api";
+import { useState } from "react";
+import { type AnswerNote, type FeedbackReport } from "../api";
 import { Badge } from "./ui";
 
 const VERDICTS = {
@@ -43,7 +44,20 @@ function Bullets({ items, marker }: { items: string[]; marker: string }) {
   );
 }
 
-export default function FeedbackView({ report }: { report: FeedbackReport }) {
+export default function FeedbackView({
+  report,
+  onBookmark,
+}: {
+  report: FeedbackReport;
+  onBookmark?: (note: AnswerNote) => void;
+}) {
+  const [saved, setSaved] = useState<Set<number>>(new Set());
+
+  function bookmark(note: AnswerNote, index: number) {
+    onBookmark?.(note);
+    setSaved((s) => new Set(s).add(index));
+  }
+
   const counts = { strong: 0, adequate: 0, weak: 0 };
   for (const note of report.answer_notes) counts[note.verdict] += 1;
   const total = report.answer_notes.length;
@@ -100,9 +114,25 @@ export default function FeedbackView({ report }: { report: FeedbackReport }) {
                   <p className="mt-1.5 text-sm leading-relaxed text-slate-600">{note.comment}</p>
                   {note.model_answer && (
                     <div className="mt-2 rounded-lg border border-green-200 bg-green-50/60 p-3">
-                      <p className="text-xs font-semibold uppercase tracking-wide text-green-700">
-                        How a strong answer might sound
-                      </p>
+                      <div className="flex items-start justify-between gap-3">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-green-700">
+                          How a strong answer might sound
+                        </p>
+                        {onBookmark &&
+                          (saved.has(i) ? (
+                            <span className="no-print shrink-0 text-xs font-medium text-green-700">
+                              Saved
+                            </span>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => bookmark(note, i)}
+                              className="no-print shrink-0 text-xs font-medium text-brand-700 hover:underline"
+                            >
+                              Save answer
+                            </button>
+                          ))}
+                      </div>
                       <p className="mt-1 text-sm leading-relaxed text-slate-700">{note.model_answer}</p>
                     </div>
                   )}

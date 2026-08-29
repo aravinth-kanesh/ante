@@ -533,6 +533,25 @@ export interface InterviewDetail {
   turns: TurnRead[];
 }
 
+export interface SavedAnswer {
+  id: number;
+  question: string;
+  answer: string;
+  created_at: string;
+}
+
+export async function listSavedAnswers(): Promise<SavedAnswer[]> {
+  return request("/api/saved-answers");
+}
+
+export async function createSavedAnswer(question: string, answer: string): Promise<SavedAnswer> {
+  return request("/api/saved-answers", { method: "POST", body: JSON.stringify({ question, answer }) });
+}
+
+export async function deleteSavedAnswer(id: number): Promise<{ ok: boolean }> {
+  return request(`/api/saved-answers/${id}`, { method: "DELETE" });
+}
+
 export interface StarStory {
   id: number;
   title: string;

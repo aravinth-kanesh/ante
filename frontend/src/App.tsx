@@ -17,6 +17,7 @@ import Privacy from "./pages/Privacy";
 import QuestionBank from "./pages/QuestionBank";
 import QuickPractice from "./pages/QuickPractice";
 import ResetPassword from "./pages/ResetPassword";
+import SavedAnswers from "./pages/SavedAnswers";
 import Stars from "./pages/Stars";
 import Settings from "./pages/Settings";
 import Signup from "./pages/Signup";
@@ -62,6 +63,7 @@ export default function App() {
           <Route path="/practice" element={<Page><QuickPractice /></Page>} />
           <Route path="/bank" element={<Page><QuestionBank /></Page>} />
           <Route path="/stars" element={<Page><Stars /></Page>} />
+          <Route path="/saved" element={<Page><SavedAnswers /></Page>} />
           <Route path="/progress" element={<Page><Progress /></Page>} />
           <Route path="/results/:id" element={<Page><Results /></Page>} />
           <Route path="/history" element={<Page><History /></Page>} />

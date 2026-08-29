@@ -4,6 +4,7 @@ import {
   analyseNonverbal,
   answerInterview,
   answerMediaBundleUrl,
+  createSavedAnswer,
   deleteAnswerMedia,
   finishInterview,
   getActiveInterview,
@@ -927,7 +928,12 @@ export default function Interview() {
         <Card>
           <CardBody className="space-y-4">
             <CardTitle>Feedback</CardTitle>
-            <FeedbackView report={feedback} />
+            <FeedbackView
+              report={feedback}
+              onBookmark={(note) => {
+                createSavedAnswer(note.question, note.model_answer).catch(() => {});
+              }}
+            />
             <div className="flex flex-wrap items-center gap-3 pt-1">
               <Button onClick={() => begin()} loading={loading}>
                 Start another interview

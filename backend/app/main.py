@@ -29,6 +29,7 @@ from app.routers import (
     prepare,
     profile,
     progress,
+    saved,
     speech,
     star,
     vision,
@@ -176,6 +177,7 @@ app.include_router(prepare.router, prefix="/api", dependencies=verified)
 app.include_router(interview.router, prefix="/api", dependencies=verified)
 app.include_router(practice.router, prefix="/api", dependencies=verified)
 app.include_router(star.router, prefix="/api", dependencies=verified)
+app.include_router(saved.router, prefix="/api", dependencies=verified)
 app.include_router(media.router, prefix="/api", dependencies=verified)
 app.include_router(progress.router, prefix="/api", dependencies=verified)
 app.include_router(speech.router, prefix="/api", dependencies=verified)

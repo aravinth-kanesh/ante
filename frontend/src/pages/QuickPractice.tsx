@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
+  createSavedAnswer,
   getPracticeQuestion,
   submitPracticeAnswer,
   type AnswerNote,
@@ -27,12 +28,14 @@ export default function QuickPractice() {
   const [note, setNote] = useState<AnswerNote | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [savedAnswer, setSavedAnswer] = useState(false);
 
   async function loadQuestion(exclude = "") {
     setLoadingQuestion(true);
     setError("");
     setNote(null);
     setAnswer("");
+    setSavedAnswer(false);
     try {
       const res = await getPracticeQuestion(exclude);
       setQuestion(res.question);
@@ -51,6 +54,7 @@ export default function QuickPractice() {
   async function submit() {
     setSubmitting(true);
     setError("");
+    setSavedAnswer(false);
     try {
       setNote(await submitPracticeAnswer(question, answer));
     } catch (err) {
@@ -136,14 +140,33 @@ export default function QuickPractice() {
             <p className="text-sm leading-relaxed text-slate-700">{note.comment}</p>
             {note.model_answer && (
               <div className="rounded-lg border border-green-200 bg-green-50/60 p-3">
-                <p className="text-xs font-semibold uppercase tracking-wide text-green-700">
-                  How a strong answer might sound
-                </p>
+                <div className="flex items-start justify-between gap-3">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-green-700">
+                    How a strong answer might sound
+                  </p>
+                  {savedAnswer ? (
+                    <span className="shrink-0 text-xs font-medium text-green-700">Saved</span>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        createSavedAnswer(question, note.model_answer).catch((err) => setError(message(err)));
+                        setSavedAnswer(true);
+                      }}
+                      className="shrink-0 text-xs font-medium text-brand-700 hover:underline"
+                    >
+                      Save answer
+                    </button>
+                  )}
+                </div>
                 <p className="mt-1 text-sm leading-relaxed text-slate-700">{note.model_answer}</p>
               </div>
             )}
             <div className="flex flex-wrap items-center gap-3 pt-1">
               <Button onClick={() => loadQuestion(question)}>Practise another</Button>
+              <Link to="/saved" className="text-sm font-medium text-brand-700 hover:underline">
+                Saved answers
+              </Link>
               <Link to="/interview" className="text-sm font-medium text-brand-700 hover:underline">
                 Do a full interview
               </Link>

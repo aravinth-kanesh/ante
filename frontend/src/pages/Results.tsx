@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import {
+  createSavedAnswer,
   getInterview,
   regenerateFeedback,
   saveConfidence,
   saveReflection,
+  type AnswerNote,
   type InterviewDetail,
 } from "../api";
 import AnswerTimeline from "../components/AnswerTimeline";
@@ -268,7 +270,14 @@ export default function Results() {
 
               <div className="mt-3">
                 {fb ? (
-                  <FeedbackView report={fb} />
+                  <FeedbackView
+                    report={fb}
+                    onBookmark={(note: AnswerNote) => {
+                      createSavedAnswer(note.question, note.model_answer).catch((err) =>
+                        setError(message(err)),
+                      );
+                    }}
+                  />
                 ) : (
                   <p className="text-sm text-slate-500">This interview has no feedback yet.</p>
                 )}

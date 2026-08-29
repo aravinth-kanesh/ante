@@ -19,6 +19,7 @@ import QuestionBank from "./QuestionBank";
 import QuickPractice from "./QuickPractice";
 import ResetPassword from "./ResetPassword";
 import Results from "./Results";
+import SavedAnswers from "./SavedAnswers";
 import Settings from "./Settings";
 import Signup from "./Signup";
 import Stars from "./Stars";
@@ -38,6 +39,7 @@ const ROUTES: Record<string, unknown> = {
   "/api/interview": [],
   "/api/practice/question": { question: "Tell me about yourself." },
   "/api/stars": [],
+  "/api/saved-answers": [],
   "/api/progress": {
     totals: { interviews: 0, questions_answered: 0, minutes_practised: 0 },
     sessions: [],
@@ -120,5 +122,6 @@ describe("page accessibility (axe)", () => {
   it("QuickPractice has no violations", () => axeClean(<QuickPractice />));
   it("QuestionBank has no violations", () => axeClean(<QuestionBank />));
   it("Stars has no violations", () => axeClean(<Stars />));
+  it("SavedAnswers has no violations", () => axeClean(<SavedAnswers />));
   it("Results has no violations", () => axeClean(<Results />, "/results/1"));
 });
