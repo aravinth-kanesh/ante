@@ -4,6 +4,9 @@ on:
   push:
     branches: [main]
   pull_request:
+  schedule:
+    # Weekly, so newly disclosed dependency advisories surface even without a push.
+    - cron: "0 6 * * 1"
 
 # Only keep the latest run per branch or pull request.
 concurrency:

@@ -7,11 +7,13 @@ import type { InterviewDetail } from "../api";
 const mocks = vi.hoisted(() => ({
   getInterview: vi.fn(),
   regenerateFeedback: vi.fn(),
+  saveReflection: vi.fn(),
 }));
 
 vi.mock("../api", () => ({
   getInterview: mocks.getInterview,
   regenerateFeedback: mocks.regenerateFeedback,
+  saveReflection: mocks.saveReflection,
 }));
 
 import Results from "./Results";
@@ -30,6 +32,7 @@ const detail: InterviewDetail = {
     answer_notes: [],
     delivery: "Steady pace, few fillers.",
   },
+  reflection: "",
   turns: [
     { role: "assistant", kind: "question", content: "Tell me about yourself.", metrics: null, nonverbal: null },
     { role: "user", kind: "answer", content: "I am a final-year student.", metrics: null, nonverbal: null },
@@ -82,6 +85,18 @@ describe("Results", () => {
     renderResults();
     expect(await screen.findByText(/rated weak or adequate/)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Review your weak spots" })).toBeInTheDocument();
+  });
+
+  it("saves a reflection note", async () => {
+    mocks.getInterview.mockResolvedValue(detail);
+    mocks.saveReflection.mockResolvedValue({ ok: true });
+    renderResults();
+
+    const box = await screen.findByLabelText("Your reflection");
+    await userEvent.type(box, "Give a specific example next time.");
+    await userEvent.click(screen.getByRole("button", { name: "Save reflection" }));
+    expect(mocks.saveReflection).toHaveBeenCalledWith(1, "Give a specific example next time.");
+    expect(await screen.findByText("Saved")).toBeInTheDocument();
   });
 
   it("congratulates a strong interview instead of flagging gaps", async () => {

@@ -217,7 +217,12 @@ class TranscriptResponse(BaseModel):
     company: str = ""
     role: str = ""
     feedback: FeedbackReport | None = None
+    reflection: str = ""
     turns: list[TurnRead]
+
+
+class ReflectionUpdate(BaseModel):
+    text: str = Field("", max_length=5000)
 
 
 class SessionSummary(BaseModel):

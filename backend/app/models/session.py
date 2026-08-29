@@ -31,6 +31,8 @@ class InterviewSession(Base):
     # A no-setup demo run on the built-in sample CV; kept out of progress stats so it does
     # not skew a student's real trends, and badged in their history.
     is_sample: Mapped[bool] = mapped_column(default=False)
+    # The student's own note after the interview on what they will do differently.
+    reflection: Mapped[str] = mapped_column(Text, default="")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
 
     user: Mapped[User] = relationship()

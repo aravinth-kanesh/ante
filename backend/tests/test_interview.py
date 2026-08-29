@@ -563,6 +563,22 @@ def test_finished_interview_is_not_offered_for_resume(client, monkeypatch):
     assert client.get("/api/interview/active", cookies=cookies).json() is None
 
 
+def test_reflection_can_be_saved_and_read_back(client, monkeypatch):
+    mock_llm(monkeypatch)
+    cookies = auth_cookies(client, "reflect@example.com")
+    save_cv(client, cookies)
+    sid = client.post("/api/interview/start", cookies=cookies, json={"mode": "text"}).json()["session_id"]
+
+    res = client.put(
+        f"/api/interview/{sid}/reflection",
+        cookies=cookies,
+        json={"text": "Next time I will give a specific example."},
+    )
+    assert res.status_code == 200
+    detail = client.get(f"/api/interview/{sid}", cookies=cookies).json()
+    assert detail["reflection"] == "Next time I will give a specific example."
+
+
 def test_cv_text_over_the_cap_is_rejected(client):
     from app.services.cv_parse import MAX_TEXT_CHARS
 

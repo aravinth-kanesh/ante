@@ -60,6 +60,7 @@ const fetchStub = vi.fn(async (input: unknown) => {
       company: "Acme",
       role: "Analyst",
       feedback: null,
+      reflection: "",
       turns: [],
     });
   }

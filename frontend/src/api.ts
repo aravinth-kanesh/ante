@@ -524,7 +524,16 @@ export interface InterviewDetail {
   company: string;
   role: string;
   feedback: FeedbackReport | null;
+  reflection: string;
   turns: TurnRead[];
+}
+
+/** Save the student's own reflection note on a past interview. */
+export async function saveReflection(sessionId: number, text: string): Promise<{ ok: boolean }> {
+  return request(`/api/interview/${sessionId}/reflection`, {
+    method: "PUT",
+    body: JSON.stringify({ text }),
+  });
 }
 
 export async function listSessions(): Promise<SessionSummary[]> {

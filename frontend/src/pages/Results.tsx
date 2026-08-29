@@ -1,9 +1,19 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { getInterview, regenerateFeedback, type InterviewDetail } from "../api";
+import { getInterview, regenerateFeedback, saveReflection, type InterviewDetail } from "../api";
 import AnswerTimeline from "../components/AnswerTimeline";
 import FeedbackView from "../components/FeedbackView";
-import { Badge, Button, Card, CardBody, CardTitle, Loading, MicIcon, VideoIcon } from "../components/ui";
+import {
+  Badge,
+  Button,
+  Card,
+  CardBody,
+  CardTitle,
+  Loading,
+  MicIcon,
+  TextArea,
+  VideoIcon,
+} from "../components/ui";
 import { deliverySummary, nonverbalSummary } from "../format";
 
 function message(err: unknown) {
@@ -34,6 +44,9 @@ export default function Results() {
   const [detail, setDetail] = useState<InterviewDetail | null>(null);
   const [error, setError] = useState("");
   const [regenerating, setRegenerating] = useState(false);
+  const [reflection, setReflection] = useState("");
+  const [savedReflection, setSavedReflection] = useState("");
+  const [savingReflection, setSavingReflection] = useState(false);
 
   useEffect(() => {
     const sessionId = Number(id);
@@ -42,9 +55,28 @@ export default function Results() {
       return;
     }
     getInterview(sessionId)
-      .then(setDetail)
+      .then((d) => {
+        setDetail(d);
+        setReflection(d.reflection);
+        setSavedReflection(d.reflection);
+      })
       .catch((err) => setError(message(err)));
   }, [id]);
+
+  async function storeReflection() {
+    const sessionId = Number(id);
+    setSavingReflection(true);
+    setError("");
+    try {
+      await saveReflection(sessionId, reflection);
+      setSavedReflection(reflection.trim());
+      setReflection(reflection.trim());
+    } catch (err) {
+      setError(message(err));
+    } finally {
+      setSavingReflection(false);
+    }
+  }
 
   async function regenerate() {
     const sessionId = Number(id);
@@ -172,6 +204,41 @@ export default function Results() {
                 ) : (
                   <p className="text-sm text-slate-500">This interview has no feedback yet.</p>
                 )}
+              </div>
+            </CardBody>
+          </Card>
+
+          <Card>
+            <CardBody>
+              <CardTitle>Your reflection</CardTitle>
+              <p className="mt-1 text-sm text-slate-500">
+                In your own words, what is the one thing you will do differently next time? Writing
+                it down makes it far likelier to stick.
+              </p>
+              {savedReflection && <p className="print-only mt-2 text-sm text-slate-700">{savedReflection}</p>}
+              <div className="no-print mt-3 space-y-2">
+                <TextArea
+                  aria-label="Your reflection"
+                  value={reflection}
+                  onChange={(e) => setReflection(e.target.value)}
+                  rows={3}
+                  placeholder="Next time I will..."
+                />
+                <div className="flex items-center gap-3">
+                  <Button
+                    size="sm"
+                    onClick={storeReflection}
+                    loading={savingReflection}
+                    disabled={reflection.trim() === savedReflection}
+                  >
+                    Save reflection
+                  </Button>
+                  {reflection.trim() === savedReflection && savedReflection && (
+                    <span role="status" className="text-sm text-green-600">
+                      Saved
+                    </span>
+                  )}
+                </div>
               </div>
             </CardBody>
           </Card>

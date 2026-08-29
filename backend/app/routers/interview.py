@@ -18,6 +18,7 @@ from app.schemas.interview import (
     FeedbackReport,
     FeedbackResponse,
     NonverbalMetrics,
+    ReflectionUpdate,
     SessionSummary,
     StartRequest,
     StartResponse,
@@ -316,8 +317,23 @@ def transcript(
         company=session.company,
         role=session.role,
         feedback=feedback,
+        reflection=session.reflection,
         turns=[_turn_read(t) for t in session.turns],
     )
+
+
+@router.put("/{session_id}/reflection")
+def save_reflection(
+    session_id: int,
+    data: ReflectionUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> dict:
+    # The student's own note on what they will do differently next time.
+    session = _owned(db, session_id, current_user)
+    session.reflection = data.text.strip()
+    db.commit()
+    return {"ok": True}
 
 
 @router.delete("/{session_id}")
