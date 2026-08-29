@@ -232,6 +232,7 @@ export interface CompanyResearch {
   soft_skills: string[];
   skills: string[]; // legacy fallback
   tips: string[];
+  sources: { title: string; url: string }[];
 }
 
 export interface Research {

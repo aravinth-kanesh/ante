@@ -54,13 +54,32 @@ def test_research_is_ungrounded_when_web_search_off(monkeypatch):
 def test_research_is_grounded_when_web_search_returns_snippets(monkeypatch):
     monkeypatch.setattr(settings, "web_search_enabled", True)
     monkeypatch.setattr(
-        research.websearch, "search", lambda q, *a, **k: ["Acme Ltd makes climbing gear."]
+        research.websearch,
+        "search_results",
+        lambda q, *a, **k: [
+            {"title": "Acme Ltd", "body": "makes climbing gear.", "url": "https://acme.example"}
+        ],
     )
     prompts = []
     monkeypatch.setattr(research.llm, "chat", lambda messages, *a, **k: prompts.append(messages[-1]["content"]) or "{}")
     research.research_company("Acme", "Engineer")
-    assert "Acme Ltd makes climbing gear." in prompts[-1]
+    assert "makes climbing gear." in prompts[-1]
     assert "web search results" in prompts[-1]
+
+
+def test_research_captures_sources_when_grounded(monkeypatch):
+    monkeypatch.setattr(settings, "web_search_enabled", True)
+    monkeypatch.setattr(
+        research.websearch,
+        "search_results",
+        lambda q, *a, **k: [
+            {"title": "Acme Ltd", "body": "makes climbing gear.", "url": "https://acme.example"}
+        ],
+    )
+    monkeypatch.setattr(research.llm, "chat", lambda *a, **k: "{}")
+    report = research.research_company("Acme", "Engineer")
+    assert [s.url for s in report.sources] == ["https://acme.example"]
+    assert report.sources[0].title == "Acme Ltd"
 
 
 def test_render_flattens_structured_research():

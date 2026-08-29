@@ -2,7 +2,7 @@ import json
 import re
 
 from app.config import settings
-from app.schemas.profile import CompanyResearch
+from app.schemas.profile import CompanyResearch, Source
 from app.services import llm, websearch
 from app.services.text import strip_markdown
 
@@ -67,40 +67,56 @@ def _clean(report: CompanyResearch) -> CompanyResearch:
     )
 
 
-def _grounding(company: str, role: str) -> str:
-    """A prompt block of web snippets to ground the briefing, or "" when off/empty."""
+def _grounding(company: str, role: str) -> tuple[str, list[Source]]:
+    """A prompt block of web snippets to ground the briefing and the sources it drew on;
+    ("", []) when web search is off or returns nothing."""
     if not company.strip():
-        return ""
+        return "", []
+    results: list[dict] = []
+    results.extend(websearch.search_results(f"{company} company overview what they do"))
+    results.extend(websearch.search_results(f"{company} {role} interview process".strip()))
+    results = results[: settings.web_search_max_results]
+
     snippets: list[str] = []
-    snippets.extend(websearch.search(f"{company} company overview what they do"))
-    snippets.extend(websearch.search(f"{company} {role} interview process".strip()))
-    snippets = snippets[: settings.web_search_max_results]
+    sources: list[Source] = []
+    seen: set[str] = set()
+    for result in results:
+        title, body, url = result["title"], result["body"], result["url"]
+        if body:
+            snippets.append(f"{title}: {body}" if title else body)
+        if url and url not in seen:
+            seen.add(url)
+            sources.append(Source(title=title or url, url=url))
+
     if not snippets:
-        return ""
+        return "", sources
     listed = "\n".join(f"- {s}" for s in snippets)
-    return (
+    text = (
         "Use these recent web search results to ground the briefing. Prefer them over "
         "guesswork, but where they are thin or conflicting, fall back to the norms for "
         "this role and industry and say plainly when you are unsure rather than "
         f"inventing details:\n{listed}\n\n"
     )
+    return text, sources
 
 
 def research_company(company: str, role: str) -> CompanyResearch:
+    context, sources = _grounding(company, role)
     prompt = RESEARCH_PROMPT.format(
         company=company or "the employer",
         role=role or "the advertised role",
-        context=_grounding(company, role),
+        context=context,
     )
     raw = llm.chat([{"role": "user", "content": prompt}], temperature=0.3)
     match = _JSON.search(raw)
     if match:
         try:
-            return _clean(CompanyResearch.model_validate_json(match.group()))
+            report = _clean(CompanyResearch.model_validate_json(match.group()))
+            return report.model_copy(update={"sources": sources})
         except ValueError:
             pass
     # not usable JSON; keep the prose as the overview
-    return CompanyResearch(overview=strip_markdown(raw))
+    return CompanyResearch(overview=strip_markdown(raw), sources=sources)
 
 
 def render(report: CompanyResearch) -> str:

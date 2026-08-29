@@ -16,6 +16,13 @@ class ProfileRead(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class Source(BaseModel):
+    """A web result the briefing drew on, so a student can judge and dig further."""
+
+    title: str = ""
+    url: str = ""
+
+
 class CompanyResearch(BaseModel):
     """Structured company briefing for a candidate."""
 
@@ -25,6 +32,7 @@ class CompanyResearch(BaseModel):
     soft_skills: list[str] = []
     skills: list[str] = []  # legacy: research saved before skills were split
     tips: list[str] = []
+    sources: list[Source] = []  # web results the briefing was grounded in (when web search is on)
 
 
 class ResearchRead(BaseModel):

@@ -89,6 +89,28 @@ export default function CompanyResearchView({
           </ul>
         </Section>
       )}
+
+      {research.sources && research.sources.length > 0 && (
+        <Section title="Sources">
+          <p className="mb-2 text-xs text-slate-500">
+            Web results this briefing drew on. Check them and dig further before your interview.
+          </p>
+          <ul className="space-y-1.5">
+            {research.sources.map((source, i) => (
+              <li key={i} className="text-sm">
+                <a
+                  href={source.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-brand-700 hover:underline"
+                >
+                  {source.title || source.url}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </Section>
+      )}
     </div>
   );
 }
