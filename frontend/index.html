@@ -7,21 +7,9 @@
     <meta name="description" content="Ante: practise interviews before the room that matters." />
     <meta name="color-scheme" content="light dark" />
     <title>Ante - Interview Practice</title>
-    <script>
-      // Set the theme before first paint to avoid a flash: a stored choice wins, else the
-      // operating system preference.
-      (function () {
-        try {
-          var t = localStorage.getItem("ante-theme");
-          if (t !== "dark" && t !== "light") {
-            t = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-          }
-          document.documentElement.setAttribute("data-theme", t);
-        } catch (e) {
-          document.documentElement.setAttribute("data-theme", "light");
-        }
-      })();
-    </script>
+    <!-- External (not inline) so it needs no script-src exception in the CSP. Runs before
+         first paint to set the theme and avoid a flash. -->
+    <script src="/theme-init.js"></script>
   </head>
   <body>
     <div id="root"></div>

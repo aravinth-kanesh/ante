@@ -67,9 +67,11 @@ class Settings(BaseSettings):
     session_media_ttl_minutes: int = 60  # hard cap: purge anything older than this
     session_media_sweep_minutes: int = 15  # how often the background sweeper runs
 
-    # Content-Security-Policy. Starts in report-only so it can be checked in the
-    # browser before it is enforced; set CSP_REPORT_ONLY=false to enforce.
-    csp_report_only: bool = True
+    # Content-Security-Policy. Enforced by default. The policy is designed for the app
+    # (same-origin assets, 'wasm-unsafe-eval' for the in-browser MediaPipe models, blob:
+    # for recorded audio and workers) and has been checked in the browser. Set
+    # CSP_REPORT_ONLY=true to fall back to monitoring only.
+    csp_report_only: bool = False
 
     # Logging. "text" for readable local logs, "json" for structured production logs.
     log_level: str = "INFO"

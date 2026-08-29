@@ -8,19 +8,20 @@ def test_security_headers_present(client):
     assert headers["X-Frame-Options"] == "DENY"
     assert "camera=(self)" in headers["Permissions-Policy"]
     assert headers["Cross-Origin-Opener-Policy"] == "same-origin"
-    # report-only by default so it can be checked before it is enforced
-    assert "default-src 'self'" in headers["Content-Security-Policy-Report-Only"]
-    assert "wasm-unsafe-eval" in headers["Content-Security-Policy-Report-Only"]
+    # enforced by default; the policy has been checked in the browser
+    assert "default-src 'self'" in headers["Content-Security-Policy"]
+    assert "wasm-unsafe-eval" in headers["Content-Security-Policy"]
+    assert "Content-Security-Policy-Report-Only" not in headers
 
 
-def test_csp_enforced_when_not_report_only(client):
-    settings.csp_report_only = False
+def test_csp_can_fall_back_to_report_only(client):
+    settings.csp_report_only = True
     try:
         res = client.get("/api/health")
-        assert "Content-Security-Policy" in res.headers
-        assert "Content-Security-Policy-Report-Only" not in res.headers
+        assert "Content-Security-Policy-Report-Only" in res.headers
+        assert "Content-Security-Policy" not in res.headers
     finally:
-        settings.csp_report_only = True
+        settings.csp_report_only = False  # restore the enforced default
 
 
 def test_oversized_request_body_rejected(client):
