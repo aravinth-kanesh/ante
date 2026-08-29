@@ -17,6 +17,7 @@ from app.services.prompts import (
     FEEDBACK_PROMPT,
     INTERVIEW_STYLES,
     INTERVIEWER_PROMPT,
+    MODEL_ANSWER_PROMPT,
 )
 from app.services.text import strip_markdown
 
@@ -409,6 +410,47 @@ def parse_feedback(raw: str) -> FeedbackReport:
     return FeedbackReport(summary=strip_markdown(raw))
 
 
+def _fill_missing_model_answers(report: FeedbackReport, transcript: str) -> FeedbackReport:
+    """Every weak or adequate answer should carry a model answer, since it is the most
+    useful thing a student takes away. The feedback prompt asks for one, but if the model
+    left any empty, make one bounded, moderated call to fill just those. Best effort: on
+    any error or unparseable reply the notes are left as they are, never fabricated."""
+    missing = [
+        note
+        for note in report.answer_notes
+        if note.verdict in ("weak", "adequate") and not note.model_answer.strip()
+    ]
+    if not missing:
+        return report
+
+    questions = "\n".join(f"- {note.question}" for note in missing)
+    prompt = MODEL_ANSWER_PROMPT.format(questions=questions, transcript=transcript)
+    try:
+        raw = llm.chat([{"role": "user", "content": prompt}])
+        if not moderation.moderate_output(raw).allowed:
+            return report
+        match = _JSON_OBJECT.search(raw)
+        if match is None:
+            return report
+        answers = json.loads(match.group()).get("answers", [])
+    except Exception:
+        return report
+
+    by_question = {
+        str(a.get("question", "")).strip(): strip_markdown(str(a.get("model_answer", "")))
+        for a in answers
+        if isinstance(a, dict)
+    }
+    notes = []
+    for note in report.answer_notes:
+        filled = by_question.get(note.question.strip(), "")
+        if note in missing and filled:
+            notes.append(note.model_copy(update={"model_answer": filled}))
+        else:
+            notes.append(note)
+    return report.model_copy(update={"answer_notes": notes})
+
+
 def _has_answers(session: InterviewSession) -> bool:
     return any(turn.kind == "answer" and turn.content.strip() for turn in session.turns)
 
@@ -442,7 +484,7 @@ def _generate_feedback(session: InterviewSession) -> FeedbackReport:
     raw = llm.chat([{"role": "user", "content": prompt}])
     if not moderation.moderate_output(raw).allowed:
         raw = llm.chat([{"role": "user", "content": prompt}])
-    return parse_feedback(raw)
+    return _fill_missing_model_answers(parse_feedback(raw), transcript)
 
 
 def finish(db: Session, session: InterviewSession) -> FeedbackReport:

@@ -800,3 +800,41 @@ def test_confidence_out_of_range_is_rejected(client, monkeypatch):
     save_cv(client, cookies)
     sid = client.post("/api/interview/start", cookies=cookies, json={"mode": "text"}).json()["session_id"]
     assert client.put(f"/api/interview/{sid}/confidence", cookies=cookies, json={"before": 9, "after": 1}).status_code == 422
+
+
+def test_missing_model_answer_is_filled_in(monkeypatch):
+    from app.schemas.interview import AnswerNote, FeedbackReport
+
+    report = FeedbackReport(
+        summary="ok",
+        answer_notes=[
+            AnswerNote(question="About you", verdict="weak", comment="Vague.", model_answer=""),
+            AnswerNote(question="A strength", verdict="strong", comment="Great.", model_answer=""),
+        ],
+    )
+    monkeypatch.setattr(
+        interview.llm,
+        "chat",
+        lambda *a, **k: '{"answers": [{"question": "About you", "model_answer": "In my project I led four people and delivered on time."}]}',
+    )
+    monkeypatch.setattr(interview.moderation, "moderate_output", lambda t: Verdict(allowed=True))
+
+    filled = interview._fill_missing_model_answers(report, "Interviewer: About you\nCandidate: um")
+    weak = next(n for n in filled.answer_notes if n.question == "About you")
+    strong = next(n for n in filled.answer_notes if n.question == "A strength")
+    assert "led four people" in weak.model_answer
+    assert strong.model_answer == ""  # strong answers are intentionally left without one
+
+
+def test_missing_model_answer_fill_degrades_gracefully(monkeypatch):
+    from app.schemas.interview import AnswerNote, FeedbackReport
+
+    report = FeedbackReport(
+        summary="ok",
+        answer_notes=[AnswerNote(question="Q", verdict="weak", comment="c", model_answer="")],
+    )
+    monkeypatch.setattr(interview.llm, "chat", lambda *a, **k: "not json at all")
+    monkeypatch.setattr(interview.moderation, "moderate_output", lambda t: Verdict(allowed=True))
+
+    filled = interview._fill_missing_model_answers(report, "transcript")
+    assert filled.answer_notes[0].model_answer == ""  # left empty, never fabricated

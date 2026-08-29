@@ -193,6 +193,26 @@ Transcript:
 {transcript}"""
 
 
+MODEL_ANSWER_PROMPT = """A university student has just had a mock interview. For each \
+question below, write a short model answer, one to three sentences, showing how a strong \
+answer might sound: in the first person, grounded in the candidate's own CV and experience \
+as shown in the transcript, with a clear structure. Do not invent achievements the \
+transcript does not support; where there is little to go on, give a well-structured, honest \
+example and keep it general.
+
+Return a single JSON object and nothing else, in exactly this shape:
+{{"answers": [{{"question": "<the question, copied exactly>", "model_answer": "<one to \
+three sentences>"}}]}}
+
+Write in plain British English with no Markdown.
+
+Questions needing a model answer:
+{questions}
+
+Transcript:
+{transcript}"""
+
+
 PROGRESS_SUMMARY_PROMPT = """You are a supportive interview coach speaking to a \
 university student about their mock interview practice so far. Below is a plain summary \
 of their measured progress.
