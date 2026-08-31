@@ -65,7 +65,7 @@ def describe(report: ProgressReport) -> str:
     lines = [
         f"Interviews completed: {report.totals.interviews}.",
         f"Questions answered: {report.totals.questions_answered}.",
-        f"Minutes of spoken practice: {report.totals.minutes_practised}.",
+        f"Minutes practised: {report.totals.minutes_practised}.",
     ]
     for delta in report.deltas:
         if delta.latest is None:
@@ -111,6 +111,28 @@ def _deliveries(session: InterviewSession) -> list[DeliveryMetrics]:
         if metrics and metrics.word_count > 0:
             out.append(metrics)
     return out
+
+
+# Typed answers have no recorded audio, so their practice time is estimated from the
+# answer's length at a nominal delivery pace, on the same footing as the measured duration
+# of spoken answers. This keeps "minutes practised" meaningful for text interviews rather
+# than counting only voice ones.
+_TYPED_WPM = 130.0
+
+
+def _practised_seconds(session: InterviewSession) -> float:
+    """Seconds of practice in one interview: the measured audio length for spoken answers,
+    and an estimate from the written length for typed ones."""
+    seconds = 0.0
+    for turn in session.turns:
+        if turn.kind != "answer":
+            continue
+        metrics = _parse(DeliveryMetrics, turn.metrics)
+        if metrics and metrics.word_count > 0:
+            seconds += metrics.duration_sec  # a real spoken answer: use the clip length
+        else:
+            seconds += len(turn.content.split()) / _TYPED_WPM * 60  # typed: estimate from length
+    return seconds
 
 
 def _nonverbals(session: InterviewSession) -> list[NonverbalMetrics]:
@@ -272,7 +294,7 @@ def build_report(sessions: list[InterviewSession]) -> ProgressReport:
     """Build the report from the user's usable interviews, oldest first."""
     stats = [session_stats(s) for s in sessions]
 
-    minutes = round(sum(sum(d.duration_sec for d in _deliveries(s)) for s in sessions) / 60)
+    minutes = round(sum(_practised_seconds(s) for s in sessions) / 60)
     totals = Totals(
         interviews=len(stats),
         questions_answered=sum(s.answered_count for s in stats),

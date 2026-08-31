@@ -97,6 +97,28 @@ def test_session_stats_text_only_has_quality_but_no_delivery():
     assert stats.has_delivery is False and stats.has_nonverbal is False
 
 
+def test_minutes_practised_estimates_typed_answers():
+    # A typed interview records no audio, so its practice time is estimated from the
+    # answer length rather than counting as zero, which would make text practice invisible.
+    session = make_session(1, 1, [{}], _feedback(strong=1))
+    long_answer = " ".join(["word"] * 260)  # 260 words at 130 wpm is 2 minutes
+    for turn in session.turns:
+        if turn.kind == "answer":
+            turn.content = long_answer
+    report = progress.build_report([session])
+    assert report.totals.minutes_practised == 2
+
+
+def test_minutes_practised_mixes_measured_and_estimated():
+    spoken = make_session(1, 1, [{"metrics": VOICE}], _feedback(strong=1))  # 30s measured
+    typed = make_session(2, 2, [{}], _feedback(strong=1))
+    for turn in typed.turns:
+        if turn.kind == "answer":
+            turn.content = " ".join(["word"] * 195)  # 195 words at 130 wpm is 90s
+    report = progress.build_report([spoken, typed])
+    assert report.totals.minutes_practised == 2  # 30s + 90s = 120s
+
+
 def test_build_report_deltas_and_totals():
     worse = make_session(
         1, 1, [{"metrics": {**VOICE, "filler_count": 10}}], _feedback(strong=1, weak=1,
@@ -110,7 +132,7 @@ def test_build_report_deltas_and_totals():
 
     assert report.totals.interviews == 2
     assert report.totals.questions_answered == 2
-    assert report.totals.minutes_practised == 1  # 30s + 30s
+    assert report.totals.minutes_practised == 1  # 30s + 30s of measured audio
 
     by = {d.metric: d for d in report.deltas}
     assert by["strong_rate"].direction == "improved"  # 0.5 -> 1.0

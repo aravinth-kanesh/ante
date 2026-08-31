@@ -57,7 +57,7 @@ class MetricDelta(BaseModel):
 class Totals(BaseModel):
     interviews: int = 0
     questions_answered: int = 0
-    minutes_practised: int = 0  # spoken practice only (voice interviews)
+    minutes_practised: int = 0  # spoken audio for voice answers, estimated from length for typed ones
 
 
 class ProgressReport(BaseModel):
