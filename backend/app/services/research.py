@@ -17,13 +17,20 @@ Job description:
 
 RESEARCH_PROMPT = """You are briefing a candidate who is about to interview for the \
 role of {role} at {company}.
-{context}Return a structured briefing as a single JSON object and \
-nothing else, in exactly this shape:
+
+The job description for this specific role is given at the end. Treat it as the most \
+reliable source and draw the briefing from it wherever it provides the information, \
+above all the interview or recruitment process, the skills the role asks for, and what \
+the role involves. Prefer it over your general knowledge; use your general knowledge, \
+and any search results below, only to fill gaps it leaves, and never contradict what it \
+states.
+{context}Return a structured briefing as a single JSON object and nothing else, in \
+exactly this shape:
 {{
   "overview": "<what the company does and the values or culture it is known for>",
-  "interview_process": "<how it usually interviews for this role: the likely stages \
-and formats, and the themes questions tend to focus on such as behavioural, technical \
-or values-based>",
+  "interview_process": "<how this role is actually interviewed for: take the stages and \
+formats from the job description where it sets them out, and fall back to the usual \
+process for the role only where it does not>",
   "technical_skills": ["<a hard or technical skill the role needs, e.g. a language, \
 tool, or domain knowledge>"],
   "soft_skills": ["<an interpersonal or behavioural quality the role needs, e.g. \
@@ -31,9 +38,13 @@ teamwork or communication>"],
   "tips": ["<a concrete thing the candidate should prepare or emphasise>"]
 }}
 
-If you are not confident about specifics for this company, say so plainly in the \
-relevant field and give the norms for this role and industry instead, rather than \
-inventing details. Write in plain British English with no Markdown."""
+If you are not confident about specifics for this company and the job description does \
+not cover them, say so plainly in the relevant field and give the norms for this role \
+and industry instead, rather than inventing details. Write in plain British English \
+with no Markdown.
+
+Job description:
+{jd}"""
 
 
 def extract_company_role(jd_text: str) -> tuple[str, str]:
@@ -100,12 +111,13 @@ def _grounding(company: str, role: str) -> tuple[str, list[Source]]:
     return text, sources
 
 
-def research_company(company: str, role: str) -> CompanyResearch:
+def research_company(company: str, role: str, jd: str = "") -> CompanyResearch:
     context, sources = _grounding(company, role)
     prompt = RESEARCH_PROMPT.format(
         company=company or "the employer",
         role=role or "the advertised role",
         context=context,
+        jd=jd.strip() or "(not provided)",
     )
     raw = llm.chat([{"role": "user", "content": prompt}], temperature=0.3)
     match = _JSON.search(raw)

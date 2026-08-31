@@ -38,6 +38,11 @@ def _owned_cv(db: Session, cv_id: int, user: User) -> CV:
 
 def _mirror(profile: Profile, cv: CV) -> None:
     """Point the active-CV mirror (read by interview/prepare) at this CV."""
+    if profile.cv_text != cv.text:
+        # The active CV's text changed, so the CV-tailored sections no longer apply. The
+        # company research does not depend on the CV, so it is left in place.
+        profile.preparation = ""
+        profile.prep_questions = ""
     profile.selected_cv_id = cv.id
     profile.cv_text = cv.text
     profile.cv_filename = cv.filename

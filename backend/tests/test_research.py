@@ -104,7 +104,7 @@ def test_research_endpoint_persists_and_reads_back(client, monkeypatch):
         overview="Acme values craft.", interview_process="Two stages.", skills=["Python"]
     )
     monkeypatch.setattr(research, "extract_company_role", lambda jd: ("Acme", "Engineer"))
-    monkeypatch.setattr(research, "research_company", lambda c, r: report)
+    monkeypatch.setattr(research, "research_company", lambda c, r, jd="": report)
 
     cookies = auth_cookies(client)
     client.put("/api/profile", cookies=cookies, json={"cv_text": "cv", "jd_text": "Acme role"})
@@ -131,7 +131,7 @@ def test_questions_autoresearch_grounds_on_company(client, monkeypatch):
     seen = {}
     monkeypatch.setattr(research, "extract_company_role", lambda jd: ("Acme", "Engineer"))
     monkeypatch.setattr(
-        research, "research_company", lambda c, r: CompanyResearch(overview="Acme values craftsmanship.")
+        research, "research_company", lambda c, r, jd="": CompanyResearch(overview="Acme values craftsmanship.")
     )
 
     def fake_generate(cv, jd, context=""):
@@ -147,3 +147,16 @@ def test_questions_autoresearch_grounds_on_company(client, monkeypatch):
 
     assert res.status_code == 200
     assert seen["context"] == "Acme values craftsmanship."  # research fed into generation
+
+
+def test_research_uses_the_job_description(monkeypatch):
+    # The job description is the most reliable source for this specific role, so it must
+    # reach the research prompt, not just the company name and role.
+    prompts = []
+    monkeypatch.setattr(
+        research.llm, "chat", lambda messages, *a, **k: prompts.append(messages[-1]["content"]) or "{}"
+    )
+    jd = "Step 1: online test. Step 2: one-way video interview. Step 3: assessment day."
+    research.research_company("Acme", "Engineer", jd)
+    assert jd in prompts[-1]
+    assert "job description" in prompts[-1].lower()

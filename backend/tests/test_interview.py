@@ -668,13 +668,13 @@ def test_list_backfills_company_for_older_sessions(client, monkeypatch):
 
     # the first run could not identify the company, so the session recorded none
     monkeypatch.setattr(research, "extract_company_role", lambda jd: ("", ""))
-    monkeypatch.setattr(research, "research_company", lambda c, r: CompanyResearch())
+    monkeypatch.setattr(research, "research_company", lambda c, r, jd="": CompanyResearch())
     client.post("/api/interview/start", cookies=cookies)
     assert client.get("/api/interview", cookies=cookies).json()[0]["title"] == "General Interview"
 
     # research later identifies the company for the same job description
     monkeypatch.setattr(research, "extract_company_role", lambda jd: ("Ciena", "Engineer"))
-    monkeypatch.setattr(research, "research_company", lambda c, r: CompanyResearch(overview="ctx"))
+    monkeypatch.setattr(research, "research_company", lambda c, r, jd="": CompanyResearch(overview="ctx"))
     client.post("/api/profile/research", cookies=cookies)
 
     titles = [s["title"] for s in client.get("/api/interview", cookies=cookies).json()]
@@ -704,7 +704,7 @@ def test_list_sessions_titles_number_repeats(client, monkeypatch):
     from app.schemas.profile import CompanyResearch
 
     monkeypatch.setattr(research, "extract_company_role", lambda jd: ("Cognizant", "Analyst"))
-    monkeypatch.setattr(research, "research_company", lambda c, r: CompanyResearch(overview="ctx"))
+    monkeypatch.setattr(research, "research_company", lambda c, r, jd="": CompanyResearch(overview="ctx"))
     client.put("/api/profile", cookies=cookies, json={"jd_text": "Cognizant analyst role"})
 
     for _ in range(2):

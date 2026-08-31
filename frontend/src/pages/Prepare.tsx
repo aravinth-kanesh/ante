@@ -45,24 +45,34 @@ export default function Prepare() {
   const [genError, setGenError] = useState("");
 
   useEffect(() => {
-    listCvs()
-      .then((cvs) => setActiveCv(cvs.find((c) => c.selected) ?? null))
-      .catch(() => {});
-    getProfile()
-      .then((p) => {
-        setJd(p.jd_text);
-        setSavedJd(p.jd_text);
-      })
-      .catch(() => {});
-    getResearch()
-      .then((r) => r.research && setResearch(r))
-      .catch(() => {});
-    getPreparation()
-      .then((r) => (r.competencies.length > 0 || r.plan.length > 0) && setPrep(r))
-      .catch(() => {});
-    getPrepQuestions()
-      .then(setQuestions)
-      .catch(() => {});
+    (async () => {
+      const [cvs, profile, r, prepData, qs] = await Promise.all([
+        listCvs().catch(() => [] as Cv[]),
+        getProfile().catch(() => null),
+        getResearch().catch(() => null),
+        getPreparation().catch(() => null),
+        getPrepQuestions().catch(() => [] as PrepGroup[]),
+      ]);
+      const cv = cvs.find((c) => c.selected) ?? null;
+      setActiveCv(cv);
+      if (profile) {
+        setJd(profile.jd_text);
+        setSavedJd(profile.jd_text);
+      }
+      if (r?.research) setResearch(r);
+      const hasPlan = Boolean(prepData && (prepData.competencies.length > 0 || prepData.plan.length > 0));
+      if (hasPlan && prepData) setPrep(prepData);
+      setQuestions(qs);
+
+      // Auto-generate any tailored section that is missing for the current job
+      // description and CV, so the page stays up to date without a manual click. A change
+      // to the CV or job description clears these on the server, which brings us here.
+      const jdReady = Boolean(profile?.jd_text?.trim());
+      if (jdReady && !r?.research) runResearch();
+      if (jdReady && cv && !hasPlan) runPlan();
+      if (jdReady && cv && qs.length === 0) runQuestions();
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function saveJd(e: FormEvent) {
@@ -72,6 +82,16 @@ export default function Prepare() {
     try {
       await saveJobDescription(jd);
       setSavedJd(jd);
+      // A new job description makes every tailored section out of date (the server has
+      // cleared them), so regenerate them for the new role.
+      setResearch(null);
+      setPrep(null);
+      setQuestions([]);
+      runResearch();
+      if (activeCv) {
+        runPlan();
+        runQuestions();
+      }
     } catch (err) {
       setJdError(message(err));
     } finally {

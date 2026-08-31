@@ -50,7 +50,7 @@ def run_research(db: Session, profile: Profile) -> CompanyResearch:
     interview and question prompts read as context.
     """
     company, role = research.extract_company_role(profile.jd_text)
-    report = research.research_company(company, role)
+    report = research.research_company(company, role, profile.jd_text)
     profile.company = company
     profile.role = role
     profile.company_research = report.model_dump_json()
@@ -77,10 +77,15 @@ def update_profile(
     if data.cv_text is not None:
         profile.cv_text = data.cv_text
     if data.jd_text != profile.jd_text:
-        # the job description changed, so any cached research no longer applies
+        # The job description changed, so every tailored section is now out of date: the
+        # research, the grounding context, the gap-analysis plan, and the likely questions.
+        # Clear them so the Prepare page regenerates them for the new role.
         profile.company = ""
         profile.role = ""
         profile.company_context = ""
+        profile.company_research = ""
+        profile.preparation = ""
+        profile.prep_questions = ""
     profile.jd_text = data.jd_text
     db.commit()
     db.refresh(profile)
