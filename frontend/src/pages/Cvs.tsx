@@ -2,7 +2,10 @@ import { useEffect, useState, type ChangeEvent } from "react";
 import {
   createCv,
   deleteCv,
+  generatePreparation,
+  generateQuestions,
   getCv,
+  getProfile,
   listCvs,
   renameCv,
   selectCv,
@@ -19,6 +22,9 @@ function message(err: unknown) {
 export default function Cvs() {
   const [cvs, setCvs] = useState<Cv[] | null>(null);
   const [error, setError] = useState("");
+  // Whether a job description is set, so a CV change can pre-generate the CV-tailored
+  // Prepare sections in the background and they are ready if the student goes there next.
+  const [hasJd, setHasJd] = useState(false);
 
   const [newLabel, setNewLabel] = useState("");
   const [newText, setNewText] = useState("");
@@ -45,7 +51,18 @@ export default function Cvs() {
 
   useEffect(() => {
     refresh();
+    getProfile()
+      .then((p) => setHasJd(Boolean(p.jd_text.trim())))
+      .catch(() => {});
   }, []);
+
+  // Changing the active CV clears the CV-tailored sections on the server; regenerate them
+  // now, in the background, so Prepare is already up to date if the student opens it next.
+  function warmPrep() {
+    if (!hasJd) return;
+    generateQuestions().catch(() => {});
+    generatePreparation().catch(() => {});
+  }
 
   async function onUpload(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -57,6 +74,7 @@ export default function Cvs() {
       await uploadCvFile(file, newLabel.trim());
       setNewLabel("");
       await refresh();
+      warmPrep();
     } catch (err) {
       setAddError(message(err));
     } finally {
@@ -72,6 +90,7 @@ export default function Cvs() {
       setNewLabel("");
       setNewText("");
       await refresh();
+      warmPrep();
     } catch (err) {
       setAddError(message(err));
     } finally {
@@ -79,11 +98,12 @@ export default function Cvs() {
     }
   }
 
-  async function act(id: number, fn: () => Promise<unknown>) {
+  async function act(id: number, fn: () => Promise<unknown>, warm = false) {
     setBusyId(id);
     try {
       await fn();
       await refresh();
+      if (warm) warmPrep();
     } catch (err) {
       setError(message(err));
     } finally {
@@ -122,6 +142,8 @@ export default function Cvs() {
     try {
       await updateCvText(id, viewText);
       await refresh();
+      // Editing the active CV's text changes what the sections are tailored to.
+      if (cvs?.find((c) => c.id === id)?.selected) warmPrep();
     } catch (err) {
       setError(message(err));
     } finally {
@@ -237,7 +259,7 @@ export default function Cvs() {
                       size="sm"
                       variant="secondary"
                       loading={busyId === cv.id}
-                      onClick={() => act(cv.id, () => selectCv(cv.id))}
+                      onClick={() => act(cv.id, () => selectCv(cv.id), true)}
                     >
                       Use this CV
                     </Button>
@@ -255,7 +277,9 @@ export default function Cvs() {
                         variant="destructive"
                         loading={busyId === cv.id}
                         onClick={() =>
-                          act(cv.id, () => deleteCv(cv.id)).then(() => setConfirmDeleteId(null))
+                          act(cv.id, () => deleteCv(cv.id), cv.selected).then(() =>
+                            setConfirmDeleteId(null),
+                          )
                         }
                       >
                         Delete permanently
