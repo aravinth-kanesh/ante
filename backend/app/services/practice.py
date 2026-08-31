@@ -2,7 +2,7 @@ import random
 
 from app.schemas.interview import AnswerNote
 from app.services import interview, llm, moderation
-from app.services.prompts import FEEDBACK_PROMPT
+from app.services.prompts import FEEDBACK_PROMPT, WRITTEN_INTERVIEW_NOTE
 
 # A small bank of common questions so a student can practise one straight away, with no
 # setup. When they have generated their own likely questions in Prepare, those are mixed
@@ -35,7 +35,9 @@ def assess(question: str, answer: str) -> AnswerNote:
     # the one answer note, so quick practice gives the same honest, structured read.
     body = answer.strip() or "(the candidate gave no answer)"
     transcript = f"Interviewer: {question}\nCandidate: {body}"
-    prompt = FEEDBACK_PROMPT.format(transcript=transcript, delivery="")
+    # Quick practice is always typed, so assess the written content only and never invent
+    # spoken-delivery feedback.
+    prompt = FEEDBACK_PROMPT.format(transcript=transcript, delivery="", mode_note=WRITTEN_INTERVIEW_NOTE)
     raw = llm.chat([{"role": "user", "content": prompt}])
     if not moderation.moderate_output(raw).allowed:
         raw = llm.chat([{"role": "user", "content": prompt}])

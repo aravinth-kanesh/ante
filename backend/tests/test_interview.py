@@ -264,6 +264,8 @@ def test_feedback_is_structured_and_plain_text(client, monkeypatch):
     assert report["strengths"] == []  # not padded with faint praise
     assert report["improvements"] == ["Give a specific example."]
     assert report["answer_notes"][0]["verdict"] == "weak"
+    # the answer was typed, so a delivery line the model produced anyway is dropped
+    assert report["delivery"] == ""
 
     # the stored transcript exposes the same structured report
     detail = client.get(f"/api/interview/{sid}", cookies=cookies).json()
@@ -358,6 +360,86 @@ def test_feedback_has_no_delivery_block_for_typed_answers(client, monkeypatch):
     client.post(f"/api/interview/{sid}/finish", cookies=cookies)
 
     assert "was measured during the interview" not in prompts[-1]
+
+
+def test_typed_interview_tells_the_model_it_was_written(client, monkeypatch):
+    # A typed interview must steer the model away from spoken-delivery feedback, rather
+    # than leaving the mode-agnostic prompt to invent pace or "practise aloud" advice.
+    prompts = _capture_prompts(monkeypatch)
+    cookies = auth_cookies(client)
+    save_cv(client, cookies)
+    sid = client.post("/api/interview/start", cookies=cookies).json()["session_id"]
+    client.post(f"/api/interview/{sid}/answer", cookies=cookies, json={"answer": "I built X."})
+    client.post(f"/api/interview/{sid}/finish", cookies=cookies)
+
+    assert "This was a written interview" in prompts[-1]
+    assert "do not advise them to practise aloud" in prompts[-1]
+
+
+def test_voice_interview_is_not_told_it_was_written(client, monkeypatch):
+    prompts = _capture_prompts(monkeypatch)
+    cookies = auth_cookies(client)
+    save_cv(client, cookies)
+    sid = client.post("/api/interview/start", cookies=cookies, json={"mode": "voice"}).json()["session_id"]
+    client.post(
+        f"/api/interview/{sid}/answer",
+        cookies=cookies,
+        json={"answer": "I built X.", "metrics": VOICE_METRICS},
+    )
+    client.post(f"/api/interview/{sid}/finish", cookies=cookies)
+
+    assert "This was a written interview" not in prompts[-1]
+    assert "was measured during the interview" in prompts[-1]  # the spoken delivery block
+
+
+def test_typed_interview_strips_invented_delivery(client, monkeypatch):
+    # Even if the model returns a delivery assessment for a typed interview, it is dropped
+    # so the student never sees fabricated feedback about how they "spoke".
+    reply = (
+        '{"summary": "Good.", "strengths": ["Clear example"], "improvements": ["Be specific."], '
+        '"answer_notes": [{"question": "About you", "verdict": "strong", "comment": "Solid."}], '
+        '"delivery": "You spoke at a steady pace with few filler words."}'
+    )
+    monkeypatch.setattr(interview.llm, "chat", lambda *a, **k: reply)
+    monkeypatch.setattr(interview.moderation, "moderate_output", lambda t: Verdict(allowed=True))
+    cookies = auth_cookies(client)
+    save_cv(client, cookies)
+    sid = client.post("/api/interview/start", cookies=cookies).json()["session_id"]
+    client.post(f"/api/interview/{sid}/answer", cookies=cookies, json={"answer": "I built a web app."})
+
+    report = client.post(f"/api/interview/{sid}/finish", cookies=cookies).json()["feedback"]
+    assert report["delivery"] == ""
+
+
+def test_voice_interview_keeps_measured_delivery(client, monkeypatch):
+    reply = (
+        '{"summary": "Good.", "strengths": [], "improvements": ["Slow down."], '
+        '"answer_notes": [{"question": "About you", "verdict": "strong", "comment": "Solid."}], '
+        '"delivery": "You spoke a little fast at about 180 words a minute."}'
+    )
+    monkeypatch.setattr(interview.llm, "chat", lambda *a, **k: reply)
+    monkeypatch.setattr(interview.moderation, "moderate_output", lambda t: Verdict(allowed=True))
+    cookies = auth_cookies(client)
+    save_cv(client, cookies)
+    sid = client.post("/api/interview/start", cookies=cookies, json={"mode": "voice"}).json()["session_id"]
+    client.post(
+        f"/api/interview/{sid}/answer",
+        cookies=cookies,
+        json={"answer": "I built X.", "metrics": VOICE_METRICS},
+    )
+
+    report = client.post(f"/api/interview/{sid}/finish", cookies=cookies).json()["feedback"]
+    assert "180 words a minute" in report["delivery"]
+
+
+def test_feedback_prompt_grades_fairly():
+    # The rubric must reward genuinely strong answers and forbid manufactured nitpicks,
+    # including penalising a candidate for not reciting the role or company back.
+    from app.services.prompts import FEEDBACK_PROMPT
+
+    assert "Do not invent or inflate a criticism to justify a lower grade" in FEEDBACK_PROMPT
+    assert "restate the job title or company name" in FEEDBACK_PROMPT
+    assert "If you cannot point to a real, substantive weakness, the answer is strong." in FEEDBACK_PROMPT
 
 
 def test_transcript_exposes_metrics(client, monkeypatch):

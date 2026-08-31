@@ -127,10 +127,24 @@ plain, encouraging language, explain any interview term you use (for example, ST
 means describing the Situation, Task, Action and Result), and make every point clear \
 and easy to act on.
 
-- Judge each answer on its merits. If an answer is vague, generic, or says little of \
-substance, say so plainly and explain why it is weak, rather than praising it. For \
-example, "I have built many applications in Linux" asserts experience but gives no \
-evidence, so it is a weak answer.
+- Grade each answer fairly and consistently against this scale, and put the result in \
+"verdict":
+  - "strong": it answers the question that was asked, is specific, and is backed by a \
+concrete example, real detail, or evidence. A strong answer need not be perfect or \
+exhaustive. If it is genuinely good, mark it strong and say what worked; give any extra \
+refinement as an optional suggestion, not as a reason to grade it down.
+  - "adequate": it is relevant but has a real, substantive weakness, for example it is \
+vague, thin on evidence, generic, only partly answers the question, or has no clear \
+structure.
+  - "weak": it does not really answer the question, is generic or empty, or asserts \
+things with no evidence. For example, "I have built many applications in Linux" asserts \
+experience but gives none, so it is weak.
+- Only lower a verdict for a genuine weakness that a real interviewer would care about. \
+Do not invent or inflate a criticism to justify a lower grade, and never mark an answer \
+down for a trivial or stylistic preference. In particular, do not treat it as a fault \
+that the candidate did not restate the job title or company name in their answer: the \
+interviewer already knows the role, and a natural answer does not recite it back. If you \
+cannot point to a real, substantive weakness, the answer is strong.
 - Do not invent strengths or soften real problems, and do not pad the feedback with \
 empty praise. Only credit something the candidate genuinely did well.
 - For weak answers, show what a strong answer would include: a specific example, real \
@@ -141,7 +155,7 @@ example of how a strong answer might sound, in the first person and grounded in 
 candidate's own CV, so they can hear the difference. Leave it empty for strong answers.
 - In "improvements", give at least three distinct, genuinely useful points, each on a \
 different aspect (for example answer structure, being specific and giving evidence, \
-directly answering the question that was asked, or spoken delivery). Each must be a \
+directly answering the question that was asked, or showing the impact of what you did). Each must be a \
 transferable interview skill the candidate can carry into any interview, phrased \
 generally: do NOT name this company, its products, or the specific role in an \
 improvement (put any advice tied to this company or role in the per-answer notes \
@@ -152,6 +166,10 @@ different transferable things worth practising.
 underlying issue (for example using the STAR structure) applies to several answers, \
 raise it once, and use the other points for different, specific improvements. Each \
 improvement and each answer note must add something new.
+- Give advice that reflects what strong interviewers actually recommend, not artificial \
+tactics. For "tell me about yourself" and similar openers, a good answer is concise, \
+leads with relevant experience, and connects it to what the role needs; do not tell the \
+candidate to state the job title and company name back to the interviewer.
 - If they did not demonstrate anything well, return an empty "strengths" list rather \
 than padding it with faint praise.
 - If the candidate did not answer a question (the transcript shows no answer, or a \
@@ -159,7 +177,7 @@ note that they gave none), say plainly that they did not answer it, rather than 
 describing it as brief, and encourage them to attempt an answer next time, even a \
 rough one out loud.
 - Keep a supportive, professional tone, but never at the expense of honesty.
-{delivery}
+{mode_note}{delivery}
 Return a single JSON object and nothing else, in exactly this shape:
 {{
   "summary": "<two or three sentences giving an honest overall assessment>",
@@ -191,6 +209,22 @@ an answer as strong), and judge such attempts as you would any other answer.
 
 Transcript:
 {transcript}"""
+
+
+# Inserted into the feedback prompt for a written (typed) interview, where nothing about
+# spoken delivery was observed. Without it the mode-agnostic prompt leans on spoken
+# framing and the model invents pace, filler-word and "practise aloud" feedback that does
+# not apply. For a voice interview this is empty and the measured delivery block is used
+# instead.
+WRITTEN_INTERVIEW_NOTE = (
+    "\nThis was a written interview: the candidate typed their answers rather than "
+    "speaking them, so nothing about their spoken delivery was observed. Assess only the "
+    "substance of what they wrote. Do not comment on or assume pace, pauses, filler "
+    "words, tone of voice or on-camera presence, and do not advise them to practise "
+    "aloud, record themselves, listen back, or speak in any particular way. Keep every "
+    "point about the written content and transferable interview thinking, and leave the "
+    "'delivery' field as an empty string.\n"
+)
 
 
 MODEL_ANSWER_PROMPT = """A university student has just had a mock interview. For each \

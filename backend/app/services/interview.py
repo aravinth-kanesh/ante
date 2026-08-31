@@ -18,6 +18,7 @@ from app.services.prompts import (
     INTERVIEW_STYLES,
     INTERVIEWER_PROMPT,
     MODEL_ANSWER_PROMPT,
+    WRITTEN_INTERVIEW_NOTE,
 )
 from app.services.text import strip_markdown
 
@@ -480,11 +481,26 @@ def _generate_feedback(session: InterviewSession) -> FeedbackReport:
             content = turn.content.strip() or "(the candidate gave no answer to this question)"
             lines.append(f"Candidate: {content}")
     transcript = "\n".join(lines)
-    prompt = FEEDBACK_PROMPT.format(transcript=transcript, delivery=_delivery_block(session))
+    # Delivery is only measured from spoken answers. When none were measured (a typed
+    # interview, or a voice one answered by typing), tell the model to assess the written
+    # content only, so it does not lean on the prompt's spoken framing and invent pace or
+    # filler-word feedback that never applied.
+    delivery_block = _delivery_block(session)
+    written = not delivery_block
+    prompt = FEEDBACK_PROMPT.format(
+        transcript=transcript,
+        delivery=delivery_block,
+        mode_note=WRITTEN_INTERVIEW_NOTE if written else "",
+    )
     raw = llm.chat([{"role": "user", "content": prompt}])
     if not moderation.moderate_output(raw).allowed:
         raw = llm.chat([{"role": "user", "content": prompt}])
-    return _fill_missing_model_answers(parse_feedback(raw), transcript)
+    report = _fill_missing_model_answers(parse_feedback(raw), transcript)
+    if written:
+        # Belt and braces: discard any delivery line the model still produced from the
+        # transcript, so a typed interview never shows invented spoken-delivery feedback.
+        report = report.model_copy(update={"delivery": ""})
+    return report
 
 
 def finish(db: Session, session: InterviewSession) -> FeedbackReport:
