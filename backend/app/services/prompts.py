@@ -148,8 +148,8 @@ cannot point to a real, substantive weakness, the answer is strong.
 - Do not invent strengths or soften real problems, and do not pad the feedback with \
 empty praise. Only credit something the candidate genuinely did well.
 - For weak answers, show what a strong answer would include: a specific example, real \
-detail, clear structure (such as situation, task, action, result), and evidence of \
-the competencies the role needs.
+detail, a clear structure (for a behavioural question, situation, task, action, result), \
+and evidence of the competencies the role needs.
 - For every weak or adequate answer, fill in "model_answer" with a short, concrete \
 example of how a strong answer might sound, in the first person and grounded in the \
 candidate's own CV, so they can hear the difference. Leave it empty for strong answers.
@@ -170,6 +170,14 @@ improvement and each answer note must add something new.
 tactics. For "tell me about yourself" and similar openers, a good answer is concise, \
 leads with relevant experience, and connects it to what the role needs; do not tell the \
 candidate to state the job title and company name back to the interviewer.
+- Match the advice to the kind of question. STAR (Situation, Task, Action, Result) fits \
+only behavioural or competency questions that ask for a specific past example, such as \
+"tell me about a time when...". Do not suggest STAR, or fault the candidate for not \
+using it, on an opener like "tell me about yourself", a motivation, opinion or closing \
+question ("is there anything you would like to add"), or a technical question; judge each \
+of those on its own terms. Keep every critique realistic and logical: only raise what a \
+real interviewer would genuinely note for that particular question, never a generic point \
+that does not fit what was asked.
 - If they did not demonstrate anything well, return an empty "strengths" list rather \
 than padding it with faint praise.
 - If the candidate did not answer a question (the transcript shows no answer, or a \

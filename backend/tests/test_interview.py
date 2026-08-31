@@ -442,6 +442,15 @@ def test_feedback_prompt_grades_fairly():
     assert "If you cannot point to a real, substantive weakness, the answer is strong." in FEEDBACK_PROMPT
 
 
+def test_feedback_prompt_scopes_star_to_behavioural_questions():
+    # STAR must only be suggested for behavioural questions, not openers, closing or
+    # technical ones, so the feedback does not push an illogical structure.
+    from app.services.prompts import FEEDBACK_PROMPT
+
+    assert "STAR (Situation, Task, Action, Result) fits" in FEEDBACK_PROMPT
+    assert "Keep every critique realistic and logical" in FEEDBACK_PROMPT
+
+
 def test_transcript_exposes_metrics(client, monkeypatch):
     mock_llm(monkeypatch)
     cookies = auth_cookies(client)
