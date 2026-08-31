@@ -279,25 +279,8 @@ export default function Progress() {
       {avgConfidenceAfter != null && (
         <Card>
           <CardBody>
-            <CardTitle>Confidence</CardTitle>
-            <p className="mt-1 text-sm text-slate-500">
-              How confident you have felt, self-rated out of 5. Nerves usually settle with practice.
-            </p>
-            <div className="mt-4 flex flex-wrap items-end gap-8">
-              {avgConfidenceBefore != null && (
-                <div>
-                  <p className="text-2xl font-semibold text-slate-900">
-                    {avgConfidenceBefore.toFixed(1)}
-                  </p>
-                  <p className="mt-1 text-xs text-slate-500">before, on average</p>
-                </div>
-              )}
-              <div>
-                <p className="text-2xl font-semibold text-slate-900">
-                  {avgConfidenceAfter.toFixed(1)}
-                </p>
-                <p className="mt-1 text-xs text-slate-500">after, on average</p>
-              </div>
+            <div className="flex flex-wrap items-center gap-2.5">
+              <CardTitle>Confidence</CardTitle>
               {avgConfidenceBefore != null && (
                 <DirectionBadge
                   direction={
@@ -309,6 +292,25 @@ export default function Progress() {
                   }
                 />
               )}
+            </div>
+            <p className="mt-1 text-sm text-slate-500">
+              How confident you have felt, self-rated out of 5. Nerves usually settle with practice.
+            </p>
+            <div className="mt-4 flex flex-wrap items-end gap-10">
+              {avgConfidenceBefore != null && (
+                <div>
+                  <p className="text-2xl font-semibold text-slate-900 tabular-nums">
+                    {avgConfidenceBefore.toFixed(1)}
+                  </p>
+                  <p className="mt-1 text-xs text-slate-500">before, on average</p>
+                </div>
+              )}
+              <div>
+                <p className="text-2xl font-semibold text-slate-900 tabular-nums">
+                  {avgConfidenceAfter.toFixed(1)}
+                </p>
+                <p className="mt-1 text-xs text-slate-500">after, on average</p>
+              </div>
             </div>
           </CardBody>
         </Card>
