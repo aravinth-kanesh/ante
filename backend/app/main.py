@@ -20,7 +20,6 @@ from fastapi import Depends
 
 from app.routers import (
     auth,
-    chat,
     cv,
     health,
     interview,
@@ -182,4 +181,3 @@ app.include_router(media.router, prefix="/api", dependencies=verified)
 app.include_router(progress.router, prefix="/api", dependencies=verified)
 app.include_router(speech.router, prefix="/api", dependencies=verified)
 app.include_router(vision.router, prefix="/api", dependencies=verified)
-app.include_router(chat.router, prefix="/api", dependencies=verified)

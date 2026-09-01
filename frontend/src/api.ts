@@ -1,8 +1,3 @@
-export interface Message {
-  role: "system" | "user" | "assistant";
-  content: string;
-}
-
 export interface User {
   id: number;
   email: string;
@@ -247,19 +242,6 @@ export async function getResearch(): Promise<Research> {
 
 export async function researchCompany(): Promise<Research> {
   return request("/api/profile/research", { method: "POST" });
-}
-
-export interface ChatReply {
-  reply: string;
-  blocked: boolean;
-}
-
-export async function sendChat(messages: Message[]): Promise<ChatReply> {
-  const data = await request("/api/chat", {
-    method: "POST",
-    body: JSON.stringify({ messages }),
-  });
-  return { reply: data.reply, blocked: data.blocked ?? false };
 }
 
 export interface PrepQuestion {
