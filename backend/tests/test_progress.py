@@ -119,6 +119,17 @@ def test_minutes_practised_mixes_measured_and_estimated():
     assert report.totals.minutes_practised == 2  # 30s + 90s = 120s
 
 
+def test_wpm_trend_is_measured_against_the_good_range():
+    # Speaking pace is two-sided (110 to 160 is comfortable), so slowing from too fast into
+    # the range is an improvement, and speeding up out of it is a slip.
+    assert progress._direction("wpm", 185.0, 140.0) == "improved"  # too fast -> in range
+    assert progress._direction("wpm", 90.0, 130.0) == "improved"  # too slow -> in range
+    assert progress._direction("wpm", 140.0, 185.0) == "slipped"  # in range -> too fast
+    assert progress._direction("wpm", 130.0, 150.0) == "steady"  # both comfortable
+    # filler words stay one-sided: fewer is always better
+    assert progress._direction("filler_per_min", 8.0, 2.0) == "improved"
+
+
 def test_build_report_deltas_and_totals():
     worse = make_session(
         1, 1, [{"metrics": {**VOICE, "filler_count": 10}}], _feedback(strong=1, weak=1,

@@ -44,6 +44,10 @@ _TOLERANCE = {
     "head_steadiness": 5.0,
 }
 _LOWER_IS_BETTER = {"filler_per_min"}
+# Two-sided targets: both too low and too high are worse, so "better" means closer to the
+# good range rather than simply higher or lower. Speaking pace is the clear case: slowing
+# from too fast into the comfortable range is an improvement, not a slip.
+_RANGED = {"wpm"}
 # Plain formatting of each metric value, for the coach summary's input.
 _FORMAT = {
     "strong_rate": lambda v: f"{round(v * 100)}%",
@@ -196,7 +200,23 @@ def session_stats(session: InterviewSession) -> SessionStats:
     )
 
 
+def _distance_outside_range(metric: str, value: float) -> float:
+    """How far a value sits outside its good range, or 0 when it is inside."""
+    low, high = _GOOD_RANGE[metric]
+    if value < low:
+        return low - value
+    if value > high:
+        return value - high
+    return 0.0
+
+
 def _direction(metric: str, first: float, latest: float) -> str:
+    if metric in _RANGED:
+        # Better means closer to the good range; moving to the middle of it counts as steady.
+        change = _distance_outside_range(metric, latest) - _distance_outside_range(metric, first)
+        if abs(change) <= _TOLERANCE[metric]:
+            return "steady"
+        return "improved" if change < 0 else "slipped"
     change = latest - first
     if abs(change) <= _TOLERANCE[metric]:
         return "steady"
