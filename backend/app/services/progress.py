@@ -117,25 +117,30 @@ def _deliveries(session: InterviewSession) -> list[DeliveryMetrics]:
     return out
 
 
-# Typed answers have no recorded audio, so their practice time is estimated from the
-# answer's length at a nominal delivery pace, on the same footing as the measured duration
-# of spoken answers. This keeps "minutes practised" meaningful for text interviews rather
-# than counting only voice ones.
-_TYPED_WPM = 130.0
+# Practice time is wall-clock: for each answer, the time from its question appearing to the
+# answer being submitted, so the thinking time before an answer counts alongside the time
+# spent speaking or typing it. This works the same for voice and text. Each answer is
+# capped so an interview left open, or resumed much later, cannot inflate the total.
+_MAX_ANSWER_SECONDS = 10 * 60
+
+
+def _naive(dt):
+    """Drop tzinfo so timestamps from the database subtract cleanly regardless of whether
+    the driver returns aware or naive datetimes."""
+    return dt.replace(tzinfo=None) if dt is not None and dt.tzinfo is not None else dt
 
 
 def _practised_seconds(session: InterviewSession) -> float:
-    """Seconds of practice in one interview: the measured audio length for spoken answers,
-    and an estimate from the written length for typed ones."""
+    """Wall-clock practice time in one interview: for each answer, the gap from its question
+    to its submission, capped per answer, so thinking time counts as well as delivery."""
     seconds = 0.0
+    question_at = _naive(session.created_at)
     for turn in session.turns:
-        if turn.kind != "answer":
-            continue
-        metrics = _parse(DeliveryMetrics, turn.metrics)
-        if metrics and metrics.word_count > 0:
-            seconds += metrics.duration_sec  # a real spoken answer: use the clip length
-        else:
-            seconds += len(turn.content.split()) / _TYPED_WPM * 60  # typed: estimate from length
+        if turn.kind == "question":
+            question_at = _naive(turn.created_at) or question_at
+        elif turn.kind == "answer" and turn.created_at is not None and question_at is not None:
+            gap = (_naive(turn.created_at) - question_at).total_seconds()
+            seconds += min(max(gap, 0.0), _MAX_ANSWER_SECONDS)
     return seconds
 
 

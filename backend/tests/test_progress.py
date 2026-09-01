@@ -1,5 +1,5 @@
 import json
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from app.models.session import InterviewSession, Turn
 from app.services import interview, progress
@@ -43,12 +43,16 @@ def _feedback(strong=0, adequate=0, weak=0, strengths=None, improvements=None):
     )
 
 
-def make_session(sid, day, answers, feedback=None, status="finished"):
-    """answers: list of dicts with optional 'metrics'/'nonverbal'."""
+def make_session(sid, day, answers, feedback=None, status="finished", answer_secs=None):
+    """answers: list of dicts with optional 'metrics'/'nonverbal'. answer_secs optionally
+    gives the wall-clock seconds between each question and its answer (default 60)."""
+    base = datetime(2026, 1, day, 9, 0, tzinfo=timezone.utc)
     turns, idx = [], 0
-    for ans in answers:
-        turns.append(Turn(index=idx, role="interviewer", kind="question", content="Q"))
+    clock = base
+    for a_i, ans in enumerate(answers):
+        turns.append(Turn(index=idx, role="interviewer", kind="question", content="Q", created_at=clock))
         idx += 1
+        clock += timedelta(seconds=answer_secs[a_i] if answer_secs else 60)
         turns.append(
             Turn(
                 index=idx,
@@ -57,17 +61,19 @@ def make_session(sid, day, answers, feedback=None, status="finished"):
                 content="an answer",
                 metrics=json.dumps(ans["metrics"]) if ans.get("metrics") else None,
                 nonverbal=json.dumps(ans["nonverbal"]) if ans.get("nonverbal") else None,
+                created_at=clock,
             )
         )
         idx += 1
+        clock += timedelta(seconds=3)  # short model pause before the next question
     if feedback is not None:
-        turns.append(Turn(index=idx, role="interviewer", kind="feedback", content=feedback))
+        turns.append(Turn(index=idx, role="interviewer", kind="feedback", content=feedback, created_at=clock))
     return InterviewSession(
         id=sid,
         company="Acme",
         role="Analyst",
         interview_type="behavioural",
-        created_at=datetime(2026, 1, day, tzinfo=timezone.utc),
+        created_at=base,
         status=status,
         turns=turns,
     )
@@ -97,26 +103,22 @@ def test_session_stats_text_only_has_quality_but_no_delivery():
     assert stats.has_delivery is False and stats.has_nonverbal is False
 
 
-def test_minutes_practised_estimates_typed_answers():
-    # A typed interview records no audio, so its practice time is estimated from the
-    # answer length rather than counting as zero, which would make text practice invisible.
-    session = make_session(1, 1, [{}], _feedback(strong=1))
-    long_answer = " ".join(["word"] * 260)  # 260 words at 130 wpm is 2 minutes
-    for turn in session.turns:
-        if turn.kind == "answer":
-            turn.content = long_answer
+def test_minutes_practised_is_wall_clock_including_thinking():
+    # Practice time is the gap from each question to its answer, so thinking time counts,
+    # the same way for voice and text.
+    voice = make_session(1, 1, [{"metrics": VOICE}, {"metrics": VOICE}], _feedback(strong=2),
+                         answer_secs=[120, 150])  # 4.5 minutes of answering
+    text = make_session(2, 2, [{}], _feedback(strong=1), answer_secs=[90])  # 1.5 minutes
+    report = progress.build_report([voice, text])
+    assert report.totals.minutes_practised == 6  # 270s + 90s = 360s
+
+
+def test_minutes_practised_caps_a_long_idle_gap():
+    # An interview left open (or resumed much later) must not inflate the total: each
+    # answer's time is capped.
+    session = make_session(1, 1, [{}], _feedback(strong=1), answer_secs=[3600])  # an hour idle
     report = progress.build_report([session])
-    assert report.totals.minutes_practised == 2
-
-
-def test_minutes_practised_mixes_measured_and_estimated():
-    spoken = make_session(1, 1, [{"metrics": VOICE}], _feedback(strong=1))  # 30s measured
-    typed = make_session(2, 2, [{}], _feedback(strong=1))
-    for turn in typed.turns:
-        if turn.kind == "answer":
-            turn.content = " ".join(["word"] * 195)  # 195 words at 130 wpm is 90s
-    report = progress.build_report([spoken, typed])
-    assert report.totals.minutes_practised == 2  # 30s + 90s = 120s
+    assert report.totals.minutes_practised == 10  # capped at the 10-minute per-answer limit
 
 
 def test_wpm_trend_is_measured_against_the_good_range():
@@ -143,7 +145,7 @@ def test_build_report_deltas_and_totals():
 
     assert report.totals.interviews == 2
     assert report.totals.questions_answered == 2
-    assert report.totals.minutes_practised == 1  # 30s + 30s of measured audio
+    assert report.totals.minutes_practised == 2  # 60s + 60s of wall-clock answering
 
     by = {d.metric: d for d in report.deltas}
     assert by["strong_rate"].direction == "improved"  # 0.5 -> 1.0
