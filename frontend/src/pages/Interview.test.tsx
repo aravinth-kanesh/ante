@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -231,5 +231,42 @@ describe("Interview recording", () => {
 
     // the failed upload is surfaced rather than silently dropped
     expect(await screen.findByText(/could not be saved/)).toBeInTheDocument();
+  });
+
+  it("deletes recordings held on the server when the candidate leaves the page", async () => {
+    mocks.startInterview.mockResolvedValue({
+      session_id: 1,
+      question: "Tell me about yourself.",
+      mode: "voice",
+      duration_target_min: 10,
+    });
+    mocks.startCapture.mockResolvedValue({
+      stream: {},
+      stop: vi.fn().mockResolvedValue({
+        audioBlob: new Blob(["a"]),
+        samples: [],
+        replay: { blob: new Blob(["v"]), hasVideo: false },
+      }),
+      cancel: vi.fn(),
+    });
+    mocks.transcribeAudio.mockResolvedValue({ transcript: "my spoken answer", metrics: emptyMetrics });
+    mocks.answerInterview.mockResolvedValue({ question: null, done: true });
+    mocks.uploadAnswerMedia.mockResolvedValue({ ok: true, index: 1, has_video: false });
+    mocks.deleteAnswerMedia.mockResolvedValue({});
+
+    const { unmount } = renderInterview();
+    await userEvent.click(screen.getByRole("checkbox", { name: /Save my answers/ }));
+    await userEvent.click(screen.getByRole("button", { name: "Start interview" }));
+
+    await userEvent.click(await screen.findByRole("button", { name: /Speak answer/ }));
+    await userEvent.click(await screen.findByRole("button", { name: "Stop recording" }));
+    await screen.findByRole("button", { name: /Record again/ });
+    await userEvent.click(screen.getByRole("button", { name: "Submit answer" }));
+
+    // the recording uploaded, so leaving the page must clear it from the server
+    await waitFor(() => expect(mocks.uploadAnswerMedia).toHaveBeenCalled());
+    expect(mocks.deleteAnswerMedia).not.toHaveBeenCalled();
+    unmount();
+    expect(mocks.deleteAnswerMedia).toHaveBeenCalledWith(1);
   });
 });

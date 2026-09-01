@@ -132,6 +132,10 @@ export default function Interview() {
   const replayRef = useRef<Replay | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const questionRef = useRef<HTMLParagraphElement | null>(null);
+  // The session whose recordings are still held on the server, so leaving the page can
+  // delete them promptly rather than waiting for the TTL sweeper. Null when there is
+  // nothing to clear (never recorded, or already deleted).
+  const pendingMediaSessionRef = useRef<number | null>(null);
 
   // Which focus options have data to draw on (from the Prepare page).
   useEffect(() => {
@@ -196,11 +200,14 @@ export default function Interview() {
     setSpeaking(false);
   }
 
-  // Stop any speech or capture if the user leaves the page.
+  // Stop any speech or capture if the user leaves the page, and delete any recordings
+  // still held on the server so they do not outlive the session.
   useEffect(() => {
     return () => {
       cancelVoice();
       captureRef.current?.cancel();
+      const sid = pendingMediaSessionRef.current;
+      if (sid !== null) deleteAnswerMedia(sid).catch(() => {});
     };
   }, []);
 
@@ -312,6 +319,10 @@ export default function Interview() {
     setReview(null);
     setIsSample(sample);
     replayRef.current = null;
+    // Clear any recordings left on the server by a previous interview before starting a new one.
+    const prevMedia = pendingMediaSessionRef.current;
+    if (prevMedia !== null) deleteAnswerMedia(prevMedia).catch(() => {});
+    pendingMediaSessionRef.current = null;
     try {
       const res = await startInterview(
         voiceMode ? "voice" : "text",
@@ -355,6 +366,7 @@ export default function Interview() {
         try {
           await uploadAnswerMedia(sessionId, answerIndex, replay.blob);
           setSavedByIndex((m) => ({ ...m, [answerIndex]: true }));
+          pendingMediaSessionRef.current = sessionId; // held on the server until we clear it
         } catch {
           setSavedByIndex((m) => ({ ...m, [answerIndex]: false }));
         }
@@ -371,6 +383,7 @@ export default function Interview() {
     try {
       await deleteAnswerMedia(sessionId);
       setRecordingsDeleted(true);
+      pendingMediaSessionRef.current = null; // cleared, so nothing to delete on leaving
     } catch (err) {
       setError(message(err));
     }
@@ -627,8 +640,8 @@ export default function Interview() {
                     {saveRecording && (
                       <p className="text-xs leading-relaxed text-slate-500">
                         Your recordings are sent to our server only while you are interviewing, so
-                        you can play them back and download them at the end. They are permanently
-                        deleted when the session ends, and are never kept afterwards or used for
+                        you can play them back and download them at the end. They are deleted as
+                        soon as you leave the interview, and never kept afterwards or used for
                         anything else.
                       </p>
                     )}
