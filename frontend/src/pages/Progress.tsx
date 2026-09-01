@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
+  generateProgressSummary,
   getProgress,
-  getProgressSummary,
+  readProgressSummary,
   type MetricDelta,
   type ProgressReport,
   type SessionStats,
@@ -136,17 +137,30 @@ export default function Progress() {
   const [summaryError, setSummaryError] = useState("");
 
   useEffect(() => {
-    getProgress()
-      .then(setReport)
-      .catch((err) => setError(err instanceof Error ? err.message : String(err)))
-      .finally(() => setLoading(false));
+    (async () => {
+      const [rep, stored] = await Promise.all([
+        getProgress().catch((err) => {
+          setError(err instanceof Error ? err.message : String(err));
+          return null;
+        }),
+        readProgressSummary().catch(() => ({ summary: "" })),
+      ]);
+      if (rep) setReport(rep);
+      setLoading(false);
+      // Show the saved summary if there is one, so it persists across logins. If it is
+      // empty (never generated, or cleared because the interview history changed), generate
+      // a fresh one now so the page stays current without a manual click.
+      if (stored.summary) setSummary(stored.summary);
+      else if (rep && rep.totals.interviews > 0) summarise();
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function summarise() {
     setSummarising(true);
     setSummaryError("");
     try {
-      setSummary((await getProgressSummary()).summary);
+      setSummary((await generateProgressSummary()).summary);
     } catch (err) {
       setSummaryError(err instanceof Error ? err.message : String(err));
     } finally {

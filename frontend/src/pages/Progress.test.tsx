@@ -6,12 +6,14 @@ import type { ProgressReport, SessionStats } from "../api";
 
 const mocks = vi.hoisted(() => ({
   getProgress: vi.fn(),
-  getProgressSummary: vi.fn(),
+  readProgressSummary: vi.fn(),
+  generateProgressSummary: vi.fn(),
 }));
 
 vi.mock("../api", () => ({
   getProgress: mocks.getProgress,
-  getProgressSummary: mocks.getProgressSummary,
+  readProgressSummary: mocks.readProgressSummary,
+  generateProgressSummary: mocks.generateProgressSummary,
 }));
 
 import Progress from "./Progress";
@@ -56,7 +58,10 @@ function renderProgress() {
 
 beforeEach(() => {
   mocks.getProgress.mockReset();
-  mocks.getProgressSummary.mockReset();
+  mocks.readProgressSummary.mockReset();
+  mocks.generateProgressSummary.mockReset();
+  mocks.readProgressSummary.mockResolvedValue({ summary: "" });
+  mocks.generateProgressSummary.mockResolvedValue({ summary: "A generated summary." });
 });
 
 describe("Progress weekly goal", () => {
@@ -78,5 +83,23 @@ describe("Progress weekly goal", () => {
     const { container } = renderProgress();
     await screen.findByText("This week");
     expect((await axe(container)).violations).toEqual([]);
+  });
+});
+
+describe("Progress coach summary", () => {
+  it("shows the stored summary and does not regenerate it", async () => {
+    mocks.getProgress.mockResolvedValue(report([session(0), session(1)]));
+    mocks.readProgressSummary.mockResolvedValue({ summary: "Your saved coach summary." });
+    renderProgress();
+    expect(await screen.findByText("Your saved coach summary.")).toBeInTheDocument();
+    expect(mocks.generateProgressSummary).not.toHaveBeenCalled();
+  });
+
+  it("auto-generates a summary when none is stored yet", async () => {
+    mocks.getProgress.mockResolvedValue(report([session(0), session(1)]));
+    mocks.readProgressSummary.mockResolvedValue({ summary: "" });
+    renderProgress();
+    expect(await screen.findByText("A generated summary.")).toBeInTheDocument();
+    expect(mocks.generateProgressSummary).toHaveBeenCalled();
   });
 });

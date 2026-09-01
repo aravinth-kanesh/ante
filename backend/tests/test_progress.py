@@ -251,3 +251,40 @@ def test_coach_summary_without_interviews_is_a_prompt_to_start(client):
     cookies = {"access_token": res.cookies["access_token"]}
     summary = client.post("/api/progress/summary", cookies=cookies).json()["summary"]
     assert "not done any interviews" in summary
+
+
+def _signup_with_interview(client, monkeypatch, email):
+    _mock_interview(monkeypatch)
+    res = client.post("/api/auth/signup", json={"email": email, "password": "password123"})
+    client.cookies.clear()
+    cookies = {"access_token": res.cookies["access_token"]}
+    client.put("/api/profile", cookies=cookies, json={"cv_text": "my cv", "jd_text": ""})
+    sid = client.post("/api/interview/start", cookies=cookies, json={"mode": "voice"}).json()["session_id"]
+    client.post(f"/api/interview/{sid}/answer", cookies=cookies, json={"answer": "I built X.", "metrics": VOICE})
+    client.post(f"/api/interview/{sid}/finish", cookies=cookies)
+    return cookies
+
+
+def test_coach_summary_persists_and_is_read_back(client, monkeypatch):
+    cookies = _signup_with_interview(client, monkeypatch, "persist@example.com")
+    # nothing is stored until it is generated
+    assert client.get("/api/progress/summary", cookies=cookies).json()["summary"] == ""
+
+    monkeypatch.setattr(interview.llm, "chat", lambda *a, **k: "A saved coach note.")
+    client.post("/api/progress/summary", cookies=cookies)
+    # it is read back on a later visit, so it survives a re-login
+    assert client.get("/api/progress/summary", cookies=cookies).json()["summary"] == "A saved coach note."
+
+
+def test_coach_summary_cleared_when_history_changes(client, monkeypatch):
+    cookies = _signup_with_interview(client, monkeypatch, "inval@example.com")
+    monkeypatch.setattr(interview.llm, "chat", lambda *a, **k: "A saved coach note.")
+    client.post("/api/progress/summary", cookies=cookies)
+    assert client.get("/api/progress/summary", cookies=cookies).json()["summary"] == "A saved coach note."
+
+    # finishing another interview changes the history and must clear the cached summary
+    _mock_interview(monkeypatch)  # restore the interviewer/feedback chat
+    sid = client.post("/api/interview/start", cookies=cookies, json={"mode": "text"}).json()["session_id"]
+    client.post(f"/api/interview/{sid}/answer", cookies=cookies, json={"answer": "Another answer."})
+    client.post(f"/api/interview/{sid}/finish", cookies=cookies)
+    assert client.get("/api/progress/summary", cookies=cookies).json()["summary"] == ""

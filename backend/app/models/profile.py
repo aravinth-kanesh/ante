@@ -26,6 +26,9 @@ class Profile(Base):
     company_research: Mapped[str] = mapped_column(Text, default="")  # structured JSON for display
     prep_questions: Mapped[str] = mapped_column(Text, default="")  # last generated questions (JSON)
     preparation: Mapped[str] = mapped_column(Text, default="")  # gap analysis + plan (JSON)
+    # Cached coach summary of interview progress; cleared when the interview history
+    # changes so it is regenerated on the next visit to the progress page.
+    coach_summary: Mapped[str] = mapped_column(Text, default="")
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=_utcnow, onupdate=_utcnow
     )

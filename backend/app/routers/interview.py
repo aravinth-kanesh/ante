@@ -27,7 +27,7 @@ from app.schemas.interview import (
     TurnRead,
 )
 from app.security import get_current_user
-from app.services import interview, samples, session_media
+from app.services import interview, profiles, samples, session_media
 
 router = APIRouter(prefix="/interview", tags=["interview"])
 logger = logging.getLogger(__name__)
@@ -215,6 +215,8 @@ def finish(
             status_code=502,
             detail="Your feedback could not be generated just now. Please try again in a moment.",
         ) from exc
+    if not session.is_sample:
+        profiles.clear_coach_summary(db, current_user)  # history changed; regenerate on next visit
     return FeedbackResponse(feedback=report)
 
 
@@ -237,6 +239,8 @@ def regenerate_feedback(
             status_code=502,
             detail="Your feedback could not be generated just now. Please try again in a moment.",
         ) from exc
+    if not session.is_sample:
+        profiles.clear_coach_summary(db, current_user)  # verdicts changed; regenerate on next visit
     return FeedbackResponse(feedback=report)
 
 
@@ -365,7 +369,10 @@ def delete_session(
 ) -> dict:
     # A candidate can delete their own past interviews (their own data).
     session = _owned(db, session_id, current_user)
+    was_counted = not session.is_sample
     session_media.purge(session.id)  # remove any recordings held for this session
     db.delete(session)
     db.commit()
+    if was_counted:
+        profiles.clear_coach_summary(db, current_user)  # history changed; regenerate on next visit
     return {"ok": True}

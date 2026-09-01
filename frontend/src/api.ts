@@ -692,6 +692,12 @@ export async function getProgress(): Promise<ProgressReport> {
   return request("/api/progress");
 }
 
-export async function getProgressSummary(): Promise<{ summary: string }> {
+/** The stored coach summary (persists across logins; empty when none saved yet). */
+export async function readProgressSummary(): Promise<{ summary: string }> {
+  return request("/api/progress/summary");
+}
+
+/** Generate a fresh coach summary and store it (a billable model call). */
+export async function generateProgressSummary(): Promise<{ summary: string }> {
   return request("/api/progress/summary", { method: "POST" });
 }

@@ -8,7 +8,7 @@ from app.models.user import User
 from app.ratelimit import limiter
 from app.schemas.progress import ProgressReport, ProgressSummary
 from app.security import get_current_user
-from app.services import llm, moderation, progress
+from app.services import llm, moderation, profiles, progress
 from app.services.prompts import PROGRESS_SUMMARY_PROMPT
 from app.services.text import strip_markdown
 
@@ -40,6 +40,16 @@ def read_progress(
     return progress.build_report(_usable_sessions(db, current_user))
 
 
+@router.get("/summary", response_model=ProgressSummary)
+def read_coach_summary(
+    current_user: User = Depends(get_current_user), db: Session = Depends(get_db)
+) -> ProgressSummary:
+    """The stored coach summary, so it persists across logins. Empty when none is saved
+    yet or the interview history changed and cleared it (the page regenerates it then)."""
+    profile = current_user.profile
+    return ProgressSummary(summary=profile.coach_summary if profile else "")
+
+
 # A POST because it makes a billable model call: it must not be cached or prefetched.
 @router.post("/summary", response_model=ProgressSummary)
 @limiter.limit(settings.llm_rate_limit)
@@ -48,7 +58,7 @@ def coach_summary(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> ProgressSummary:
-    """A short, on-demand coach note narrating the student's trends (a model call)."""
+    """Generate and store a short coach note narrating the student's trends (a model call)."""
     report = progress.build_report(_usable_sessions(db, current_user))
     if report.totals.interviews == 0:
         return ProgressSummary(
@@ -64,4 +74,7 @@ def coach_summary(
             reply = llm.chat([{"role": "user", "content": prompt}])  # one retry
     except Exception as exc:
         raise HTTPException(status_code=502, detail=f"Could not summarise your progress: {exc}") from exc
-    return ProgressSummary(summary=strip_markdown(reply))
+    summary = strip_markdown(reply)
+    profiles.get_or_create(db, current_user).coach_summary = summary
+    db.commit()
+    return ProgressSummary(summary=summary)

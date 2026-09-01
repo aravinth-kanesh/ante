@@ -1,5 +1,4 @@
 from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile
-from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.config import settings
@@ -9,7 +8,7 @@ from app.models.user import User
 from app.ratelimit import limiter
 from app.schemas.profile import CompanyResearch, ProfileRead, ProfileUpdate, ResearchRead
 from app.security import get_current_user
-from app.services import research
+from app.services import profiles, research
 from app.services.cv_parse import SUPPORTED, extract_text
 
 router = APIRouter(prefix="/profile", tags=["profile"])
@@ -18,20 +17,7 @@ MAX_CV_BYTES = 2 * 1024 * 1024
 
 
 def _get_or_create(db: Session, user: User) -> Profile:
-    if user.profile is not None:
-        return user.profile
-    # The dashboard fires several requests at once, each of which may reach here; the
-    # unique constraint on profiles.user_id means only one insert wins, so treat a
-    # clash as "another request already created it" and use that one.
-    profile = Profile(user_id=user.id)
-    db.add(profile)
-    try:
-        db.commit()
-    except IntegrityError:
-        db.rollback()
-        return db.query(Profile).filter_by(user_id=user.id).one()
-    db.refresh(profile)
-    return profile
+    return profiles.get_or_create(db, user)
 
 
 def _stored_research(profile: Profile) -> CompanyResearch | None:
