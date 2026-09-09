@@ -52,12 +52,17 @@ and camera work best in Chrome or Edge.
 
 - **Prepare**: company research, an honest look at where your CV fits the role, a
   preparation plan, and likely questions.
-- **Mock interview**: an adaptive spoken interview with feedback on your answers, your
-  speaking (pace, pauses, filler words) and your presence on camera. You can focus it
-  on your weak spots (from the gap analysis) or your likely questions.
+- **Mock interview**: an adaptive spoken interview that paces itself to a length you
+  choose, with feedback on your answers, your speaking (pace, pauses, filler words) and
+  your presence on camera, and a model answer where a response falls short. You can
+  focus it on your weak spots or your likely questions, and optionally record a session
+  to watch back with your pauses and filler words marked on a timeline.
 - **Progress**: how you are improving across interviews, with trends for answer
   quality, speaking and on-camera presence, and the recurring things to work on.
 - **History**: every past interview and its feedback, saved to your account.
+- **More practice**: quick single-question drills and a question bank, a STAR-story
+  builder, saved model answers, and a side-by-side comparison of two past interviews. A
+  one-click sample interview lets you try the whole loop with no setup.
 - **Accounts**: sign up, verify your email, reset or change your password, download
   your data, or delete your account.
 
@@ -70,7 +75,7 @@ and are deleted when the session ends; the server keeps no audio or video afterw
 ## Settings
 
 All configuration lives in a single file, `backend/.env` (copied from
-`backend/.env.example`, which lists every option with a short explanation). At a
+`backend/.env.example`, which lists the main options with a short explanation). At a
 minimum you set your API key there; sensible defaults cover everything else for local
 use.
 
@@ -102,19 +107,33 @@ including a complete interview, works without them.
   Vite + TypeScript. The interviewer voice, speech-to-text and webcam analysis all run
   locally or in the browser, so that content is not sent to a third party.
 
-## Deployment
+### The easy way: Docker
 
-1. **Backend.** Copy `backend/.env.example` to `backend/.env` and fill it in: set
+The repository includes a stack that runs PostgreSQL, the backend, and a Caddy server
+that serves the built frontend and provisions HTTPS for you.
+
+```bash
+cp backend/.env.example .env     # then set JWT_SECRET, the LLM_* keys, and SITE_ADDRESS
+docker compose up -d --build
+```
+
+Set `SITE_ADDRESS` to your domain for automatic certificates, or leave it unset for a
+local run on port 80. Use `LLM_FAKE=1` to try it without a model. Migrations apply on
+startup, and Caddy serves the frontend and enforces the security policy.
+
+### By hand
+
+1. **Backend.** Copy `backend/.env.example` to `backend/.env` and set
    `ENVIRONMENT=production`, a long random `JWT_SECRET`, `DATABASE_URL` for your
    PostgreSQL instance, `BACKEND_CORS_ORIGINS` to your site's origin, and the `LLM_*`
    keys (or `LLM_FAKE=1` to run without a model). Build the image from
-   `backend/Dockerfile` and run it; migrations apply automatically at startup. Put it
-   behind a reverse proxy that terminates TLS (the app already emits HSTS and marks
-   cookies Secure in production).
+   `backend/Dockerfile` and run it behind a reverse proxy that terminates TLS; migrations
+   apply automatically at startup, and the app emits HSTS and marks cookies Secure in
+   production.
 2. **Frontend.** `npm --prefix frontend run build` produces static files in
-   `frontend/dist/`. Serve them from the same origin as the API (or a CDN) and proxy
-   `/api` to the backend, so the auth cookies stay first-party.
+   `frontend/dist/`. Serve them from the same origin as the API and proxy `/api` to the
+   backend, so the auth cookies stay first-party.
 3. **Optional.** Configure SMTP (`SMTP_*`, `APP_BASE_URL`) so verification and reset
    emails send; set `WEB_SEARCH_ENABLED=1` to ground company research in web results;
-   point `RATE_LIMIT_STORAGE_URI` at Redis if you run multiple workers; and flip
+   point `RATE_LIMIT_STORAGE_URI` at Redis if you run multiple workers; and set
    `CSP_REPORT_ONLY=false` once you have checked the policy in a browser.
