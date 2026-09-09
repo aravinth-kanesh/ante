@@ -107,6 +107,8 @@ including a complete interview, works without them.
   Vite + TypeScript. The interviewer voice, speech-to-text and webcam analysis all run
   locally or in the browser, so that content is not sent to a third party.
 
+## Deployment
+
 ### The easy way: Docker
 
 The repository includes a stack that runs PostgreSQL, the backend, and a Caddy server
