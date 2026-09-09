@@ -240,6 +240,18 @@ def test_data_export_returns_account_data(client):
     assert body["cvs"][0]["text"] == "my cv"
 
 
+def test_data_export_includes_stars_and_saved_answers(client):
+    signup(client, email="lists@example.com")
+    client.post(
+        "/api/stars",
+        json={"title": "Leading a team", "situation": "s", "task": "t", "action": "a", "result": "r"},
+    )
+    client.post("/api/saved-answers", json={"question": "Why this role?", "answer": "Because."})
+    body = client.get("/api/auth/export").json()
+    assert body["star_stories"][0]["title"] == "Leading a team"
+    assert body["saved_answers"][0]["question"] == "Why this role?"
+
+
 def test_auth_config_reports_verification(client):
     res = client.get("/api/auth/config")
     assert res.status_code == 200

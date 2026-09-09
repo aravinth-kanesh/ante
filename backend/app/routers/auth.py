@@ -8,7 +8,9 @@ from sqlalchemy.orm import Session
 from app.config import settings
 from app.models.cv import CV
 from app.models.onetime import OneTimeToken
+from app.models.saved import SavedAnswer
 from app.models.session import InterviewSession
+from app.models.star import StarStory
 from app.models.user import User
 from app.db import get_db
 from app.ratelimit import limiter
@@ -287,6 +289,17 @@ def export_data(current_user: User = Depends(get_current_user), db: Session = De
             }
             for s in db.query(InterviewSession).filter_by(user_id=current_user.id).all()
         ],
+        "star_stories": [
+            {"title": s.title, "situation": s.situation, "task": s.task,
+             "action": s.action, "result": s.result,
+             "created_at": s.created_at.isoformat() if s.created_at else None}
+            for s in db.query(StarStory).filter_by(user_id=current_user.id).all()
+        ],
+        "saved_answers": [
+            {"question": a.question, "answer": a.answer,
+             "created_at": a.created_at.isoformat() if a.created_at else None}
+            for a in db.query(SavedAnswer).filter_by(user_id=current_user.id).all()
+        ],
     }
     return Response(
         content=json.dumps(data, indent=2),
@@ -310,6 +323,8 @@ def delete_account(
         session_media.purge(session.id)
         db.delete(session)
     db.query(CV).filter_by(user_id=current_user.id).delete()
+    db.query(StarStory).filter_by(user_id=current_user.id).delete()
+    db.query(SavedAnswer).filter_by(user_id=current_user.id).delete()
     if current_user.profile is not None:
         db.delete(current_user.profile)
     db.delete(current_user)
