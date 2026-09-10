@@ -34,10 +34,9 @@ test("sign up, add a CV, complete a typed interview and see progress", async ({ 
   await page.getByRole("button", { name: /Stop . get feedback/ }).click();
   await expect(page.getByRole("heading", { name: "Feedback" })).toBeVisible();
 
-  // A coach summary of progress
+  // The progress page generates a coach summary on load, so it appears without a click.
   await page.goto("/progress");
-  await page.getByRole("button", { name: /Summarise my progress/ }).click();
-  await expect(page.getByText(/making steady progress/)).toBeVisible();
+  await expect(page.getByText(/making steady progress/)).toBeVisible({ timeout: 15000 });
 });
 
 // The sample interview needs no setup, so a first-time visitor can see the whole loop,
