@@ -1,141 +1,119 @@
 # Ante
 
-Ante helps students prepare for job interviews. You give it your CV and a job
-description, and it researches the company, shows you where you are strong and where
-you have gaps, gives you a preparation plan and likely questions, then runs a
-realistic spoken mock interview with feedback on both your answers and how you
-deliver them.
+Ante helps students prepare for job interviews. Give it your CV and a job description
+and it researches the company, shows where you are strong and where you have gaps,
+builds a preparation plan with likely questions, then runs a spoken mock interview
+with feedback on your answers and how you deliver them.
 
 The name means "before": the preparation you do before the interview.
 
-## What you need
+## Features
 
-- Python 3.10 or newer, and Node.js 18 or newer.
-- A key for an OpenAI-compatible chat model (for example OpenAI). You add this to a
-  settings file during setup, below.
+- **Prepare**: company research, an honest look at how your CV fits the role, a
+  preparation plan and likely questions.
+- **Mock interview**: an adaptive spoken interview of a length you choose, with
+  feedback on your answers, your speaking (pace, pauses, filler words) and your
+  presence on camera, plus a model answer where a response falls short. You can record
+  a session and watch it back with pauses and filler words marked on a timeline.
+- **Progress and history**: every past interview saved to your account, with trends
+  across them and the recurring things to work on.
+- **More practice**: single-question drills, a question bank, a STAR-story builder,
+  saved model answers and a side-by-side comparison of two interviews.
+- **Accounts**: email verification, password reset, data download and account deletion.
 
-## Running it
+A one-click sample interview lets you try the whole loop with no setup.
 
-The app has two parts that run at the same time: the backend (the server) and the
-frontend (the website). Open two terminal windows and keep both running.
+## Quick start
 
-**1. Backend**
+You need Python 3.10+, Node.js 18+ and an API key for any OpenAI-compatible chat model.
+The backend and frontend run side by side, so use two terminals.
+
+**Backend**
 
 ```bash
 cd backend
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-
-cp .env.example .env          # then open .env and add your API key
-python scripts/fetch_tts_model.py   # optional: gives the interviewer a natural voice
+cp .env.example .env
+python scripts/fetch_tts_model.py   # optional: natural interviewer voice
 uvicorn app.main:app --reload --port 8000
 ```
 
-**2. Frontend** (in a second terminal)
+Before starting the server, open `backend/.env`, set `ENVIRONMENT=development` and fill
+in the `LLM_*` values. To run with no key at all, set `LLM_FAKE=1`.
+
+**Frontend**
 
 ```bash
 cd frontend
 npm install
-npm run setup                 # optional: enables the camera feedback feature
+npm run setup                       # optional: camera feedback
 npm run dev
 ```
 
-Then open http://localhost:5173 and create an account.
+Open http://localhost:5173 and create an account.
 
-The two steps marked optional make the interviewer speak out loud and let it read
-your body language on camera. You can skip them and the app still works: it falls
-back to your browser's built-in voice and hides the camera feature. The microphone
-and camera work best in Chrome or Edge.
+Without the two optional steps the app still works: it uses your browser's built-in
+voice and hides the camera feature. The microphone and camera work best in Chrome or
+Edge.
 
-## What is inside
+## Privacy
 
-- **Prepare**: company research, an honest look at where your CV fits the role, a
-  preparation plan, and likely questions.
-- **Mock interview**: an adaptive spoken interview that paces itself to a length you
-  choose, with feedback on your answers, your speaking (pace, pauses, filler words) and
-  your presence on camera, and a model answer where a response falls short. You can
-  focus it on your weak spots or your likely questions, and optionally record a session
-  to watch back with your pauses and filler words marked on a timeline.
-- **Progress**: how you are improving across interviews, with trends for answer
-  quality, speaking and on-camera presence, and the recurring things to work on.
-- **History**: every past interview and its feedback, saved to your account.
-- **More practice**: quick single-question drills and a question bank, a STAR-story
-  builder, saved model answers, and a side-by-side comparison of two past interviews. A
-  one-click sample interview lets you try the whole loop with no setup.
-- **Accounts**: sign up, verify your email, reset or change your password, download
-  your data, or delete your account.
+- Microphone audio is transcribed in memory and never saved.
+- Camera analysis runs in your browser, so no video or image leaves your device.
+- Recordings are only kept if you opt in, only for that session, and are deleted when
+  it ends.
 
-Your privacy: your microphone audio is turned into text in memory and never saved,
-and the camera analysis runs inside your browser, so no video or image leaves your
-device for the analysis. If you opt in to saving your answers, the recordings are held
-on the server only for the length of that session so you can review and download them,
-and are deleted when the session ends; the server keeps no audio or video afterwards.
+## Security and accessibility
 
-## Settings
+Passwords are hashed and checked against known breaches, sign-in uses httpOnly cookies
+with CSRF protection, and the app sets the standard security headers and rate limits.
 
-All configuration lives in a single file, `backend/.env` (copied from
-`backend/.env.example`, which lists the main options with a short explanation). At a
-minimum you set your API key there; sensible defaults cover everything else for local
-use.
+Ante aims to meet WCAG 2.1 AA: it is fully keyboard operable, announces question
+changes and errors to screen readers, gives charts a text-table alternative and
+respects a reduced-motion preference. The microphone and camera are optional, so a
+complete interview works without them.
 
-## Security
+## Development
 
-The app is built for real deployment: passwords are hashed and checked against known
-breaches, sign-in uses secure httpOnly cookies with CSRF protection, and it adds the
-standard protective headers and rate limits. If you deploy it publicly, serve it over
-HTTPS, set a strong `JWT_SECRET`, and see `backend/.env.example` for the production
-options (database, email, and so on).
+| | |
+| --- | --- |
+| Backend | FastAPI and SQLAlchemy, with SQLite locally and PostgreSQL in production. Alembic migrations apply at startup. |
+| Frontend | React, Vite and TypeScript. |
+| Speech and vision | Interviewer voice, speech-to-text and webcam analysis run locally or in the browser. |
+| API docs | http://localhost:8000/docs |
+| Backend tests | `pytest`, from `backend/` with the virtual environment active |
+| Frontend tests | `npm test` (Vitest) and `npm run e2e` (Playwright, a full interview against the offline backend) |
 
-## Accessibility
-
-Ante aims to meet WCAG 2.1 AA. It is fully keyboard operable with a visible focus
-indicator and a skip link, forms have proper labels, the changing interview question
-and errors are announced to screen readers, page changes move focus and update the
-title, charts have text-table alternatives, and animations respect a reduced-motion
-preference. The webcam and microphone features are optional, so the whole app,
-including a complete interview, works without them.
-
-## For developers
-
-- Interactive API documentation is served at `http://localhost:8000/docs`.
-- Run the backend tests with `pytest` (from `backend/`, with the virtual environment
-  active). The frontend has `npm test` (Vitest) and `npm run e2e` (Playwright, which
-  launches the backend in its offline mode and drives a full interview in a browser).
-- The backend is FastAPI + SQLAlchemy (SQLite locally, PostgreSQL in production, with
-  Alembic migrations applied automatically at startup). The frontend is React +
-  Vite + TypeScript. The interviewer voice, speech-to-text and webcam analysis all run
-  locally or in the browser, so that content is not sent to a third party.
+All backend settings live in `backend/.env`. Each one is explained in
+`backend/.env.example`, and the defaults cover local use.
 
 ## Deployment
 
-### The easy way: Docker
+### Docker
 
-The repository includes a stack that runs PostgreSQL, the backend, and a Caddy server
-that serves the built frontend and provisions HTTPS for you.
+The included stack runs PostgreSQL, the backend, and a Caddy server that serves the
+built frontend and provisions HTTPS.
 
 ```bash
-cp backend/.env.example .env     # then set JWT_SECRET, the LLM_* keys, and SITE_ADDRESS
+cp .env.example .env
 docker compose up -d --build
 ```
 
-Set `SITE_ADDRESS` to your domain for automatic certificates, or leave it unset for a
-local run on port 80. Use `LLM_FAKE=1` to try it without a model. Migrations apply on
-startup, and Caddy serves the frontend and enforces the security policy.
+Before bringing it up, edit `.env`: set `JWT_SECRET`, the `LLM_*` values, and
+`SITE_ADDRESS` and `SITE_ORIGIN` for your domain. The file explains each setting,
+including how to run the stack locally over plain HTTP.
 
 ### By hand
 
-1. **Backend.** Copy `backend/.env.example` to `backend/.env` and set
-   `ENVIRONMENT=production`, a long random `JWT_SECRET`, `DATABASE_URL` for your
-   PostgreSQL instance, `BACKEND_CORS_ORIGINS` to your site's origin, and the `LLM_*`
-   keys (or `LLM_FAKE=1` to run without a model). Build the image from
-   `backend/Dockerfile` and run it behind a reverse proxy that terminates TLS; migrations
-   apply automatically at startup, and the app emits HSTS and marks cookies Secure in
-   production.
-2. **Frontend.** `npm --prefix frontend run build` produces static files in
-   `frontend/dist/`. Serve them from the same origin as the API and proxy `/api` to the
-   backend, so the auth cookies stay first-party.
-3. **Optional.** Configure SMTP (`SMTP_*`, `APP_BASE_URL`) so verification and reset
-   emails send; set `WEB_SEARCH_ENABLED=1` to ground company research in web results;
-   point `RATE_LIMIT_STORAGE_URI` at Redis if you run multiple workers; and set
-   `CSP_REPORT_ONLY=false` once you have checked the policy in a browser.
+1. **Backend.** In `backend/.env`, set `ENVIRONMENT=production`, a long random
+   `JWT_SECRET`, `DATABASE_URL` for your PostgreSQL instance, `BACKEND_CORS_ORIGINS` to
+   your site's origin, and the `LLM_*` values. Build `backend/Dockerfile` and run it
+   behind a reverse proxy that terminates TLS.
+2. **Frontend.** Run `npm --prefix frontend run build` and serve `frontend/dist/` from
+   the same origin as the API, proxying `/api` to the backend so the auth cookies stay
+   first-party.
+3. **Optional.** Set `SMTP_*` and `APP_BASE_URL` to send verification and reset emails,
+   `WEB_SEARCH_ENABLED=1` to ground company research in web results, and
+   `RATE_LIMIT_STORAGE_URI` to a Redis instance if you run several workers.
